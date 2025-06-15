@@ -1,3 +1,4 @@
+// lib/features/habits/data/repositories/habit_repository_impl.dart - CORREGIDO
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../domain/repositories/habit_repository.dart';
@@ -68,5 +69,10 @@ class HabitRepositoryImpl implements HabitRepository {
       );
       await localDataSource.insertHabitEntry(newEntry);
     }
+  }
+  
+  @override
+  Future<List<HabitEntry>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate) async {
+    return await localDataSource.getHabitEntriesForDateRange(startDate, endDate);
   }
 }

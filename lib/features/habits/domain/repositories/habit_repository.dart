@@ -1,3 +1,4 @@
+// lib/features/habits/domain/repositories/habit_repository.dart - CORREGIDO
 import '../entities/habit.dart';
 import '../entities/habit_entry.dart';
 import '../../../../shared/enums/habit_status.dart';
@@ -11,4 +12,6 @@ abstract class HabitRepository {
   Future<HabitEntry?> getHabitEntryForDate(int habitId, DateTime date);
   Future<void> updateHabitEntryStatus(int habitId, DateTime date, HabitStatus status);
   
+  // MÉTODO AGREGADO - Este es el que faltaba:
+  Future<List<HabitEntry>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate);
 }
