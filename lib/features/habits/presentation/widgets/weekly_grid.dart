@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/widgets/weekly_grid.dart - UI MEJORADA
+// lib/features/habits/presentation/widgets/weekly_grid.dart - DISEÑO DELICADO
 import 'package:flutter/material.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/entities/habit.dart';
@@ -26,35 +26,71 @@ class WeeklyGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final weekDates = AppDateUtils.getWeekDates(weekStart);
 
-    return Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Título con estilo mejorado
-          Text(
-            'Vista semanal',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+    return Card(
+      margin: const EdgeInsets.all(16),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header simple
+            Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.view_week,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Vista semanal',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${weekDates.first.day} - ${weekDates.last.day}',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
-          ),
-          const SizedBox(height: 16),
-          _buildHeader(context, weekDates),
-          const SizedBox(height: 12),
-          Expanded(
-            child: _buildGrid(context, weekDates),
-          ),
-        ],
+            const SizedBox(height: 16),
+            _buildHeader(context, weekDates),
+            const SizedBox(height: 12),
+            Expanded(
+              child: _buildGrid(context, weekDates),
+            ),
+          ],
+        ),
       ),
     );
+  }
+
+  String _getWeekRange(List<DateTime> weekDates) {
+    final start = weekDates.first;
+    final end = weekDates.last;
+    return '${start.day}/${start.month} - ${end.day}/${end.month}';
   }
 
   Widget _buildHeader(BuildContext context, List<DateTime> weekDates) {
     return Row(
       children: [
-        // Espacio para números de hábitos
-        const SizedBox(width: 50),
-        // Días de la semana
+        const SizedBox(width: 36),
         ...AppDateUtils.weekDayNames.asMap().entries.map((entry) {
           final index = entry.key;
           final dayName = entry.value;
@@ -63,12 +99,15 @@ class WeeklyGrid extends StatelessWidget {
 
           return Expanded(
             child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              margin: const EdgeInsets.symmetric(horizontal: 1),
+              padding: const EdgeInsets.symmetric(vertical: 6),
               decoration: isToday
                   ? BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      border: Border(
+                        bottom: BorderSide(
+                          color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                          width: 1.5,
+                        ),
+                      ),
                     )
                   : null,
               child: Column(
@@ -76,22 +115,23 @@ class WeeklyGrid extends StatelessWidget {
                   Text(
                     dayName,
                     textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                          fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
-                          color: isToday 
-                              ? Theme.of(context).colorScheme.primary 
-                              : Theme.of(context).colorScheme.onSurfaceVariant,
-                        ),
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
+                      color: isToday 
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey[600],
+                    ),
                   ),
+                  const SizedBox(height: 2),
                   Text(
                     '${date.day}',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: isToday ? FontWeight.bold : FontWeight.normal,
+                      fontSize: 9,
                       color: isToday 
-                          ? Theme.of(context).colorScheme.primary 
-                          : Colors.grey[600],
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.grey[500],
                     ),
                   ),
                 ],
@@ -123,26 +163,17 @@ class WeeklyGrid extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.calendar_today_outlined,
-            size: 64,
-            color: Theme.of(context).colorScheme.outline,
+            Icons.view_week,
+            size: 40,
+            color: Colors.grey[300],
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
           Text(
-            'No tienes hábitos creados',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  fontWeight: FontWeight.w500,
-                ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '¡Crea tu primer hábito con el botón +!',
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+            'No tienes hábitos',
+            style: TextStyle(
+              fontSize: 14,
+              color: Colors.grey[500],
+            ),
           ),
         ],
       ),
@@ -152,11 +183,18 @@ class WeeklyGrid extends StatelessWidget {
   Widget _buildHabitRow(BuildContext context, Habit habit, int index, List<DateTime> weekDates) {
     return Container(
       margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+      decoration: BoxDecoration(
+        border: Border.all(
+          color: Colors.grey[100]!,
+          width: 0.5,
+        ),
+        borderRadius: BorderRadius.circular(6),
+      ),
       child: Row(
         children: [
           _buildHabitNumber(context, habit, index),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6),
           ..._buildDayCells(context, habit, weekDates),
         ],
       ),
@@ -167,17 +205,20 @@ class WeeklyGrid extends StatelessWidget {
     return GestureDetector(
       onLongPress: () => onDelete(habit.id!),
       child: Container(
-        width: 42,
-        height: 32,
+        width: 28,
+        height: 28,
         decoration: BoxDecoration(
-          color: Theme.of(context).colorScheme.primary,
-          borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Theme.of(context).colorScheme.primary,
+            width: 2,
+          ),
+          borderRadius: BorderRadius.circular(6),
         ),
         child: Center(
           child: Text(
             '${index + 1}',
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimary,
+              color: Theme.of(context).colorScheme.primary,
               fontWeight: FontWeight.bold,
               fontSize: 12,
             ),
@@ -195,37 +236,33 @@ class WeeklyGrid extends StatelessWidget {
       final isPastDate = AppDateUtils.isPastDate(date);
       final canEdit = isToday;
 
-      // Auto-skip logic: días pasados sin entrada se consideran skipped
       final displayStatus = (isPastDate && entry == null) 
           ? HabitStatus.skipped 
           : status;
 
       return Expanded(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 1),
+          margin: const EdgeInsets.symmetric(horizontal: 0.5),
           child: GestureDetector(
             onTap: canEdit ? () => onToggle(habit.id!, date, status) : null,
             child: Container(
-              height: 32,
+              height: 24,
               decoration: BoxDecoration(
-                color: HabitStatusColor.getColor(displayStatus).withOpacity(
-                  canEdit ? 1.0 : 0.7
+                color: displayStatus != HabitStatus.pending 
+                    ? _getDelicateColor(displayStatus, isToday)
+                    : null,
+                border: Border.all(
+                  color: isToday
+                      ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
+                      : _getDelicateBorderColor(displayStatus),
+                  width: isToday ? 1.5 : 0.5,
                 ),
-                borderRadius: BorderRadius.circular(6),
-                border: isToday
-                    ? Border.all(
-                        color: Theme.of(context).colorScheme.primary,
-                        width: 2,
-                      )
-                    : Border.all(
-                        color: Colors.grey[300]!,
-                        width: 0.5,
-                      ),
+                borderRadius: BorderRadius.circular(3),
               ),
               child: Center(
                 child: HabitStatusIcon(
                   status: displayStatus, 
-                  size: 16,
+                  size: 10,
                 ),
               ),
             ),
@@ -233,6 +270,30 @@ class WeeklyGrid extends StatelessWidget {
         ),
       );
     }).toList();
+  }
+
+  Color _getDelicateColor(HabitStatus status, bool isToday) {
+    final opacity = isToday ? 0.4 : 0.2;
+    
+    switch (status) {
+      case HabitStatus.completed:
+        return Colors.green.withOpacity(opacity);
+      case HabitStatus.skipped:
+        return Colors.red.withOpacity(opacity);
+      case HabitStatus.pending:
+        return Colors.transparent;
+    }
+  }
+
+  Color _getDelicateBorderColor(HabitStatus status) {
+    switch (status) {
+      case HabitStatus.completed:
+        return Colors.green.withOpacity(0.3);
+      case HabitStatus.skipped:
+        return Colors.red.withOpacity(0.3);
+      case HabitStatus.pending:
+        return Colors.grey.withOpacity(0.2);
+    }
   }
 
   HabitEntry? _findEntryForDate(int habitId, DateTime date) {

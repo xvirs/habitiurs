@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/widgets/delete_confirmation_dialog.dart
+// lib/features/habits/presentation/widgets/delete_confirmation_dialog.dart - SIMPLE
 import 'package:flutter/material.dart';
 
 class DeleteConfirmationDialog extends StatelessWidget {
@@ -12,16 +12,8 @@ class DeleteConfirmationDialog extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      icon: Icon(
-        Icons.warning_rounded,
-        color: Theme.of(context).colorScheme.error,
-        size: 32,
-      ),
-      title: const Text('Eliminar Hábito'),
-      content: const Text(
-        '¿Estás seguro de que quieres eliminar este hábito?\n\n'
-        'Esta acción no se puede deshacer y se perderán todos los datos relacionados.',
-      ),
+      title: const Text('Eliminar hábito'),
+      content: const Text('¿Eliminar este hábito? Esta acción no se puede deshacer.'),
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
@@ -33,8 +25,7 @@ class DeleteConfirmationDialog extends StatelessWidget {
             onConfirm();
           },
           style: FilledButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.error,
-            foregroundColor: Theme.of(context).colorScheme.onError,
+            backgroundColor: Colors.red,
           ),
           child: const Text('Eliminar'),
         ),

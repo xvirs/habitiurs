@@ -15,7 +15,10 @@ class StatisticsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => InjectionContainer().statisticsBloc..add(LoadStatistics()), // CAMBIO: usar tu DI
+      create:
+          (context) =>
+              InjectionContainer().statisticsBloc
+                ..add(LoadStatistics()), // CAMBIO: usar tu DI
       child: const StatisticsView(),
     );
   }
@@ -29,6 +32,9 @@ class StatisticsView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Estadísticas'),
+        shadowColor: Colors.transparent,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -41,9 +47,7 @@ class StatisticsView extends StatelessWidget {
       body: BlocBuilder<StatisticsBloc, StatisticsState>(
         builder: (context, state) {
           if (state is StatisticsLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state is StatisticsError) {
@@ -51,11 +55,7 @@ class StatisticsView extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[300],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
                     'Error al cargar estadísticas',
@@ -91,13 +91,13 @@ class StatisticsView extends StatelessWidget {
                   children: [
                     // Componente 1: Resumen del mes actual con semanas
                     CurrentMonthSummary(statistics: state.currentMonth),
-                    
+
                     // Componente 2: Lista scrolleable del año actual
                     YearlyStatisticsList(statistics: state.currentYear),
-                    
+
                     // Componente 3: Gráfico histórico
                     HistoricalChart(data: state.historicalData),
-                    
+
                     // Espaciado final
                     const SizedBox(height: 16),
                   ],
@@ -111,18 +111,11 @@ class StatisticsView extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.analytics_outlined,
-                  size: 64,
-                  color: Colors.grey,
-                ),
+                Icon(Icons.analytics_outlined, size: 64, color: Colors.grey),
                 SizedBox(height: 16),
                 Text(
                   'Cargando estadísticas...',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
                 ),
               ],
             ),

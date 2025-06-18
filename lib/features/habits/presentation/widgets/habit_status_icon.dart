@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/widgets/habit_status_icon.dart - MEJORADO
+// lib/features/habits/presentation/widgets/habit_status_icon.dart - DISEÑO MINIMALISTA
 import 'package:flutter/material.dart';
 import '../../../../shared/enums/habit_status.dart';
 
@@ -17,19 +17,19 @@ class HabitStatusIcon extends StatelessWidget {
     switch (status) {
       case HabitStatus.completed:
         return Icon(
-          Icons.check_rounded,
+          Icons.check,
           color: Colors.white,
           size: size,
         );
       case HabitStatus.skipped:
         return Icon(
-          Icons.close_rounded,
+          Icons.close,
           color: Colors.white,
           size: size,
         );
       case HabitStatus.pending:
         return Icon(
-          Icons.add_rounded,
+          Icons.circle_outlined,
           color: Colors.grey[600],
           size: size,
         );
@@ -41,15 +41,25 @@ class HabitStatusColor {
   static Color getColor(HabitStatus status) {
     switch (status) {
       case HabitStatus.completed:
-        return Colors.green[500]!; // Verde más suave
+        return Colors.green;
       case HabitStatus.skipped:
-        return Colors.red[400]!; // Rojo más suave
+        return Colors.red[400]!;
       case HabitStatus.pending:
-        return Colors.grey[200]!;
+        return Colors.transparent;
     }
   }
 
-  // Colores adicionales para diferentes contextos
+  static Color getBorderColor(HabitStatus status) {
+    switch (status) {
+      case HabitStatus.completed:
+        return Colors.green;
+      case HabitStatus.skipped:
+        return Colors.red[400]!;
+      case HabitStatus.pending:
+        return Colors.grey[400]!;
+    }
+  }
+
   static Color getTextColor(HabitStatus status) {
     switch (status) {
       case HabitStatus.completed:
@@ -58,17 +68,6 @@ class HabitStatusColor {
         return Colors.red[600]!;
       case HabitStatus.pending:
         return Colors.grey[800]!;
-    }
-  }
-
-  static Color getBackgroundColor(HabitStatus status) {
-    switch (status) {
-      case HabitStatus.completed:
-        return Colors.green[50]!;
-      case HabitStatus.skipped:
-        return Colors.red[50]!;
-      case HabitStatus.pending:
-        return Colors.grey[50]!;
     }
   }
 }

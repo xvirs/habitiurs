@@ -1,4 +1,4 @@
-// lib/features/statistics/presentation/widgets/current_month_summary.dart
+// lib/features/statistics/presentation/widgets/current_month_summary.dart - DISEÑO MINIMALISTA
 import 'package:flutter/material.dart';
 import '../../domain/entities/statistics.dart';
 
@@ -19,11 +19,33 @@ class CurrentMonthSummary extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              '${statistics.monthName} ${statistics.year}',
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+            // Header simple con línea de color
+            Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.calendar_month,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    '${statistics.monthName} ${statistics.year}',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             _buildWeeksList(),
@@ -41,13 +63,15 @@ class CurrentMonthSummary extends StatelessWidget {
           margin: const EdgeInsets.only(bottom: 6),
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           decoration: BoxDecoration(
-            color: Colors.grey[50],
+            border: Border.all(
+              color: Colors.grey[200]!,
+              width: 1,
+            ),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: Colors.grey[200]!),
           ),
           child: Row(
             children: [
-              // Semana compacta
+              // Semana
               Text(
                 'Semana ${week.weekNumber}',
                 style: const TextStyle(
@@ -56,23 +80,19 @@ class CurrentMonthSummary extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Stats compactos
+              // Stats simples
               Expanded(
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    _buildStatChip(
-                      'Cumplidos',
+                    _buildStatText(
                       week.completedCount.toString(),
-                      Colors.green[100]!,
-                      Colors.green[800]!,
+                      Colors.green[600]!,
                     ),
-                    const SizedBox(width: 6),
-                    _buildStatChip(
-                      'No cumplidos',
+                    const SizedBox(width: 8),
+                    _buildStatText(
                       week.skippedCount.toString(),
-                      Colors.red[100]!,
-                      Colors.red[800]!,
+                      Colors.red[500]!,
                     ),
                   ],
                 ),
@@ -84,18 +104,21 @@ class CurrentMonthSummary extends StatelessWidget {
     );
   }
 
-  Widget _buildStatChip(String label, String value, Color bgColor, Color textColor) {
+  Widget _buildStatText(String value, Color color) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
       decoration: BoxDecoration(
-        color: bgColor,
-        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+        borderRadius: BorderRadius.circular(4),
       ),
       child: Text(
         value,
         style: TextStyle(
-          color: textColor,
-          fontWeight: FontWeight.bold,
+          color: color,
+          fontWeight: FontWeight.w600,
           fontSize: 11,
         ),
       ),

@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/pages/habits_page.dart - UI MEJORADA
+// lib/features/habits/presentation/pages/habits_page.dart - SIN CARDS DUPLICADOS
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/habits/presentation/widgets/delete_confirmation_dialog.dart';
@@ -101,39 +101,33 @@ class _HabitsPageView extends StatelessWidget {
 
     return Column(
       children: [
-        // Cuadrícula semanal - Parte superior
+        // Cuadrícula semanal - Parte superior (sin Card wrapper)
         Expanded(
-          child: Card(
-            margin: const EdgeInsets.all(16),
-            child: WeeklyGrid(
-              habits: state.habits,
-              weekEntries: state.weekEntries,
-              weekStart: state.currentWeekStart,
-              onToggle: (habitId, date, currentStatus) => _handleToggle(
-                context,
-                habitId,
-                date,
-                currentStatus,
-              ),
-              onDelete: (habitId) => _showDeleteConfirmation(context, habitId),
+          child: WeeklyGrid(
+            habits: state.habits,
+            weekEntries: state.weekEntries,
+            weekStart: state.currentWeekStart,
+            onToggle: (habitId, date, currentStatus) => _handleToggle(
+              context,
+              habitId,
+              date,
+              currentStatus,
             ),
+            onDelete: (habitId) => _showDeleteConfirmation(context, habitId),
           ),
         ),
-        // Lista de hábitos diarios - Parte inferior
+        // Lista de hábitos diarios - Parte inferior (sin Card wrapper)
         Expanded(
-          child: Card(
-            margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: DailyHabitsList(
-              habits: state.habits,
-              todayEntries: todayEntries,
-              onToggle: (habitId, currentStatus) => _handleToggle(
-                context,
-                habitId,
-                today,
-                currentStatus,
-              ),
-              onDelete: (habitId) => _showDeleteConfirmation(context, habitId),
+          child: DailyHabitsList(
+            habits: state.habits,
+            todayEntries: todayEntries,
+            onToggle: (habitId, currentStatus) => _handleToggle(
+              context,
+              habitId,
+              today,
+              currentStatus,
             ),
+            onDelete: (habitId) => _showDeleteConfirmation(context, habitId),
           ),
         ),
       ],

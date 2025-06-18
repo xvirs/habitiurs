@@ -15,7 +15,9 @@ class AIAssistantPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create: (context) => InjectionContainer().aiAssistantBloc..add(LoadAIAssistantData()),
+      create:
+          (context) =>
+              InjectionContainer().aiAssistantBloc..add(LoadAIAssistantData()),
       child: const AIAssistantView(),
     );
   }
@@ -29,6 +31,10 @@ class AIAssistantView extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Asistente IA'),
+        elevation: 0,
+        backgroundColor: Theme.of(context).colorScheme.surface,
+        surfaceTintColor: Colors.transparent,
+        shadowColor: Colors.transparent,
         actions: [
           IconButton(
             icon: const Icon(Icons.refresh),
@@ -41,9 +47,7 @@ class AIAssistantView extends StatelessWidget {
       body: BlocBuilder<AIAssistantBloc, AIAssistantState>(
         builder: (context, state) {
           if (state is AIAssistantLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
 
           if (state is AIAssistantError) {
@@ -51,11 +55,7 @@ class AIAssistantView extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: Colors.red[300],
-                  ),
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
                   const SizedBox(height: 16),
                   Text(
                     'Error al cargar el asistente',
@@ -70,7 +70,9 @@ class AIAssistantView extends StatelessWidget {
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
-                      context.read<AIAssistantBloc>().add(LoadAIAssistantData());
+                      context.read<AIAssistantBloc>().add(
+                        LoadAIAssistantData(),
+                      );
                     },
                     child: const Text('Reintentar'),
                   ),
@@ -94,7 +96,9 @@ class AIAssistantView extends StatelessWidget {
                       isLoading: state.isRecommendationLoading,
                       hasInternetConnection: state.hasInternetConnection,
                       onRefresh: () {
-                        context.read<AIAssistantBloc>().add(RefreshAIRecommendation());
+                        context.read<AIAssistantBloc>().add(
+                          RefreshAIRecommendation(),
+                        );
                       },
                     ),
 
@@ -104,9 +108,7 @@ class AIAssistantView extends StatelessWidget {
                     ),
 
                     // Sección 3: Guía de Uso
-                    AppGuideSection(
-                      guides: state.appGuides,
-                    ),
+                    AppGuideSection(guides: state.appGuides),
 
                     // Espaciado final
                     const SizedBox(height: 16),
@@ -121,18 +123,11 @@ class AIAssistantView extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.psychology_outlined,
-                  size: 64,
-                  color: Colors.grey,
-                ),
+                Icon(Icons.psychology_outlined, size: 64, color: Colors.grey),
                 SizedBox(height: 16),
                 Text(
                   'Cargando asistente...',
-                  style: TextStyle(
-                    fontSize: 18,
-                    color: Colors.grey,
-                  ),
+                  style: TextStyle(fontSize: 18, color: Colors.grey),
                 ),
               ],
             ),

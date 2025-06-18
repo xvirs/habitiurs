@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/widgets/daily_habits_list.dart - UI MEJORADA
+// lib/features/habits/presentation/widgets/daily_habits_list.dart - SIN CARDS ANIDADOS
 import 'package:flutter/material.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
@@ -21,102 +21,158 @@ class DailyHabitsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16),
+    return Card(
+      margin: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Título con estilo mejorado
-          Text(
-            'Hábitos de hoy',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
+          // Header con padding
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Row(
+              children: [
+                Container(
+                  width: 3,
+                  height: 20,
+                  decoration: BoxDecoration(
+                    color: Theme.of(context).colorScheme.primary,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Icon(
+                  Icons.today,
+                  color: Theme.of(context).colorScheme.primary,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Hábitos de hoy',
+                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                Text(
+                  '${habits.length}',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w600,
+                    color: Theme.of(context).colorScheme.primary,
+                  ),
+                ),
+              ],
             ),
           ),
-          const SizedBox(height: 16),
 
-          // Lista de hábitos con diseño mejorado
+          // Lista de hábitos sin padding
           Expanded(
             child: habits.isEmpty
                 ? _buildEmptyState(context)
-                : ListView.builder(
-                    itemCount: habits.length,
-                    itemBuilder: (context, index) {
-                      final habit = habits[index];
+                : ClipRRect(
+                    borderRadius: const BorderRadius.vertical(
+                      bottom: Radius.circular(12),
+                    ),
+                    child: ListView.builder(
+                      itemCount: habits.length,
+                      itemBuilder: (context, index) {
+                        final habit = habits[index];
 
-                      // Buscar entrada para este hábito hoy
-                      HabitEntry? habitEntry;
-                      try {
-                        habitEntry = todayEntries.firstWhere(
-                          (e) => e.habitId == habit.id,
-                        );
-                      } catch (e) {
-                        habitEntry = null;
-                      }
+                        HabitEntry? habitEntry;
+                        try {
+                          habitEntry = todayEntries.firstWhere(
+                            (e) => e.habitId == habit.id,
+                          );
+                        } catch (e) {
+                          habitEntry = null;
+                        }
 
-                      final status = habitEntry?.status ?? HabitStatus.pending;
+                        final status = habitEntry?.status ?? HabitStatus.pending;
 
-                      return Container(
-                        margin: const EdgeInsets.only(bottom: 8),
-                        decoration: BoxDecoration(
-                          color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.grey[200]!),
-                        ),
-                        child: ListTile(
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 4,
-                          ),
-                          leading: GestureDetector(
-                            onLongPress: () => onDelete(habit.id!),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: Theme.of(context).colorScheme.primary,
-                                borderRadius: BorderRadius.circular(8),
+                        return GestureDetector(
+                          onTap: () => onToggle(habit.id!, status),
+                          child: Container(
+                            margin: EdgeInsets.only(
+                              bottom: index == habits.length - 1 ? 0 : 8,
+                            ),
+                            padding: EdgeInsets.fromLTRB(
+                              16,
+                              12,
+                              16,
+                              index == habits.length - 1 ? 16 : 12,
+                            ),
+                            decoration: BoxDecoration(
+                              border: Border.all(
+                                color: HabitStatusColor.getBorderColor(status),
+                                width: 1,
                               ),
-                              child: Center(
-                                child: Text(
-                                  '${index + 1}',
-                                  style: TextStyle(
-                                    color: Theme.of(context).colorScheme.onPrimary,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 14,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Row(
+                              children: [
+                                GestureDetector(
+                                  onLongPress: () => onDelete(habit.id!),
+                                  child: Container(
+                                    width: 28,
+                                    height: 28,
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                        color: Theme.of(context).colorScheme.primary,
+                                        width: 2,
+                                      ),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        '${index + 1}',
+                                        style: TextStyle(
+                                          color: Theme.of(context).colorScheme.primary,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 12,
+                                        ),
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Text(
+                                    habit.name,
+                                    style: TextStyle(
+                                      decoration: status == HabitStatus.completed
+                                          ? TextDecoration.lineThrough
+                                          : null,
+                                      color: status == HabitStatus.completed
+                                          ? Colors.grey[600]
+                                          : null,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                ),
+                                Container(
+                                  width: 28,
+                                  height: 28,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      color: HabitStatusColor.getBorderColor(status),
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(6),
+                                    color: status != HabitStatus.pending 
+                                        ? HabitStatusColor.getColor(status)
+                                        : null,
+                                  ),
+                                  child: Center(
+                                    child: HabitStatusIcon(status: status, size: 16),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          title: Text(
-                            habit.name,
-                            style: TextStyle(
-                              decoration: status == HabitStatus.completed
-                                  ? TextDecoration.lineThrough
-                                  : null,
-                              color: _getTextColor(status),
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          trailing: GestureDetector(
-                            onTap: () => onToggle(habit.id!, status),
-                            child: Container(
-                              width: 36,
-                              height: 36,
-                              decoration: BoxDecoration(
-                                color: HabitStatusColor.getColor(status),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Center(
-                                child: HabitStatusIcon(status: status, size: 18),
-                              ),
-                            ),
-                          ),
-                          onTap: () => onToggle(habit.id!, status),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
           ),
         ],
@@ -130,41 +186,20 @@ class DailyHabitsList extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.check_circle_outline,
-            size: 64,
+            Icons.add_task,
+            size: 48,
             color: Colors.grey[400],
           ),
           const SizedBox(height: 16),
           Text(
-            'No tienes hábitos para realizar hoy',
-            textAlign: TextAlign.center,
+            'No tienes hábitos',
             style: TextStyle(
               fontSize: 16,
               color: Colors.grey[600],
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Toca el botón + para agregar tu primer hábito',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
-            ),
-          ),
         ],
       ),
     );
-  }
-
-  Color? _getTextColor(HabitStatus status) {
-    switch (status) {
-      case HabitStatus.completed:
-        return Colors.grey[600];
-      case HabitStatus.skipped:
-        return Colors.red[400];
-      case HabitStatus.pending:
-        return null;
-    }
   }
 }
