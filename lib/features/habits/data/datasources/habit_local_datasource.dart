@@ -1,10 +1,11 @@
-// lib/features/habits/data/datasources/habit_local_datasource.dart - CORREGIDO CON SOFT DELETE
+// lib/features/habits/data/datasources/habit_local_datasource.dart - AUTO-SKIP MEJORADO
 import 'package:sqflite/sqflite.dart';
 import '../models/habit_model.dart';
 import '../models/habit_entry_model.dart';
 import '../../../../core/database/database_helper.dart';
 import '../../../../core/constants/database_constants.dart';
 import '../../../../shared/enums/habit_status.dart';
+import '../../../../shared/utils/date_utils.dart';
 
 abstract class HabitLocalDataSource {
   Future<List<HabitModel>> getAllHabits();
@@ -17,9 +18,6 @@ abstract class HabitLocalDataSource {
   Future<int> insertHabitEntry(HabitEntryModel entry);
   Future<void> updateHabitEntry(HabitEntryModel entry);
   Future<void> deleteHabitEntry(int habitId, DateTime date);
-  
-  // AGREGAR: método con auto-skip logic
-  Future<List<HabitEntryModel>> getHabitEntriesWithAutoSkip(DateTime startDate, DateTime endDate);
 }
 
 class HabitLocalDataSourceImpl implements HabitLocalDataSource {
@@ -71,29 +69,21 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   Future<void> permanentlyDeleteHabit(int id) async {
     final db = await _databaseHelper.database;
     
-    // CAMBIO APLICADO: Solo marcar como inactivo, NO eliminar entradas históricas
+    // Soft delete: Solo marcar como inactivo para preservar estadísticas
     await db.update(
       DatabaseConstants.habitsTable,
       {'is_active': 0},
       where: 'id = ?',
       whereArgs: [id],
     );
-    
-    // COMENTADO: No eliminar las entradas para preservar estadísticas
-    // await db.delete(DatabaseConstants.habitEntriesTable, where: 'habit_id = ?', whereArgs: [id]);
-    // await db.delete(DatabaseConstants.habitsTable, where: 'id = ?', whereArgs: [id]);
   }
 
   @override
   Future<List<HabitEntryModel>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate) async {
     final db = await _databaseHelper.database;
-    final maps = await db.query(
-      DatabaseConstants.habitEntriesTable,
-      where: 'date >= ? AND date <= ?',
-      whereArgs: [_formatDate(startDate), _formatDate(endDate)],
-      orderBy: 'date ASC, habit_id ASC',
-    );
-    return maps.map((map) => HabitEntryModel.fromMap(map)).toList();
+    
+    // NUEVO: Aplicar auto-skip logic para cualquier consulta de rango
+    return await _getEntriesWithAutoSkip(db, startDate, endDate);
   }
 
   @override
@@ -104,7 +94,21 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
       where: 'habit_id = ? AND date = ?',
       whereArgs: [habitId, _formatDate(date)],
     );
-    if (maps.isEmpty) return null;
+    
+    if (maps.isEmpty) {
+      // NUEVO: Aplicar auto-skip si es día pasado
+      final today = DateTime.now();
+      if (AppDateUtils.isPastDate(date) && !AppDateUtils.isSameDay(date, today)) {
+        return HabitEntryModel(
+          id: null, // No existe en BD
+          habitId: habitId,
+          date: date,
+          status: HabitStatus.skipped,
+        );
+      }
+      return null; // Día actual o futuro sin entrada
+    }
+    
     return HabitEntryModel.fromMap(maps.first);
   }
 
@@ -139,50 +143,54 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
     );
   }
 
-  // NUEVO: método con auto-skip logic para Statistics
-  @override
-  Future<List<HabitEntryModel>> getHabitEntriesWithAutoSkip(DateTime startDate, DateTime endDate) async {
-    final db = await _databaseHelper.database;
-    
+  // MÉTODO PRINCIPAL: Auto-skip logic aplicada automáticamente
+  Future<List<HabitEntryModel>> _getEntriesWithAutoSkip(Database db, DateTime startDate, DateTime endDate) async {
     // Obtener todos los hábitos activos
     final habitsQuery = '''
-      SELECT id, name, created_at, is_active 
-      FROM habits 
+      SELECT id, created_at 
+      FROM ${DatabaseConstants.habitsTable} 
       WHERE is_active = 1
     ''';
     final habitsResult = await db.rawQuery(habitsQuery);
     
-    // Generar todas las combinaciones de hábito-fecha
     final List<HabitEntryModel> entries = [];
     final today = DateTime.now();
     
     for (final habitData in habitsResult) {
       final habitId = habitData['id'] as int;
+      final habitCreatedAt = DateTime.parse(habitData['created_at'] as String);
       
       // Generar entradas para cada día del rango
       for (DateTime date = startDate; 
            date.isBefore(endDate.add(const Duration(days: 1))); 
            date = date.add(const Duration(days: 1))) {
         
+        // Solo procesar fechas después de la creación del hábito
+        if (date.isBefore(DateTime(habitCreatedAt.year, habitCreatedAt.month, habitCreatedAt.day))) {
+          continue;
+        }
+        
         final dateStr = _formatDate(date);
         
-        // Buscar entrada existente
+        // Buscar entrada existente en BD
         final entryQuery = '''
           SELECT id, habit_id, date, status 
-          FROM habit_entries 
+          FROM ${DatabaseConstants.habitEntriesTable} 
           WHERE habit_id = ? AND date = ?
         ''';
         final entryResult = await db.rawQuery(entryQuery, [habitId, dateStr]);
         
         if (entryResult.isNotEmpty) {
-          // Entrada existe, usar su estado
-          final entryData = entryResult.first;
-          entries.add(HabitEntryModel.fromMap(entryData));
+          // Entrada existe: usar su estado real
+          entries.add(HabitEntryModel.fromMap(entryResult.first));
         } else {
-          // No existe entrada - aplicar lógica de auto-skip
-          final status = date.isBefore(today)
-              ? HabitStatus.skipped 
-              : HabitStatus.pending;
+          // No existe entrada: aplicar lógica de auto-skip
+          final isToday = AppDateUtils.isSameDay(date, today);
+          final isPastDate = AppDateUtils.isPastDate(date) && !isToday;
+          
+          final status = isPastDate 
+              ? HabitStatus.skipped    // Días pasados = automáticamente skipped
+              : HabitStatus.pending;   // Día actual/futuro = pendiente
           
           entries.add(HabitEntryModel(
             id: null, // No existe en BD

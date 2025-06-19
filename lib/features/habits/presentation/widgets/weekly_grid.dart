@@ -1,25 +1,20 @@
-// lib/features/habits/presentation/widgets/weekly_grid.dart - DISEÑO DELICADO
+// lib/features/habits/presentation/widgets/weekly_grid.dart - VISTA SIMPLE NO SCROLLEABLE
 import 'package:flutter/material.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
-import '../widgets/habit_status_icon.dart';
 import '../../../../shared/enums/habit_status.dart';
 
 class WeeklyGrid extends StatelessWidget {
   final List<Habit> habits;
   final List<HabitEntry> weekEntries;
   final DateTime weekStart;
-  final Function(int habitId, DateTime date, HabitStatus currentStatus) onToggle;
-  final Function(int habitId) onDelete;
-
+  
   const WeeklyGrid({
     super.key,
     required this.habits,
     required this.weekEntries,
     required this.weekStart,
-    required this.onToggle,
-    required this.onDelete,
   });
 
   @override
@@ -34,46 +29,16 @@ class WeeklyGrid extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Header simple
-            Row(
-              children: [
-                Container(
-                  width: 3,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Icon(
-                  Icons.view_week,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Vista semanal',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                Text(
-                  '${weekDates.first.day} - ${weekDates.last.day}',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
             _buildHeader(context, weekDates),
+            const SizedBox(height: 16),
+            
+            // Headers de días
+            _buildDaysHeader(context, weekDates),
             const SizedBox(height: 12),
+            
+            // Grid de hábitos (expandido para ocupar todo el espacio disponible)
             Expanded(
-              child: _buildGrid(context, weekDates),
+              child: _buildFixedGrid(context, weekDates),
             ),
           ],
         ),
@@ -81,16 +46,50 @@ class WeeklyGrid extends StatelessWidget {
     );
   }
 
-  String _getWeekRange(List<DateTime> weekDates) {
-    final start = weekDates.first;
-    final end = weekDates.last;
-    return '${start.day}/${start.month} - ${end.day}/${end.month}';
-  }
-
   Widget _buildHeader(BuildContext context, List<DateTime> weekDates) {
     return Row(
       children: [
-        const SizedBox(width: 36),
+        Container(
+          width: 3,
+          height: 20,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Icon(
+          Icons.view_week,
+          color: Theme.of(context).colorScheme.primary,
+          size: 20,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Vista semanal',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        Text(
+          '${weekDates.first.day} - ${weekDates.last.day}',
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Theme.of(context).colorScheme.primary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDaysHeader(BuildContext context, List<DateTime> weekDates) {
+    return Row(
+      children: [
+        // Espacio para números de hábitos
+        const SizedBox(width: 28),
+        // Headers de días
         ...AppDateUtils.weekDayNames.asMap().entries.map((entry) {
           final index = entry.key;
           final dayName = entry.value;
@@ -143,18 +142,20 @@ class WeeklyGrid extends StatelessWidget {
     );
   }
 
-  Widget _buildGrid(BuildContext context, List<DateTime> weekDates) {
-    return habits.isEmpty
-        ? _buildEmptyState(context)
-        : ListView.builder(
-            itemCount: habits.length,
-            itemBuilder: (context, index) => _buildHabitRow(
-              context,
-              habits[index],
-              index,
-              weekDates,
-            ),
-          );
+  Widget _buildFixedGrid(BuildContext context, List<DateTime> weekDates) {
+    if (habits.isEmpty) {
+      return _buildEmptyState(context);
+    }
+
+    return Column(
+      children: habits.asMap().entries.map((entry) {
+        final index = entry.key;
+        final habit = entry.value;
+        return Expanded(
+          child: _buildHabitRow(context, habit, index, weekDates),
+        );
+      }).toList(),
+    );
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -181,47 +182,35 @@ class WeeklyGrid extends StatelessWidget {
   }
 
   Widget _buildHabitRow(BuildContext context, Habit habit, int index, List<DateTime> weekDates) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 6),
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
-      decoration: BoxDecoration(
-        border: Border.all(
-          color: Colors.grey[100]!,
-          width: 0.5,
-        ),
-        borderRadius: BorderRadius.circular(6),
-      ),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 1),
       child: Row(
         children: [
-          _buildHabitNumber(context, habit, index),
-          const SizedBox(width: 6),
+          // Número del hábito
+          _buildHabitNumber(context, index),
+          const SizedBox(width: 4),
+          // Celdas de días
           ..._buildDayCells(context, habit, weekDates),
         ],
       ),
     );
   }
 
-  Widget _buildHabitNumber(BuildContext context, Habit habit, int index) {
-    return GestureDetector(
-      onLongPress: () => onDelete(habit.id!),
-      child: Container(
-        width: 28,
-        height: 28,
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: Theme.of(context).colorScheme.primary,
-            width: 2,
-          ),
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Center(
-          child: Text(
-            '${index + 1}',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.primary,
-              fontWeight: FontWeight.bold,
-              fontSize: 12,
-            ),
+  Widget _buildHabitNumber(BuildContext context, int index) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Center(
+        child: Text(
+          '${index + 1}',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
           ),
         ),
       ),
@@ -234,65 +223,37 @@ class WeeklyGrid extends StatelessWidget {
       final status = entry?.status ?? HabitStatus.pending;
       final isToday = AppDateUtils.isToday(date);
       final isPastDate = AppDateUtils.isPastDate(date);
-      final canEdit = isToday;
 
+      // Auto-skip logic: días pasados sin entrada se consideran "skipped"
       final displayStatus = (isPastDate && entry == null) 
           ? HabitStatus.skipped 
           : status;
 
       return Expanded(
         child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 0.5),
-          child: GestureDetector(
-            onTap: canEdit ? () => onToggle(habit.id!, date, status) : null,
-            child: Container(
-              height: 24,
-              decoration: BoxDecoration(
-                color: displayStatus != HabitStatus.pending 
-                    ? _getDelicateColor(displayStatus, isToday)
-                    : null,
-                border: Border.all(
-                  color: isToday
-                      ? Theme.of(context).colorScheme.primary.withOpacity(0.9)
-                      : _getDelicateBorderColor(displayStatus),
-                  width: isToday ? 1.5 : 0.5,
-                ),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Center(
-                child: HabitStatusIcon(
-                  status: displayStatus, 
-                  size: 10,
-                ),
-              ),
-            ),
+          margin: const EdgeInsets.symmetric(horizontal: 1),
+          height: 24,
+          decoration: BoxDecoration(
+            color: _getCellColor(displayStatus, isToday),
+            border: isToday ? Border.all(
+              color: Theme.of(context).colorScheme.primary,
+              width: 2,
+            ) : null,
+            borderRadius: BorderRadius.circular(4),
           ),
         ),
       );
     }).toList();
   }
 
-  Color _getDelicateColor(HabitStatus status, bool isToday) {
-    final opacity = isToday ? 0.4 : 0.2;
-    
+  Color _getCellColor(HabitStatus status, bool isToday) {
     switch (status) {
       case HabitStatus.completed:
-        return Colors.green.withOpacity(opacity);
+        return Colors.green[500]!;
       case HabitStatus.skipped:
-        return Colors.red.withOpacity(opacity);
+        return Colors.red[400]!;
       case HabitStatus.pending:
-        return Colors.transparent;
-    }
-  }
-
-  Color _getDelicateBorderColor(HabitStatus status) {
-    switch (status) {
-      case HabitStatus.completed:
-        return Colors.green.withOpacity(0.3);
-      case HabitStatus.skipped:
-        return Colors.red.withOpacity(0.3);
-      case HabitStatus.pending:
-        return Colors.grey.withOpacity(0.2);
+        return Colors.grey[200]!;
     }
   }
 

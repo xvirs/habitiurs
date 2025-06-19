@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/widgets/daily_habits_list.dart - SIN CARDS ANIDADOS
+// lib/features/habits/presentation/widgets/daily_habits_list.dart - LIMPIO CON BOTÓN +
 import 'package:flutter/material.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
@@ -10,6 +10,7 @@ class DailyHabitsList extends StatelessWidget {
   final List<HabitEntry> todayEntries;
   final Function(int habitId, HabitStatus currentStatus) onToggle;
   final Function(int habitId) onDelete;
+  final VoidCallback onAdd; // SIMPLIFICADO: Solo callback sin parámetros
 
   const DailyHabitsList({
     super.key,
@@ -17,6 +18,7 @@ class DailyHabitsList extends StatelessWidget {
     required this.todayEntries,
     required this.onToggle,
     required this.onDelete,
+    required this.onAdd,
   });
 
   @override
@@ -26,7 +28,7 @@ class DailyHabitsList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header con padding
+          // Header con botón + a la derecha
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: Row(
@@ -54,19 +56,28 @@ class DailyHabitsList extends StatelessWidget {
                     ),
                   ),
                 ),
-                Text(
-                  '${habits.length}',
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: Theme.of(context).colorScheme.primary,
+                // Botón + reemplazando el número de hábitos
+                GestureDetector(
+                  onTap: onAdd,
+                  child: Container(
+                    width: 32,
+                    height: 32,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // Lista de hábitos sin padding
+          // Lista de hábitos
           Expanded(
             child: habits.isEmpty
                 ? _buildEmptyState(context)
@@ -91,7 +102,7 @@ class DailyHabitsList extends StatelessWidget {
                         final status = habitEntry?.status ?? HabitStatus.pending;
 
                         return GestureDetector(
-                          onTap: () => onToggle(habit.id!, status),
+                          onTap: () => _handleToggle(habit.id!, status),
                           child: Container(
                             margin: EdgeInsets.only(
                               bottom: index == habits.length - 1 ? 0 : 8,
@@ -104,30 +115,30 @@ class DailyHabitsList extends StatelessWidget {
                             ),
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: HabitStatusColor.getBorderColor(status),
+                                color: _getSimplifiedBorderColor(status),
                                 width: 1,
                               ),
                               borderRadius: BorderRadius.circular(8),
+                              color: status == HabitStatus.completed 
+                                  ? Colors.green.withOpacity(0.05)
+                                  : null,
                             ),
                             child: Row(
                               children: [
                                 GestureDetector(
                                   onLongPress: () => onDelete(habit.id!),
                                   child: Container(
-                                    width: 28,
-                                    height: 28,
+                                    width: 24,
+                                    height: 24,
                                     decoration: BoxDecoration(
-                                      border: Border.all(
-                                        color: Theme.of(context).colorScheme.primary,
-                                        width: 2,
-                                      ),
-                                      borderRadius: BorderRadius.circular(6),
+                                      color: Theme.of(context).colorScheme.primary,
+                                      borderRadius: BorderRadius.circular(4),
                                     ),
                                     child: Center(
                                       child: Text(
                                         '${index + 1}',
-                                        style: TextStyle(
-                                          color: Theme.of(context).colorScheme.primary,
+                                        style: const TextStyle(
+                                          color: Colors.white,
                                           fontWeight: FontWeight.bold,
                                           fontSize: 12,
                                         ),
@@ -151,20 +162,18 @@ class DailyHabitsList extends StatelessWidget {
                                   ),
                                 ),
                                 Container(
-                                  width: 28,
-                                  height: 28,
+                                  width: 32,
+                                  height: 32,
                                   decoration: BoxDecoration(
+                                    color: _getToggleBackgroundColor(status),
                                     border: Border.all(
-                                      color: HabitStatusColor.getBorderColor(status),
+                                      color: _getToggleBorderColor(status),
                                       width: 2,
                                     ),
                                     borderRadius: BorderRadius.circular(6),
-                                    color: status != HabitStatus.pending 
-                                        ? HabitStatusColor.getColor(status)
-                                        : null,
                                   ),
                                   child: Center(
-                                    child: HabitStatusIcon(status: status, size: 16),
+                                    child: _getToggleIcon(status),
                                   ),
                                 ),
                               ],
@@ -178,6 +187,10 @@ class DailyHabitsList extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void _handleToggle(int habitId, HabitStatus currentStatus) {
+    onToggle(habitId, currentStatus);
   }
 
   Widget _buildEmptyState(BuildContext context) {
@@ -198,8 +211,74 @@ class DailyHabitsList extends StatelessWidget {
               color: Colors.grey[600],
             ),
           ),
+          const SizedBox(height: 8),
+          Text(
+            'Toca el botón + para agregar tu primer hábito',
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.grey[400],
+            ),
+            textAlign: TextAlign.center,
+          ),
         ],
       ),
     );
+  }
+
+  // Métodos de colores (sin cambios)
+  Color _getSimplifiedBorderColor(HabitStatus status) {
+    switch (status) {
+      case HabitStatus.completed:
+        return Colors.green.withOpacity(0.3);
+      case HabitStatus.pending:
+        return Colors.grey.withOpacity(0.3);
+      case HabitStatus.skipped:
+        return Colors.red.withOpacity(0.3);
+    }
+  }
+
+  Color _getToggleBackgroundColor(HabitStatus status) {
+    switch (status) {
+      case HabitStatus.completed:
+        return Colors.green[500]!;
+      case HabitStatus.pending:
+        return Colors.grey[100]!;
+      case HabitStatus.skipped:
+        return Colors.red[400]!;
+    }
+  }
+
+  Color _getToggleBorderColor(HabitStatus status) {
+    switch (status) {
+      case HabitStatus.completed:
+        return Colors.green[600]!;
+      case HabitStatus.pending:
+        return Colors.grey[400]!;
+      case HabitStatus.skipped:
+        return Colors.red[500]!;
+    }
+  }
+
+  Widget _getToggleIcon(HabitStatus status) {
+    switch (status) {
+      case HabitStatus.completed:
+        return const Icon(
+          Icons.check,
+          color: Colors.white,
+          size: 18,
+        );
+      case HabitStatus.pending:
+        return Icon(
+          Icons.add,
+          color: Colors.grey[600],
+          size: 18,
+        );
+      case HabitStatus.skipped:
+        return const Icon(
+          Icons.close,
+          color: Colors.white,
+          size: 18,
+        );
+    }
   }
 }

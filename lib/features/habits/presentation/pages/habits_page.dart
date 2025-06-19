@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/pages/habits_page.dart - SIN CARDS DUPLICADOS
+// lib/features/habits/presentation/pages/habits_page.dart - SIN BOTÓN EN APPBAR
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/habits/presentation/widgets/delete_confirmation_dialog.dart';
@@ -8,7 +8,7 @@ import '../bloc/habit_event.dart';
 import '../bloc/habit_state.dart';
 import '../widgets/weekly_grid.dart';
 import '../widgets/daily_habits_list.dart';
-import '../widgets/add_habit_dialog.dart';
+import '../widgets/add_habit_bottom_sheet.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../shared/enums/habit_status.dart';
 
@@ -44,13 +44,7 @@ class _HabitsPageView extends StatelessWidget {
       scrolledUnderElevation: 0,
       backgroundColor: Theme.of(context).colorScheme.surface,
       surfaceTintColor: Colors.transparent,
-      actions: [
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () => _showAddHabitDialog(context),
-          tooltip: 'Agregar hábito',
-        ),
-      ],
+      // REMOVIDO: actions con el botón de agregar
     );
   }
 
@@ -101,22 +95,15 @@ class _HabitsPageView extends StatelessWidget {
 
     return Column(
       children: [
-        // Cuadrícula semanal - Parte superior (sin Card wrapper)
+        // Vista semanal de solo lectura - Parte superior
         Expanded(
           child: WeeklyGrid(
             habits: state.habits,
             weekEntries: state.weekEntries,
             weekStart: state.currentWeekStart,
-            onToggle: (habitId, date, currentStatus) => _handleToggle(
-              context,
-              habitId,
-              date,
-              currentStatus,
-            ),
-            onDelete: (habitId) => _showDeleteConfirmation(context, habitId),
           ),
         ),
-        // Lista de hábitos diarios - Parte inferior (sin Card wrapper)
+        // Lista de hábitos diarios interactiva - Parte inferior
         Expanded(
           child: DailyHabitsList(
             habits: state.habits,
@@ -128,6 +115,7 @@ class _HabitsPageView extends StatelessWidget {
               currentStatus,
             ),
             onDelete: (habitId) => _showDeleteConfirmation(context, habitId),
+            onAdd: () => _showAddHabitBottomSheet(context), // CAMBIADO
           ),
         ),
       ],
@@ -144,13 +132,15 @@ class _HabitsPageView extends StatelessWidget {
     );
   }
 
-  void _showAddHabitDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AddHabitDialog(
-        onAdd: (name) => context.read<HabitBloc>().add(CreateHabitEvent(name)),
-      ),
+  void _showAddHabitBottomSheet(BuildContext context) {
+    AddHabitBottomSheet.show(
+      context,
+      onAdd: (habitName) => _handleAddHabit(context, habitName),
     );
+  }
+
+  void _handleAddHabit(BuildContext context, String habitName) {
+    context.read<HabitBloc>().add(CreateHabitEvent(habitName));
   }
 
   void _showDeleteConfirmation(BuildContext context, int habitId) {
