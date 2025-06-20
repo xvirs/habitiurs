@@ -1,5 +1,6 @@
 // lib/features/ai_assistant/presentation/widgets/app_guide_section.dart
 import 'package:flutter/material.dart';
+import 'package:habitiurs/features/ai_assistant/domain/entities/app_guide.dart';
 import 'package:habitiurs/features/ai_assistant/domain/entities/educational_content.dart';
 
 class AppGuideSection extends StatelessWidget {

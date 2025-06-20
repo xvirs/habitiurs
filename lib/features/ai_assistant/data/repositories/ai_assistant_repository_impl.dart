@@ -1,25 +1,30 @@
 // lib/features/ai_assistant/data/repositories/ai_assistant_repository_impl.dart
+// 🔄 REFACTORIZADO - Imports corregidos para evitar ambiguedad
+
+import '../../../../core/ai/models/ai_request_model.dart';
+import '../../../../core/ai/models/ai_response_model.dart';
+import '../../../../core/ai/models/ai_context_builder.dart'; // ✅ Solo este import
+import '../../../../core/ai/repositories/ai_repository.dart';
+import '../../../habits/domain/repositories/habit_repository.dart';
 import '../../domain/entities/educational_content.dart';
+import '../../domain/entities/app_guide.dart';
 import '../../domain/repositories/ai_assistant_repository.dart';
 import '../datasources/offline_content_datasource.dart';
-import '../services/gemini_api_service.dart';
-import '../../../habits/domain/repositories/habit_repository.dart';
 
 class AIAssistantRepositoryImpl implements AIAssistantRepository {
   final OfflineContentDatasource offlineContentDatasource;
-  final GeminiApiService geminiApiService;
+  final AIRepository aiRepository; // ✅ Usar AI Repository centralizado
   final HabitRepository habitRepository;
 
   AIAssistantRepositoryImpl({
     required this.offlineContentDatasource,
-    required this.geminiApiService,
+    required this.aiRepository,
     required this.habitRepository,
   });
 
+  // 📚 EDUCATIONAL CONTENT - Solo lógica específica de la feature
   @override
   Future<List<EducationalContent>> getEducationalContent() async {
-    // Por ahora, siempre usar contenido offline
-    // En el futuro se podría agregar contenido dinámico desde una API
     return await offlineContentDatasource.getEducationalContent();
   }
 
@@ -28,38 +33,68 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
     return await offlineContentDatasource.getEducationalContent();
   }
 
+  // 📖 APP GUIDES - Solo lógica específica de la feature
   @override
   Future<List<AppGuide>> getAppGuides() async {
     return await offlineContentDatasource.getAppGuides();
   }
 
+  // 🤖 AI RECOMMENDATIONS - Delegar completamente al core/ai/
   @override
-  Future<AIRecommendation> getAIRecommendation(UserContext context) async {
-    return await geminiApiService.getRecommendation(context);
-  }
-
-  @override
-  Future<List<AIRecommendation>> getFallbackRecommendations() async {
-    return await offlineContentDatasource.getFallbackRecommendations();
-  }
-
-  @override
-  Future<UserContext> generateUserContext() async {
+  Future<AIResponse> getAIRecommendation() async {
     try {
-      // Obtener todos los hábitos
+      // 1. Generar contexto usando datos de hábitos
+      final userContext = await _generateUserContext();
+      
+      // 2. Crear contexto con AIContextBuilder del core
+      final aiContext = AIContextBuilder.buildPersonalRecommendationContext(
+        habitNames: userContext['habit_names'] ?? [],
+        completionRates: Map<String, double>.from(userContext['completion_rates'] ?? {}),
+        currentStreak: userContext['current_streak'] ?? 0,
+        longestStreak: userContext['longest_streak'] ?? 0,
+        strugglingHabits: List<String>.from(userContext['struggling_habits'] ?? []),
+        totalDaysTracked: userContext['total_days_tracked'] ?? 0,
+        lastActiveDate: DateTime.parse(userContext['last_active_date'] ?? DateTime.now().toIso8601String()),
+      );
+
+      // 3. Crear request usando tipos del core
+      final request = AIRequest(
+        type: AIRequestType.personalRecommendation,
+        prompt: _buildPersonalRecommendationPrompt(userContext),
+        metadata: aiContext,
+      );
+
+      // 4. Delegar completamente al AIRepository centralizado
+      return await aiRepository.generateResponse(request);
+    } catch (e) {
+      // Si falla, el aiRepository manejará el fallback automáticamente
+      rethrow;
+    }
+  }
+
+  // 🌐 CONNECTIVITY - Delegar al core/ai/
+  @override
+  Future<bool> hasInternetConnection() async {
+    return await aiRepository.hasInternetConnection();
+  }
+
+  // 🔧 HELPERS PRIVADOS - Solo generar contexto, no lógica de IA
+
+  Future<Map<String, dynamic>> _generateUserContext() async {
+    try {
       final habits = await habitRepository.getAllHabits();
       final habitNames = habits.map((h) => h.name).toList();
 
       if (habits.isEmpty) {
-        return UserContext(
-          habitNames: [],
-          completionRates: {},
-          currentStreak: 0,
-          longestStreak: 0,
-          strugglingHabits: [],
-          totalDaysTracked: 0,
-          lastActiveDate: DateTime.now(),
-        );
+        return {
+          'habit_names': <String>[],
+          'completion_rates': <String, double>{},
+          'current_streak': 0,
+          'longest_streak': 0,
+          'struggling_habits': <String>[],
+          'total_days_tracked': 0,
+          'last_active_date': DateTime.now().toIso8601String(),
+        };
       }
 
       // Obtener entradas de los últimos 30 días
@@ -67,7 +102,7 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
       final startDate = now.subtract(const Duration(days: 30));
       final entries = await habitRepository.getHabitEntriesForDateRange(startDate, now);
 
-      // Calcular tasas de cumplimiento por hábito
+      // Calcular métricas básicas
       final completionRates = <String, double>{};
       final strugglingHabits = <String>[];
 
@@ -79,52 +114,72 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
         final rate = totalCount > 0 ? completedCount / totalCount : 0.0;
         completionRates[habit.name] = rate;
         
-        if (rate < 0.4 && totalCount > 7) { // Considerarlo "struggling" si <40% y al menos 7 días de datos
+        if (rate < 0.4 && totalCount > 7) {
           strugglingHabits.add(habit.name);
         }
       }
 
-      // Calcular rachas
       final currentStreak = _calculateCurrentStreak(entries);
       final longestStreak = _calculateLongestStreak(entries);
-
-      // Última fecha activa
       final lastActiveDate = entries.isNotEmpty 
           ? entries.map((e) => e.date).reduce((a, b) => a.isAfter(b) ? a : b)
           : now;
 
-      return UserContext(
-        habitNames: habitNames,
-        completionRates: completionRates,
-        currentStreak: currentStreak,
-        longestStreak: longestStreak,
-        strugglingHabits: strugglingHabits,
-        totalDaysTracked: _calculateTotalDaysTracked(entries),
-        lastActiveDate: lastActiveDate,
-      );
+      return {
+        'habit_names': habitNames,
+        'completion_rates': completionRates,
+        'current_streak': currentStreak,
+        'longest_streak': longestStreak,
+        'struggling_habits': strugglingHabits,
+        'total_days_tracked': _calculateTotalDaysTracked(entries),
+        'last_active_date': lastActiveDate.toIso8601String(),
+      };
     } catch (e) {
-      // En caso de error, devolver contexto vacío
-      return UserContext(
-        habitNames: [],
-        completionRates: {},
-        currentStreak: 0,
-        longestStreak: 0,
-        strugglingHabits: [],
-        totalDaysTracked: 0,
-        lastActiveDate: DateTime.now(),
-      );
+      return {
+        'habit_names': <String>[],
+        'completion_rates': <String, double>{},
+        'current_streak': 0,
+        'longest_streak': 0,
+        'struggling_habits': <String>[],
+        'total_days_tracked': 0,
+        'last_active_date': DateTime.now().toIso8601String(),
+      };
     }
   }
 
-  @override
-  Future<bool> hasInternetConnection() async {
-    return await geminiApiService.checkConnectivity();
+  String _buildPersonalRecommendationPrompt(Map<String, dynamic> context) {
+    final habitNames = List<String>.from(context['habit_names'] ?? []);
+    final completionRates = Map<String, double>.from(context['completion_rates'] ?? {});
+    final currentStreak = context['current_streak'] ?? 0;
+    final strugglingHabits = List<String>.from(context['struggling_habits'] ?? []);
+    
+    final avgCompletionRate = completionRates.values.isNotEmpty 
+        ? completionRates.values.reduce((a, b) => a + b) / completionRates.values.length
+        : 0.0;
+
+    return '''
+Eres un experto coach de hábitos que ayuda a usuarios de una app llamada Habitiurs.
+
+DATOS DEL USUARIO:
+${habitNames.isNotEmpty ? 'Hábitos actuales: ${habitNames.join(', ')}' : 'No tiene hábitos registrados aún'}
+Tasa de cumplimiento: ${(avgCompletionRate * 100).toStringAsFixed(1)}%
+Racha actual: $currentStreak días
+${strugglingHabits.isNotEmpty ? 'Hábitos con dificultades: ${strugglingHabits.join(', ')}' : ''}
+
+INSTRUCCIONES:
+- Analiza sus datos y da un consejo personalizado y motivador
+- Máximo 2 párrafos cortos
+- Enfócate en mejoras pequeñas e incrementales
+- Mantén un tono positivo pero realista
+
+Genera tu recomendación:
+''';
   }
 
+  // Métodos de cálculo existentes (mantener sin cambios)
   int _calculateCurrentStreak(List entries) {
     if (entries.isEmpty) return 0;
-
-    // Agrupar por fecha y verificar si al menos un hábito fue completado cada día
+    
     final Map<String, bool> dayCompletions = {};
     
     for (final entry in entries) {
@@ -134,11 +189,10 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
       }
     }
 
-    // Calcular racha actual (días consecutivos con al menos un hábito completado)
     int streak = 0;
     final today = DateTime.now();
     
-    for (int i = 0; i < 365; i++) { // Máximo 365 días hacia atrás
+    for (int i = 0; i < 365; i++) {
       final checkDate = today.subtract(Duration(days: i));
       final dateStr = checkDate.toIso8601String().split('T')[0];
       
@@ -155,7 +209,6 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
   int _calculateLongestStreak(List entries) {
     if (entries.isEmpty) return 0;
 
-    // Similar al actual pero buscar la racha más larga en todo el historial
     final Map<String, bool> dayCompletions = {};
     
     for (final entry in entries) {
@@ -168,7 +221,6 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
     int maxStreak = 0;
     int currentStreak = 0;
     
-    // Obtener todas las fechas únicas y ordenarlas
     final dates = dayCompletions.keys.map((d) => DateTime.parse(d)).toList();
     dates.sort();
 
@@ -195,7 +247,6 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
   int _calculateTotalDaysTracked(List entries) {
     if (entries.isEmpty) return 0;
     
-    // Contar días únicos con al menos una entrada
     final uniqueDates = entries.map((e) => e.date.toIso8601String().split('T')[0]).toSet();
     return uniqueDates.length;
   }

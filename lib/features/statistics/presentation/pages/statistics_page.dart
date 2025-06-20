@@ -1,4 +1,4 @@
-// lib/features/statistics/presentation/pages/statistics_page.dart
+// lib/features/statistics/presentation/pages/statistics_page.dart - CON IA INTEGRADA
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
@@ -8,6 +8,7 @@ import '../bloc/statistics_state.dart';
 import '../widgets/current_month_summary.dart';
 import '../widgets/yearly_statistics_list.dart';
 import '../widgets/historical_chart.dart';
+import '../widgets/ai_statistics_insights.dart'; // 🆕 Widget de IA
 
 class StatisticsPage extends StatelessWidget {
   const StatisticsPage({Key? key}) : super(key: key);
@@ -15,10 +16,7 @@ class StatisticsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return BlocProvider(
-      create:
-          (context) =>
-              InjectionContainer().statisticsBloc
-                ..add(LoadStatistics()), // CAMBIO: usar tu DI
+      create: (context) => InjectionContainer().statisticsBloc..add(LoadStatistics()),
       child: const StatisticsView(),
     );
   }
@@ -89,6 +87,13 @@ class StatisticsView extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // 🆕 NUEVO: Insights de IA como primer componente
+                    AIStatisticsInsights(
+                      currentMonth: state.currentMonth,
+                      yearlyStats: state.currentYear,
+                      historicalData: state.historicalData,
+                    ),
+
                     // Componente 1: Resumen del mes actual con semanas
                     CurrentMonthSummary(statistics: state.currentMonth),
 

@@ -1,9 +1,11 @@
 // lib/features/ai_assistant/presentation/widgets/ai_recommendation_section.dart
+// 🔄 REFACTORIZADO - Usar AIResponse del core en lugar de AIRecommendation
+
 import 'package:flutter/material.dart';
-import 'package:habitiurs/features/ai_assistant/domain/entities/educational_content.dart';
+import '../../../../core/ai/models/ai_response_model.dart';
 
 class AIRecommendationSection extends StatelessWidget {
-  final AIRecommendation? recommendation;
+  final AIResponse? recommendation; // ✅ Cambiado de AIRecommendation a AIResponse
   final bool isLoading;
   final bool hasInternetConnection;
   final VoidCallback onRefresh;

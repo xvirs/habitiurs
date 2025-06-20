@@ -30,23 +30,12 @@ class _HabitsPageView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: _buildAppBar(context),
       body: BlocBuilder<HabitBloc, HabitState>(
         builder: (context, state) => _buildBody(context, state),
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(BuildContext context) {
-    return AppBar(
-      title: const Text('Hábitos Diarios'),
-      elevation: 0,
-      scrolledUnderElevation: 0,
-      backgroundColor: Theme.of(context).colorScheme.surface,
-      surfaceTintColor: Colors.transparent,
-      // REMOVIDO: actions con el botón de agregar
-    );
-  }
 
   Widget _buildBody(BuildContext context, HabitState state) {
     return switch (state) {

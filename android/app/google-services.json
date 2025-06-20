@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "819697521102",
+    "project_id": "habitiurs",
+    "storage_bucket": "habitiurs.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:819697521102:android:9795e4fab473378b551b9f",
+        "android_client_info": {
+          "package_name": "com.example.habitiurs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAKAQl97fpJ8AROD3kIu-2MjH6ELmzIK3Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

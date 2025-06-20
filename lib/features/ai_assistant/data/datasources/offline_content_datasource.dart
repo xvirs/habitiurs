@@ -1,14 +1,13 @@
 // lib/features/ai_assistant/data/datasources/offline_content_datasource.dart
+// 🔄 REFACTORIZADO - Eliminar AIRecommendationModel y fallbacks
 
-import 'package:habitiurs/features/ai_assistant/data/models/ai_recommendation_model.dart';
-import 'package:habitiurs/features/ai_assistant/data/models/app_guide_model.dart';
-import 'package:habitiurs/features/ai_assistant/domain/entities/educational_content.dart';
+import '../models/app_guide_model.dart';
 import '../models/educational_content_model.dart';
 
 abstract class OfflineContentDatasource {
   Future<List<EducationalContentModel>> getEducationalContent();
   Future<List<AppGuideModel>> getAppGuides();
-  Future<List<AIRecommendationModel>> getFallbackRecommendations();
+  // 🗑️ ELIMINAR: getFallbackRecommendations() - Ahora está en core/ai/
 }
 
 class OfflineContentDatasourceImpl implements OfflineContentDatasource {
@@ -185,48 +184,6 @@ Elimina hábitos que ya no te sirven y agrega nuevos gradualmente. 3-5 hábitos 
 La cuadrícula te muestra el día de la semana. Usa esta información para identificar si ciertos días son más desafiantes.""",
         section: "best_practices",
         order: 4,
-      ),
-    ];
-  }
-
-  @override
-  Future<List<AIRecommendationModel>> getFallbackRecommendations() async {
-    final now = DateTime.now();
-    return [
-      AIRecommendationModel(
-        id: "fallback_1",
-        content: "Recuerda que los hábitos pequeños y consistentes superan a los grandes y esporádicos. Si has fallado algunos días, simplemente vuelve a empezar mañana. Lo importante es la tendencia general, no la perfección absoluta.",
-        timestamp: now,
-        type: RecommendationType.motivation,
-        isFromAI: false,
-      ),
-      AIRecommendationModel(
-        id: "fallback_2",
-        content: "Identifica qué está funcionando bien en tus hábitos actuales y trata de aplicar esas mismas estrategias a los hábitos que te cuestan más trabajo. A menudo, el éxito en un área puede transferirse a otras.",
-        timestamp: now,
-        type: RecommendationType.improvement,
-        isFromAI: false,
-      ),
-      AIRecommendationModel(
-        id: "fallback_3",
-        content: "¡Excelente progreso! Mantener una racha es un logro significativo. Para consolidar estos hábitos, considera agregar una recompensa pequeña después de completar tu rutina diaria. Esto refuerza el ciclo positivo.",
-        timestamp: now,
-        type: RecommendationType.streak,
-        isFromAI: false,
-      ),
-      AIRecommendationModel(
-        id: "fallback_4",
-        content: "No te desanimes por romper una racha. El valor real está en volver a empezar rápidamente. Reflexiona sobre qué causó la interrupción y ajusta tu entorno o rutina para hacer el hábito más fácil mañana.",
-        timestamp: now,
-        type: RecommendationType.recovery,
-        isFromAI: false,
-      ),
-      AIRecommendationModel(
-        id: "fallback_5",
-        content: "Considera revisar tus hábitos actuales. ¿Siguen siendo relevantes para tus objetivos? A veces es mejor enfocarse en 2-3 hábitos importantes que intentar mantener muchos a medias. La calidad supera a la cantidad.",
-        timestamp: now,
-        type: RecommendationType.general,
-        isFromAI: false,
       ),
     ];
   }

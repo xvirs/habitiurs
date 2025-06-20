@@ -1,5 +1,9 @@
 // lib/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart
+// 🔄 REFACTORIZADO - Usar AIResponse del core en lugar de AIRecommendation
+
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
+import 'package:habitiurs/features/ai_assistant/domain/usecases/get_app_guides.dart';
 import '../../domain/usecases/get_educational_content.dart';
 import 'ai_assistant_event.dart';
 import 'ai_assistant_state.dart';
@@ -39,14 +43,14 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
 
       // Luego intentar cargar recomendación de IA (puede tomar tiempo)
       try {
-        final recommendation = await getAIRecommendation();
+        final aiResponse = await getAIRecommendation(); // ✅ Ahora retorna AIResponse
         
         emit(AIAssistantLoaded(
           educationalContent: educationalContent,
           appGuides: appGuides,
-          currentRecommendation: recommendation,
+          currentRecommendation: aiResponse, // ✅ AIResponse del core
           isRecommendationLoading: false,
-          hasInternetConnection: recommendation.isFromAI,
+          hasInternetConnection: aiResponse.isFromAI,
         ));
       } catch (e) {
         // Si falla la IA, mantener el estado pero sin recomendación
@@ -73,12 +77,12 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
       emit(currentState.copyWith(isRecommendationLoading: true));
       
       try {
-        final recommendation = await getAIRecommendation();
+        final aiResponse = await getAIRecommendation(); // ✅ AIResponse del core
         
         emit(currentState.copyWith(
-          currentRecommendation: recommendation,
+          currentRecommendation: aiResponse,
           isRecommendationLoading: false,
-          hasInternetConnection: recommendation.isFromAI,
+          hasInternetConnection: aiResponse.isFromAI,
         ));
       } catch (e) {
         // Si falla, mantener estado anterior pero sin loading

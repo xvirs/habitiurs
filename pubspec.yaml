@@ -1,5 +1,5 @@
 name: habitiurs
-description: "App de seguimiento de hábitos con IA integrada"
+description: "App de seguimiento de hábitos con IA integrada, auth y sincronización"
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -15,22 +15,28 @@ dependencies:
   cupertino_icons: ^1.0.8
   
   # Manejo de estado
-  flutter_bloc: ^8.1.3
+  flutter_bloc: ^8.1.6
   equatable: ^2.0.5
   
-  # Base de datos
+  # Base de datos local
   sqflite: ^2.3.0
-  path: ^1.8.3
+  path: ^1.9.0
+  
+  # Firebase & Auth
+  firebase_core: ^2.24.2
+  firebase_auth: ^4.15.3
+  cloud_firestore: ^4.13.6
+  google_sign_in: ^6.1.6
+  
+  # HTTP y conectividad para AI
+  http: ^1.1.2
+  connectivity_plus: ^5.0.2
   
   # Utilidades
   intl: ^0.18.1
   
-  # Inyección de dependencias
-  get_it: ^7.6.4
-  
-  # HTTP y conectividad para AI Assistant
-  http: ^1.1.0
-  connectivity_plus: ^5.0.2
+  # Inyección de dependencias  
+  get_it: ^7.6.7
 
 dev_dependencies:
   flutter_test:
@@ -40,7 +46,7 @@ dev_dependencies:
 flutter:
   uses-material-design: true
   
-  # Opcional: Si quieres agregar assets para íconos o imágenes
+  # Assets comentados hasta que los necesites
   # assets:
   #   - assets/images/
   #   - assets/icons/
