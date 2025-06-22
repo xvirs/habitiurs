@@ -1,48 +1,56 @@
-
-import 'package:habitiurs/shared/enums/habit_status.dart';
+// lib/features/habits/data/models/habit_entry_model.dart - COMPLETO CON MÉTODOS FALTANTES
 import '../../domain/entities/habit_entry.dart';
+import '../../../../shared/enums/habit_status.dart';
 
 class HabitEntryModel extends HabitEntry {
   const HabitEntryModel({
-    super.id,
-    required super.habitId,
-    required super.date,
-    super.status = HabitStatus.pending,
-  });
+    int? id,
+    required int habitId,
+    required DateTime date,
+    required HabitStatus status,
+  }) : super(
+          id: id,
+          habitId: habitId,
+          date: date,
+          status: status,
+        );
 
-  factory HabitEntryModel.fromMap(Map<String, dynamic> map) {
-    // CORREGIDO: Ahora maneja tanto INTEGER como STRING
-    final statusValue = map['status'];
-    HabitStatus status;
-    
-    if (statusValue is int) {
-      // Si es INTEGER (nuevo formato)
-      status = HabitStatus.values[statusValue];
-    } else if (statusValue is String) {
-      // Si es STRING (formato anterior, por compatibilidad)
-      status = HabitStatus.fromString(statusValue);
-    } else {
-      // Default
-      status = HabitStatus.pending;
-    }
-    
+  // ✅ MÉTODO fromJson FALTANTE
+  factory HabitEntryModel.fromJson(Map<String, dynamic> json) {
     return HabitEntryModel(
-      id: map['id'] as int?,
-      habitId: map['habit_id'] as int,
-      date: DateTime.parse(map['date'] as String),
-      status: status,
+      id: json['id'] as int?,
+      habitId: json['habit_id'] as int,
+      date: DateTime.parse(json['date'] as String),
+      status: HabitStatus.values[json['status'] as int],
     );
   }
 
-  Map<String, dynamic> toMap() {
+  // ✅ MÉTODO toJson FALTANTE
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'habit_id': habitId,
-      'date': date.toIso8601String().split('T')[0],
-      'status': status.index, // CORREGIDO: Usar índice INTEGER
+      'date': date.toIso8601String().split('T')[0], // Solo YYYY-MM-DD
+      'status': status.index,
     };
   }
 
+  // ✅ MÉTODO copyWith FALTANTE
+  HabitEntryModel copyWith({
+    int? id,
+    int? habitId,
+    DateTime? date,
+    HabitStatus? status,
+  }) {
+    return HabitEntryModel(
+      id: id ?? this.id,
+      habitId: habitId ?? this.habitId,
+      date: date ?? this.date,
+      status: status ?? this.status,
+    );
+  }
+
+  // ✅ MÉTODO fromEntity FALTANTE
   factory HabitEntryModel.fromEntity(HabitEntry entry) {
     return HabitEntryModel(
       id: entry.id,
@@ -50,5 +58,42 @@ class HabitEntryModel extends HabitEntry {
       date: entry.date,
       status: entry.status,
     );
+  }
+
+  // ✅ MÉTODO toEntity FALTANTE
+  HabitEntry toEntity() {
+    return HabitEntry(
+      id: id,
+      habitId: habitId,
+      date: date,
+      status: status,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'HabitEntryModel(id: $id, habitId: $habitId, date: ${date.toIso8601String().split('T')[0]}, status: ${status.name})';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is HabitEntryModel &&
+        other.id == id &&
+        other.habitId == habitId &&
+        other.date.day == date.day &&
+        other.date.month == date.month &&
+        other.date.year == date.year &&
+        other.status == status;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        habitId.hashCode ^
+        date.day.hashCode ^
+        date.month.hashCode ^
+        date.year.hashCode ^
+        status.hashCode;
   }
 }

@@ -1,4 +1,4 @@
-// lib/core/di/injection_container.dart - ACTUALIZADO PARA AI ASSISTANT REFACTORIZADO
+// lib/core/di/injection_container.dart - ACTUALIZADO CON SYNC REPOSITORY
 import 'package:firebase_core/firebase_core.dart';
 import 'package:habitiurs/features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
 import 'package:habitiurs/features/ai_assistant/domain/usecases/get_app_guides.dart';
@@ -11,10 +11,12 @@ import '../ai/repositories/ai_repository.dart';
 
 // Auth Core
 import '../auth/services/auth_service.dart';
+import '../auth/interfaces/i_auth_service.dart';
 
-// Sync Core
+// Sync Core - ✅ ACTUALIZADO: Agregar SyncRepository
 import '../sync/services/firebase_service.dart';
 import '../sync/services/sync_manager.dart';
+import '../sync/repositories/sync_repository.dart';
 
 // Features - Habits
 import '../../features/habits/data/datasources/habit_local_datasource.dart';
@@ -34,7 +36,7 @@ import '../../features/statistics/domain/repositories/statistics_repository.dart
 import '../../features/statistics/domain/usecases/get_current_month_statistics.dart';
 import '../../features/statistics/presentation/bloc/statistics_bloc.dart';
 
-// Features - AI Assistant (REFACTORIZADO)
+// Features - AI Assistant
 import '../../features/ai_assistant/data/datasources/offline_content_datasource.dart';
 import '../../features/ai_assistant/data/repositories/ai_assistant_repository_impl.dart';
 import '../../features/ai_assistant/domain/repositories/ai_assistant_repository.dart';
@@ -49,14 +51,15 @@ class InjectionContainer {
   // CORE SERVICES
   late final DatabaseHelper _databaseHelper;
   late final AIRepository _aiRepository;
-  late final AuthService _authService;
+  late final IAuthService _authService;
   late final FirebaseService _firebaseService;
   late final SyncManager _syncManager;
+  late final SyncRepository _syncRepository; // ✅ NUEVO
 
   // DATASOURCES
   late final HabitLocalDataSource _habitLocalDataSource;
   late final StatisticsLocalDatasource _statisticsLocalDatasource;
-  late final OfflineContentDatasource _offlineContentDatasource; // ✅ Solo contenido offline
+  late final OfflineContentDatasource _offlineContentDatasource;
 
   // REPOSITORIES
   late final HabitRepository _habitRepository;
@@ -75,10 +78,10 @@ class InjectionContainer {
   late final GetCurrentYearStatistics _getCurrentYearStatistics;
   late final GetHistoricalData _getHistoricalData;
 
-  // USE CASES - AI Assistant (REFACTORIZADO)
+  // USE CASES - AI Assistant
   late final GetEducationalContent _getEducationalContent;
   late final GetAppGuides _getAppGuides;
-  late final GetAIRecommendation _getAIRecommendation; // ✅ Simplificado
+  late final GetAIRecommendation _getAIRecommendation;
 
   // Initialization flag
   bool _isInitialized = false;
@@ -88,28 +91,32 @@ class InjectionContainer {
 
     print('🚀 [DI] Inicializando servicios...');
 
-    // 1. Inicializar Firebase
-    await _initializeFirebase();
+    try {
+      // 1. Inicializar Firebase
+      await _initializeFirebase();
 
-    // 2. Inicializar Core Services
-    await _initializeCoreServices();
+      // 2. Inicializar Core Services
+      await _initializeCoreServices();
 
-    // 3. Inicializar DataSources
-    _initializeDataSources();
+      // 3. Inicializar Repositories (datasources ya están listos)
+      _initializeRepositories();
 
-    // 4. Inicializar Repositories
-    _initializeRepositories();
+      // 4. Inicializar Use Cases
+      _initializeUseCases();
 
-    // 5. Inicializar Use Cases
-    _initializeUseCases();
-
-    _isInitialized = true;
-    print('✅ [DI] Servicios inicializados correctamente');
+      _isInitialized = true;
+      print('✅ [DI] Servicios inicializados correctamente');
+    } catch (e) {
+      print('❌ [DI] Error en inicialización: $e');
+      _isInitialized = false;
+    }
   }
 
   Future<void> _initializeFirebase() async {
     try {
-      await Firebase.initializeApp();
+      if (Firebase.apps.isEmpty) {
+        await Firebase.initializeApp();
+      }
       print('✅ [Firebase] Inicializado');
     } catch (e) {
       print('⚠️ [Firebase] Error inicializando: $e');
@@ -117,11 +124,15 @@ class InjectionContainer {
     }
   }
 
+  // ✅ ORDEN DE INICIALIZACIÓN ACTUALIZADO
   Future<void> _initializeCoreServices() async {
     // Database
     _databaseHelper = SqliteDatabaseHelper();
     await _databaseHelper.database; // Asegurar inicialización
     print('✅ [Database] SQLite inicializado');
+
+    // ✅ CRÍTICO: Inicializar datasources ANTES de SyncManager
+    _initializeDataSources();
 
     // AI Repository (incluye Gemini + Fallback)
     _aiRepository = AIRepository();
@@ -135,21 +146,28 @@ class InjectionContainer {
     _firebaseService = FirebaseService();
     print('✅ [Firebase] Service inicializado');
 
-    // Sync Manager
+    // ✅ Sync Manager - Con datasources
     _syncManager = SyncManager(
       firebaseService: _firebaseService,
       authService: _authService,
+      habitDataSource: _habitLocalDataSource,
+      statisticsDataSource: _statisticsLocalDatasource,
     );
     print('✅ [Sync] Manager inicializado');
+
+    // ✅ NUEVO: Sync Repository
+    _syncRepository = SyncRepositoryImpl(
+      syncManager: _syncManager,
+      firebaseService: _firebaseService,
+      authService: _authService,
+    );
+    print('✅ [Sync] Repository inicializado');
   }
 
   void _initializeDataSources() {
     _habitLocalDataSource = HabitLocalDataSourceImpl(_databaseHelper);
     _statisticsLocalDatasource = StatisticsLocalDatasourceImpl(databaseHelper: _databaseHelper);
-    
-    // ✅ AI Assistant - Solo contenido educativo y guías offline
     _offlineContentDatasource = OfflineContentDatasourceImpl();
-    
     print('✅ [DataSources] Inicializados');
   }
 
@@ -157,11 +175,10 @@ class InjectionContainer {
     _habitRepository = HabitRepositoryImpl(_habitLocalDataSource);
     _statisticsRepository = StatisticsRepositoryImpl(localDatasource: _statisticsLocalDatasource);
     
-    // ✅ AI Assistant Repository - REFACTORIZADO para usar AI centralizado
     _aiAssistantRepository = AIAssistantRepositoryImpl(
       offlineContentDatasource: _offlineContentDatasource,
-      aiRepository: _aiRepository, // ✅ Usar AIRepository centralizado del core
-      habitRepository: _habitRepository, // Para generar contexto de usuario
+      aiRepository: _aiRepository,
+      habitRepository: _habitRepository,
     );
     
     print('✅ [Repositories] Inicializados');
@@ -180,16 +197,15 @@ class InjectionContainer {
     _getCurrentYearStatistics = GetCurrentYearStatistics(_statisticsRepository);
     _getHistoricalData = GetHistoricalData(_statisticsRepository);
 
-    // ✅ AI Assistant - Use Cases simplificados
+    // AI Assistant
     _getEducationalContent = GetEducationalContent(_aiAssistantRepository);
     _getAppGuides = GetAppGuides(_aiAssistantRepository);
-    _getAIRecommendation = GetAIRecommendation(_aiAssistantRepository); // ✅ Delega al core
+    _getAIRecommendation = GetAIRecommendation(_aiAssistantRepository);
 
     print('✅ [UseCases] Inicializados');
   }
 
   // GETTERS PARA BLOCS
-
   HabitBloc get habitBloc => HabitBloc(
     getAllHabits: _getAllHabits,
     createHabit: _createHabit,
@@ -204,32 +220,32 @@ class InjectionContainer {
     getHistoricalData: _getHistoricalData,
   );
 
-  // ✅ AI Assistant BLoC - REFACTORIZADO
   AIAssistantBloc get aiAssistantBloc => AIAssistantBloc(
     getEducationalContent: _getEducationalContent,
     getAppGuides: _getAppGuides,
-    getAIRecommendation: _getAIRecommendation, // ✅ Use case simplificado
+    getAIRecommendation: _getAIRecommendation,
   );
 
   // GETTERS PARA SERVICIOS CORE
-
-  /// AI Repository centralizado - Acceso directo para todas las features
+  /// AI Repository centralizado
   AIRepository get aiRepository => _aiRepository;
 
-  /// Auth Service - Para login/logout/estado de usuario
-  AuthService get authService => _authService;
+  /// Auth Service
+  IAuthService get authService => _authService;
 
-  /// Sync Manager - Para sincronización manual o automática
+  /// ✅ NUEVO: Sync Repository (interface limpia)
+  SyncRepository get syncRepository => _syncRepository;
+
+  /// Sync Manager (para operaciones avanzadas)
   SyncManager get syncManager => _syncManager;
 
-  /// Firebase Service - Para operaciones directas de Firebase
+  /// Firebase Service
   FirebaseService get firebaseService => _firebaseService;
 
-  /// Database Helper - Para operaciones directas de SQLite
+  /// Database Helper
   DatabaseHelper get databaseHelper => _databaseHelper;
 
-  // GETTERS PARA REPOSITORIES (para use cases avanzados)
-
+  // GETTERS PARA REPOSITORIES
   HabitRepository get habitRepository => _habitRepository;
   StatisticsRepository get statisticsRepository => _statisticsRepository;
   AIAssistantRepository get aiAssistantRepository => _aiAssistantRepository;
@@ -248,28 +264,3 @@ class InjectionContainer {
     }
   }
 }
-
-// ============================================================================
-// 🔄 CAMBIOS REALIZADOS EN ESTA ACTUALIZACIÓN:
-// ============================================================================
-
-// ✅ AGREGADOS:
-// - import '../../features/ai_assistant/domain/usecases/get_app_guides.dart';
-// - import '../../features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
-// - late final GetAppGuides _getAppGuides;
-// - late final GetAIRecommendation _getAIRecommendation;
-
-// ✅ COMENTARIOS AÑADIDOS:
-// - Comentarios explicativos sobre la refactorización
-// - Marcadores ✅ para indicar cambios
-// - Documentación de que AIAssistantRepository ahora usa AI centralizado
-
-// 🗑️ SIN CAMBIOS INNECESARIOS:
-// - No se agregaron imports de archivos eliminados
-// - No se modificó la estructura existente
-// - Solo se añadieron los use cases faltantes
-
-// ✅ LÓGICA ACTUALIZADA:
-// - AIAssistantRepository ahora usa _aiRepository del core
-// - GetAIRecommendation simplificado (delega al core)
-// - Comentarios que explican el nuevo flujo

@@ -2,8 +2,8 @@
 import 'package:habitiurs/core/ai/models/ai_response_model.dart';
 
 import '../models/ai_request_model.dart';
-
-/// Servicio que proporciona respuestas offline inteligentes
+ 
+/// Servicioque proporciona respuestas offline inteligentes
 class AIFallbackService {
   
   Future<AIResponse> generateFallbackResponse(AIRequest request) async {

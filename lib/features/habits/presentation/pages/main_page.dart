@@ -1,7 +1,9 @@
-// lib/features/habits/presentation/pages/main_page.dart - CON DRAWER
+// lib/features/habits/presentation/pages/main_page.dart - MODIFICADO
 import 'package:flutter/material.dart';
-import '../../../../core/di/injection_container.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/widgets/user_drawer.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_state.dart';
 import 'habits_page.dart';
 import '../../../statistics/presentation/pages/statistics_page.dart';
 import '../../../ai_assistant/presentation/pages/ai_assistant_page.dart';
@@ -15,12 +17,9 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 1; // Empezar en Hábitos (índice 1)
-
-  final List<Widget> _pages = [
-    const AIAssistantPage(),    // IA a la izquierda (índice 0)
-    const HabitsPage(),         // Hábitos al centro (índice 1)
-    const StatisticsPage(),     // Estadísticas a la derecha (índice 2)
-  ];
+  
+  // ✅ NUEVO: GlobalKey para acceder al HabitBloc
+  final GlobalKey<HabitsPageState> _habitsPageKey = GlobalKey<HabitsPageState>();
 
   final List<String> _pageTitles = [
     'Asistente IA',
@@ -30,8 +29,15 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ NUEVO: Lista de páginas con key para HabitsPage
+    final List<Widget> pages = [
+      const AIAssistantPage(),    // IA (índice 0)
+      HabitsPage(key: _habitsPageKey), // Hábitos (índice 1) - CON KEY
+      const StatisticsPage(),     // Estadísticas (índice 2)
+    ];
+
     return Scaffold(
-      // ✅ Agregar AppBar con avatar
+      // AppBar con avatar
       appBar: AppBar(
         title: Text(
           _pageTitles[_currentIndex],
@@ -43,7 +49,6 @@ class _MainPageState extends State<MainPage> {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
-          // ✅ Avatar de usuario que abre el drawer
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: _buildUserAvatar(),
@@ -51,12 +56,14 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
       
-      // ✅ Agregar Drawer
-      drawer: const UserDrawer(),
+      // ✅ MODIFICADO: Drawer con callback de sync
+      drawer: UserDrawer(
+        onDataSynced: _onDataSynced, // ← CALLBACK AGREGADO
+      ),
       
       body: IndexedStack(
         index: _currentIndex,
-        children: _pages,
+        children: pages,
       ),
       
       bottomNavigationBar: BottomNavigationBar(
@@ -88,14 +95,56 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  Widget _buildUserAvatar() {
-    final authService = InjectionContainer().authService;
-    final user = authService.currentUser;
-    final isGuest = user?.preferences?['mode'] == 'guest';
+  // ✅ NUEVO: Callback que se ejecuta después del sync
+  void _onDataSynced() {
+    print('🔄 [MainPage] Recibido callback de sincronización');
     
+    // Solo actualizar si estamos en la página de hábitos
+    if (_currentIndex == 1 && _habitsPageKey.currentState != null) {
+      print('✅ [MainPage] Refrescando HabitsPage...');
+      _habitsPageKey.currentState!.refreshData();
+    }
+    
+    // TODO: Si en el futuro queremos actualizar Statistics también:
+    // if (_currentIndex == 2) { ... }
+  }
+
+  Widget _buildUserAvatar() {
+    return BlocBuilder<AuthBloc, AuthState>(
+      builder: (context, state) {
+        if (state is! AuthAuthenticated) {
+          return _buildAvatarContainer(
+            child: const Icon(
+              Icons.person_outline,
+              size: 20,
+              color: Colors.grey,
+            ),
+          );
+        }
+
+        final user = state.user;
+        final isGuest = user.isGuest;
+        
+        return _buildAvatarContainer(
+          photoURL: user.photoURL,
+          child: user.photoURL == null
+              ? Icon(
+                  isGuest ? Icons.person_outline : Icons.person,
+                  size: 20,
+                  color: Theme.of(context).colorScheme.primary,
+                )
+              : null,
+        );
+      },
+    );
+  }
+
+  Widget _buildAvatarContainer({
+    String? photoURL,
+    Widget? child,
+  }) {
     return GestureDetector(
       onTap: () {
-        // Abrir drawer programáticamente
         Scaffold.of(context).openDrawer();
       },
       child: Container(
@@ -109,16 +158,10 @@ class _MainPageState extends State<MainPage> {
         child: CircleAvatar(
           radius: 18,
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          backgroundImage: user?.photoURL != null 
-              ? NetworkImage(user!.photoURL!)
+          backgroundImage: photoURL != null 
+              ? NetworkImage(photoURL)
               : null,
-          child: user?.photoURL == null
-              ? Icon(
-                  isGuest ? Icons.person_outline : Icons.person,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-              : null,
+          child: child,
         ),
       ),
     );

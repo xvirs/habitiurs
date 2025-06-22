@@ -1,3 +1,4 @@
+// lib/features/habits/domain/entities/habit.dart
 import 'package:equatable/equatable.dart';
 
 class Habit extends Equatable {
@@ -15,4 +16,9 @@ class Habit extends Equatable {
 
   @override
   List<Object?> get props => [id, name, createdAt, isActive];
+
+  @override
+  String toString() {
+    return 'Habit(id: $id, name: $name, createdAt: $createdAt, isActive: $isActive)';
+  }
 }

@@ -1,11 +1,9 @@
-// lib/features/habits/data/datasources/habit_local_datasource.dart - AUTO-SKIP MEJORADO
-import 'package:sqflite/sqflite.dart';
+// lib/features/habits/data/datasources/habit_local_datasource.dart - MÉTODOS FALTANTES AGREGADOS
+import 'package:sqflite/sqflite.dart'; // ✅ IMPORT FALTANTE
+import '../../../../core/database/database_helper.dart';
 import '../models/habit_model.dart';
 import '../models/habit_entry_model.dart';
-import '../../../../core/database/database_helper.dart';
-import '../../../../core/constants/database_constants.dart';
 import '../../../../shared/enums/habit_status.dart';
-import '../../../../shared/utils/date_utils.dart';
 
 abstract class HabitLocalDataSource {
   Future<List<HabitModel>> getAllHabits();
@@ -13,6 +11,10 @@ abstract class HabitLocalDataSource {
   Future<void> updateHabit(HabitModel habit);
   Future<void> deleteHabit(int id);
   Future<void> permanentlyDeleteHabit(int id);
+  
+  // ✅ NUEVO: Insertar hábito con ID específico (para sync)
+  Future<void> insertHabitWithId(HabitModel habit);
+  
   Future<List<HabitEntryModel>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate);
   Future<HabitEntryModel?> getHabitEntryForDate(int habitId, DateTime date);
   Future<int> insertHabitEntry(HabitEntryModel entry);
@@ -28,27 +30,52 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   @override
   Future<List<HabitModel>> getAllHabits() async {
     final db = await _databaseHelper.database;
-    final maps = await db.query(
-      DatabaseConstants.habitsTable,
+    final List<Map<String, dynamic>> maps = await db.query(
+      'habits',
       where: 'is_active = ?',
       whereArgs: [1],
-      orderBy: 'created_at ASC',
+      orderBy: 'created_at DESC',
     );
-    return maps.map((map) => HabitModel.fromMap(map)).toList();
+
+    return List.generate(maps.length, (i) => HabitModel.fromJson(maps[i]));
   }
 
   @override
   Future<int> insertHabit(HabitModel habit) async {
     final db = await _databaseHelper.database;
-    return await db.insert(DatabaseConstants.habitsTable, habit.toMap());
+    return await db.insert('habits', habit.toJson());
+  }
+
+  // ✅ NUEVO MÉTODO: Insertar hábito con ID específico (para sincronización)
+  @override
+  Future<void> insertHabitWithId(HabitModel habit) async {
+    final db = await _databaseHelper.database;
+    
+    try {
+      // Usar REPLACE para manejar conflictos de ID
+      await db.execute('''
+        INSERT OR REPLACE INTO habits (id, name, created_at, is_active)
+        VALUES (?, ?, ?, ?)
+      ''', [
+        habit.id,
+        habit.name,
+        habit.createdAt.toIso8601String(),
+        habit.isActive ? 1 : 0,
+      ]);
+      
+      print('✅ [DB] Hábito insertado con ID específico: ${habit.id} - "${habit.name}"');
+    } catch (e) {
+      print('❌ [DB] Error insertando hábito con ID ${habit.id}: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<void> updateHabit(HabitModel habit) async {
     final db = await _databaseHelper.database;
     await db.update(
-      DatabaseConstants.habitsTable,
-      habit.toMap(),
+      'habits',
+      habit.toJson(),
       where: 'id = ?',
       whereArgs: [habit.id],
     );
@@ -58,7 +85,7 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   Future<void> deleteHabit(int id) async {
     final db = await _databaseHelper.database;
     await db.update(
-      DatabaseConstants.habitsTable,
+      'habits',
       {'is_active': 0},
       where: 'id = ?',
       whereArgs: [id],
@@ -69,143 +96,123 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   Future<void> permanentlyDeleteHabit(int id) async {
     final db = await _databaseHelper.database;
     
-    // Soft delete: Solo marcar como inactivo para preservar estadísticas
-    await db.update(
-      DatabaseConstants.habitsTable,
-      {'is_active': 0},
-      where: 'id = ?',
-      whereArgs: [id],
-    );
+    // Usar transacción para eliminar hábito y sus entradas
+    await db.transaction((txn) async {
+      // Primero eliminar entradas del hábito
+      await txn.delete(
+        'habit_entries',
+        where: 'habit_id = ?',
+        whereArgs: [id],
+      );
+      
+      // Luego eliminar el hábito
+      await txn.delete(
+        'habits',
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+    });
   }
 
   @override
   Future<List<HabitEntryModel>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate) async {
     final db = await _databaseHelper.database;
     
-    // NUEVO: Aplicar auto-skip logic para cualquier consulta de rango
-    return await _getEntriesWithAutoSkip(db, startDate, endDate);
+    final startDateStr = startDate.toIso8601String().split('T')[0];
+    final endDateStr = endDate.toIso8601String().split('T')[0];
+    
+    final List<Map<String, dynamic>> maps = await db.query(
+      'habit_entries',
+      where: 'date >= ? AND date <= ?',
+      whereArgs: [startDateStr, endDateStr],
+      orderBy: 'date DESC, habit_id',
+    );
+
+    return List.generate(maps.length, (i) => HabitEntryModel.fromJson(maps[i]));
   }
 
   @override
   Future<HabitEntryModel?> getHabitEntryForDate(int habitId, DateTime date) async {
     final db = await _databaseHelper.database;
-    final maps = await db.query(
-      DatabaseConstants.habitEntriesTable,
-      where: 'habit_id = ? AND date = ?',
-      whereArgs: [habitId, _formatDate(date)],
-    );
+    final dateStr = date.toIso8601String().split('T')[0];
     
-    if (maps.isEmpty) {
-      // NUEVO: Aplicar auto-skip si es día pasado
-      final today = DateTime.now();
-      if (AppDateUtils.isPastDate(date) && !AppDateUtils.isSameDay(date, today)) {
-        return HabitEntryModel(
-          id: null, // No existe en BD
-          habitId: habitId,
-          date: date,
-          status: HabitStatus.skipped,
-        );
-      }
-      return null; // Día actual o futuro sin entrada
+    final List<Map<String, dynamic>> maps = await db.query(
+      'habit_entries',
+      where: 'habit_id = ? AND date = ?',
+      whereArgs: [habitId, dateStr],
+      limit: 1,
+    );
+
+    if (maps.isNotEmpty) {
+      return HabitEntryModel.fromJson(maps.first);
     }
     
-    return HabitEntryModel.fromMap(maps.first);
+    return null;
   }
 
   @override
   Future<int> insertHabitEntry(HabitEntryModel entry) async {
     final db = await _databaseHelper.database;
-    return await db.insert(
-      DatabaseConstants.habitEntriesTable,
-      entry.toMap(),
-      conflictAlgorithm: ConflictAlgorithm.replace,
-    );
+    
+    try {
+      final result = await db.insert(
+        'habit_entries',
+        entry.toJson(),
+        conflictAlgorithm: ConflictAlgorithm.replace, // ✅ Manejar duplicados
+      );
+      
+      print('✅ [DB] Entrada insertada: Hábito ${entry.habitId} - ${entry.date.toIso8601String().split('T')[0]} - ${entry.status.name}');
+      return result;
+    } catch (e) {
+      print('❌ [DB] Error insertando entrada: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<void> updateHabitEntry(HabitEntryModel entry) async {
     final db = await _databaseHelper.database;
-    await db.update(
-      DatabaseConstants.habitEntriesTable,
-      entry.toMap(),
-      where: 'habit_id = ? AND date = ?',
-      whereArgs: [entry.habitId, _formatDate(entry.date)],
-    );
+    final dateStr = entry.date.toIso8601String().split('T')[0];
+    
+    try {
+      final result = await db.update(
+        'habit_entries',
+        entry.toJson(),
+        where: 'habit_id = ? AND date = ?',
+        whereArgs: [entry.habitId, dateStr],
+      );
+      
+      if (result > 0) {
+        print('✅ [DB] Entrada actualizada: Hábito ${entry.habitId} - $dateStr - ${entry.status.name}');
+      } else {
+        print('⚠️ [DB] No se encontró entrada para actualizar: Hábito ${entry.habitId} - $dateStr');
+      }
+    } catch (e) {
+      print('❌ [DB] Error actualizando entrada: $e');
+      rethrow;
+    }
   }
 
   @override
   Future<void> deleteHabitEntry(int habitId, DateTime date) async {
     final db = await _databaseHelper.database;
-    await db.delete(
-      DatabaseConstants.habitEntriesTable,
-      where: 'habit_id = ? AND date = ?',
-      whereArgs: [habitId, _formatDate(date)],
-    );
-  }
-
-  // MÉTODO PRINCIPAL: Auto-skip logic aplicada automáticamente
-  Future<List<HabitEntryModel>> _getEntriesWithAutoSkip(Database db, DateTime startDate, DateTime endDate) async {
-    // Obtener todos los hábitos activos
-    final habitsQuery = '''
-      SELECT id, created_at 
-      FROM ${DatabaseConstants.habitsTable} 
-      WHERE is_active = 1
-    ''';
-    final habitsResult = await db.rawQuery(habitsQuery);
+    final dateStr = date.toIso8601String().split('T')[0];
     
-    final List<HabitEntryModel> entries = [];
-    final today = DateTime.now();
-    
-    for (final habitData in habitsResult) {
-      final habitId = habitData['id'] as int;
-      final habitCreatedAt = DateTime.parse(habitData['created_at'] as String);
+    try {
+      final result = await db.delete(
+        'habit_entries',
+        where: 'habit_id = ? AND date = ?',
+        whereArgs: [habitId, dateStr],
+      );
       
-      // Generar entradas para cada día del rango
-      for (DateTime date = startDate; 
-           date.isBefore(endDate.add(const Duration(days: 1))); 
-           date = date.add(const Duration(days: 1))) {
-        
-        // Solo procesar fechas después de la creación del hábito
-        if (date.isBefore(DateTime(habitCreatedAt.year, habitCreatedAt.month, habitCreatedAt.day))) {
-          continue;
-        }
-        
-        final dateStr = _formatDate(date);
-        
-        // Buscar entrada existente en BD
-        final entryQuery = '''
-          SELECT id, habit_id, date, status 
-          FROM ${DatabaseConstants.habitEntriesTable} 
-          WHERE habit_id = ? AND date = ?
-        ''';
-        final entryResult = await db.rawQuery(entryQuery, [habitId, dateStr]);
-        
-        if (entryResult.isNotEmpty) {
-          // Entrada existe: usar su estado real
-          entries.add(HabitEntryModel.fromMap(entryResult.first));
-        } else {
-          // No existe entrada: aplicar lógica de auto-skip
-          final isToday = AppDateUtils.isSameDay(date, today);
-          final isPastDate = AppDateUtils.isPastDate(date) && !isToday;
-          
-          final status = isPastDate 
-              ? HabitStatus.skipped    // Días pasados = automáticamente skipped
-              : HabitStatus.pending;   // Día actual/futuro = pendiente
-          
-          entries.add(HabitEntryModel(
-            id: null, // No existe en BD
-            habitId: habitId,
-            date: date,
-            status: status,
-          ));
-        }
+      if (result > 0) {
+        print('✅ [DB] Entrada eliminada: Hábito $habitId - $dateStr');
+      } else {
+        print('⚠️ [DB] No se encontró entrada para eliminar: Hábito $habitId - $dateStr');
       }
+    } catch (e) {
+      print('❌ [DB] Error eliminando entrada: $e');
+      rethrow;
     }
-    
-    return entries;
-  }
-
-  String _formatDate(DateTime date) {
-    return date.toIso8601String().split('T')[0];
   }
 }

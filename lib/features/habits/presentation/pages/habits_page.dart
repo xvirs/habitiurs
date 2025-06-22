@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/pages/habits_page.dart - SIN BOTÓN EN APPBAR
+// lib/features/habits/presentation/pages/habits_page.dart - MODIFICADO
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/habits/presentation/widgets/delete_confirmation_dialog.dart';
@@ -12,30 +12,45 @@ import '../widgets/add_habit_bottom_sheet.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../shared/enums/habit_status.dart';
 
-class HabitsPage extends StatelessWidget {
+// ✅ MODIFICADO: Ahora es StatefulWidget para exposer refresh
+class HabitsPage extends StatefulWidget {
   const HabitsPage({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => InjectionContainer().habitBloc..add(LoadHabits()),
-      child: const _HabitsPageView(),
-    );
-  }
+  State<HabitsPage> createState() => HabitsPageState(); // ← State público
 }
 
-class _HabitsPageView extends StatelessWidget {
-  const _HabitsPageView();
+// ✅ NUEVO: State público para poder llamar refreshData()
+class HabitsPageState extends State<HabitsPage> {
+  late final HabitBloc _habitBloc;
+
+  @override
+  void initState() {
+    super.initState();
+    _habitBloc = InjectionContainer().habitBloc..add(LoadHabits());
+  }
+
+  @override
+  void dispose() {
+    _habitBloc.close();
+    super.dispose();
+  }
+
+  // ✅ MÉTODO PÚBLICO: Para refrescar desde MainPage
+  void refreshData() {
+    print('🔄 [HabitsPage] refreshData() llamado');
+    _habitBloc.add(RefreshData());
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: BlocBuilder<HabitBloc, HabitState>(
+    return BlocProvider.value(
+      value: _habitBloc,
+      child: BlocBuilder<HabitBloc, HabitState>(
         builder: (context, state) => _buildBody(context, state),
       ),
     );
   }
-
 
   Widget _buildBody(BuildContext context, HabitState state) {
     return switch (state) {
@@ -66,7 +81,7 @@ class _HabitsPageView extends StatelessWidget {
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
-              onPressed: () => context.read<HabitBloc>().add(LoadHabits()),
+              onPressed: () => _habitBloc.add(LoadHabits()),
               icon: const Icon(Icons.refresh),
               label: const Text('Reintentar'),
             ),
@@ -104,7 +119,7 @@ class _HabitsPageView extends StatelessWidget {
               currentStatus,
             ),
             onDelete: (habitId) => _showDeleteConfirmation(context, habitId),
-            onAdd: () => _showAddHabitBottomSheet(context), // CAMBIADO
+            onAdd: () => _showAddHabitBottomSheet(context),
           ),
         ),
       ],
@@ -112,7 +127,7 @@ class _HabitsPageView extends StatelessWidget {
   }
 
   void _handleToggle(BuildContext context, int habitId, DateTime date, HabitStatus currentStatus) {
-    context.read<HabitBloc>().add(
+    _habitBloc.add(
       ToggleHabitEntryEvent(
         habitId: habitId,
         date: date,
@@ -129,14 +144,14 @@ class _HabitsPageView extends StatelessWidget {
   }
 
   void _handleAddHabit(BuildContext context, String habitName) {
-    context.read<HabitBloc>().add(CreateHabitEvent(habitName));
+    _habitBloc.add(CreateHabitEvent(habitName));
   }
 
   void _showDeleteConfirmation(BuildContext context, int habitId) {
     showDialog(
       context: context,
       builder: (dialogContext) => DeleteConfirmationDialog(
-        onConfirm: () => context.read<HabitBloc>().add(DeleteHabitEvent(habitId)),
+        onConfirm: () => _habitBloc.add(DeleteHabitEvent(habitId)),
       ),
     );
   }

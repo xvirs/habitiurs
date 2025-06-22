@@ -1,22 +1,30 @@
 // lib/shared/enums/habit_status.dart
 enum HabitStatus {
-  pending('pending', 'Pendiente'),
-  completed('completed', 'Completado'),
-  skipped('skipped', 'Omitido');
+  pending,   // 0 - Sin decidir (gris con +)
+  completed, // 1 - Realizado (verde con ✓)
+  skipped,   // 2 - No realizado conscientemente (rojo con ✗)
+}
 
-  const HabitStatus(this.value, this.displayName);
-
-  final String value;
-  final String displayName;
-
-  static HabitStatus fromString(String value) {
-    final cleanValue = value.replaceAll('HabitStatus.', '');
-    return HabitStatus.values.firstWhere(
-      (status) => status.value == cleanValue,
-      orElse: () => HabitStatus.pending,
-    );
+extension HabitStatusExtension on HabitStatus {
+  String get displayName {
+    switch (this) {
+      case HabitStatus.pending:
+        return 'Pendiente';
+      case HabitStatus.completed:
+        return 'Completado';
+      case HabitStatus.skipped:
+        return 'Omitido';
+    }
   }
 
-  @override
-  String toString() => value;
+  String get emoji {
+    switch (this) {
+      case HabitStatus.pending:
+        return '⏳';
+      case HabitStatus.completed:
+        return '✅';
+      case HabitStatus.skipped:
+        return '❌';
+    }
+  }
 }

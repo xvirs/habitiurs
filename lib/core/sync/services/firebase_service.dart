@@ -1,7 +1,8 @@
-// lib/core/sync/services/firebase_service.dart
+// lib/core/sync/services/firebase_service.dart - CORREGIDO PARA MULTI-DISPOSITIVO
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:habitiurs/core/auth/services/auth_service.dart';
-import '../../auth/models/user_model.dart';
+import 'package:habitiurs/core/auth/models/user_preferences.dart';
+import '../../auth/models/user.dart';
+import '../models/sync_models.dart';
 
 class FirebaseService {
   final FirebaseFirestore _firestore;
@@ -18,31 +19,31 @@ class FirebaseService {
   static const String _syncOperationsCollection = 'sync_operations';
 
   // USER OPERATIONS
-  Future<void> createOrUpdateUser(AppUser user) async {
+  Future<void> createOrUpdateUser(User user) async {
     try {
       await _firestore
           .collection(_usersCollection)
           .doc(user.id)
-          .set(user.toJson(), SetOptions(merge: true));
+          .set(_userToJson(user), SetOptions(merge: true));
     } catch (e) {
       throw FirebaseException('Error guardando usuario: $e');
     }
   }
 
-  Future<AppUser?> getUser(String userId) async {
+  Future<User?> getUser(String userId) async {
     try {
       final doc = await _firestore
           .collection(_usersCollection)
           .doc(userId)
           .get();
       
-      return doc.exists ? AppUser.fromJson(doc.data()!) : null;
+      return doc.exists ? _userFromJson(doc.data()!) : null;
     } catch (e) {
       throw FirebaseException('Error obteniendo usuario: $e');
     }
   }
 
-  // HABITS SYNC
+  // ✅ HABITS SYNC - CORREGIDO PARA MULTI-DISPOSITIVO
   Future<void> syncHabits(String userId, List<Map<String, dynamic>> habits) async {
     try {
       final batch = _firestore.batch();
@@ -51,23 +52,25 @@ class FirebaseService {
           .doc(userId)
           .collection(_habitsCollection);
 
-      // Limpiar hábitos existentes del usuario
-      final existingHabits = await userHabitsRef.get();
-      for (final doc in existingHabits.docs) {
-        batch.delete(doc.reference);
-      }
-
-      // Agregar hábitos actuales
+      // ✅ CAMBIO CRÍTICO: No limpiar hábitos existentes, solo hacer merge
       for (final habit in habits) {
-        final docRef = userHabitsRef.doc(habit['id'].toString());
+        final habitId = habit['id'].toString();
+        final docRef = userHabitsRef.doc(habitId);
+        
+        // ✅ Usar merge para no sobrescribir datos de otros dispositivos
         batch.set(docRef, {
-          ...habit,
+          'id': habit['id'],
+          'name': habit['name'],
+          'created_at': habit['created_at'],
+          'is_active': habit['is_active'],
           'user_id': userId,
           'last_sync': FieldValue.serverTimestamp(),
-        });
+          'device_sync_time': DateTime.now().toIso8601String(), // Timestamp del dispositivo
+        }, SetOptions(merge: true));
       }
 
       await batch.commit();
+      print('✅ [Firebase] ${habits.length} hábitos sincronizados con merge');
     } catch (e) {
       throw FirebaseException('Error sincronizando hábitos: $e');
     }
@@ -82,15 +85,26 @@ class FirebaseService {
           .orderBy('created_at')
           .get();
 
-      return snapshot.docs
-          .map((doc) => {...doc.data(), 'firestore_id': doc.id})
-          .toList();
+      final habits = snapshot.docs.map((doc) {
+        final data = doc.data();
+        return {
+          'id': data['id'],
+          'name': data['name'],
+          'created_at': data['created_at'],
+          'is_active': data['is_active'],
+          'last_sync': data['last_sync'],
+          'firestore_id': doc.id,
+        };
+      }).toList();
+
+      print('☁️ [Firebase] Descargados ${habits.length} hábitos para usuario $userId');
+      return habits;
     } catch (e) {
       throw FirebaseException('Error obteniendo hábitos: $e');
     }
   }
 
-  // HABIT ENTRIES SYNC
+  // ✅ HABIT ENTRIES SYNC - CORREGIDO PARA MULTI-DISPOSITIVO
   Future<void> syncHabitEntries(String userId, List<Map<String, dynamic>> entries) async {
     try {
       final batch = _firestore.batch();
@@ -101,25 +115,36 @@ class FirebaseService {
 
       // Sync por chunks para evitar límites de Firestore
       const chunkSize = 500;
+      
       for (int i = 0; i < entries.length; i += chunkSize) {
         final chunk = entries.skip(i).take(chunkSize).toList();
         
         for (final entry in chunk) {
-          final docRef = userEntriesRef.doc('${entry['habit_id']}_${entry['date']}');
+          // ✅ CLAVE ÚNICA: habitId_fecha para evitar duplicados
+          final entryKey = '${entry['habit_id']}_${entry['date']}';
+          final docRef = userEntriesRef.doc(entryKey);
+          
+          // ✅ Usar merge para preservar datos de otros dispositivos
           batch.set(docRef, {
-            ...entry,
+            'habit_id': entry['habit_id'],
+            'date': entry['date'],
+            'status': entry['status'],
+            'entry_id': entry['id'], // ID local para referencia
             'user_id': userId,
             'last_sync': FieldValue.serverTimestamp(),
+            'device_sync_time': DateTime.now().toIso8601String(),
           }, SetOptions(merge: true));
         }
         
         await batch.commit();
+        print('✅ [Firebase] Chunk ${(i / chunkSize).floor() + 1} sincronizado (${chunk.length} entradas)');
       }
     } catch (e) {
       throw FirebaseException('Error sincronizando entradas: $e');
     }
   }
 
+  // ✅ MEJORADO: Descarga de entradas con filtro por fecha
   Future<List<Map<String, dynamic>>> getHabitEntries(String userId, {DateTime? since}) async {
     try {
       Query query = _firestore
@@ -127,16 +152,70 @@ class FirebaseService {
           .doc(userId)
           .collection(_habitEntriesCollection);
 
+      // ✅ CORRECCIÓN: Filtrar por fecha de la entrada, no por last_sync
       if (since != null) {
-        query = query.where('last_sync', isGreaterThan: Timestamp.fromDate(since));
+        final sinceString = since.toIso8601String().split('T')[0]; // Solo fecha YYYY-MM-DD
+        query = query.where('date', isGreaterThanOrEqualTo: sinceString);
       }
 
       final snapshot = await query.get();
-      return snapshot.docs
-          .map((doc) => {...doc.data() as Map<String, dynamic>, 'firestore_id': doc.id})
-          .toList();
+      
+      final entries = snapshot.docs.map((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        return {
+          'habit_id': data['habit_id'],
+          'date': data['date'],
+          'status': data['status'],
+          'entry_id': data['entry_id'],
+          'last_sync': data['last_sync'],
+          'firestore_id': doc.id,
+        };
+      }).toList();
+
+      print('☁️ [Firebase] Descargadas ${entries.length} entradas para usuario $userId (desde ${since?.toString().split(' ')[0] ?? 'inicio'})');
+      return entries;
     } catch (e) {
       throw FirebaseException('Error obteniendo entradas: $e');
+    }
+  }
+
+  // ✅ NUEVO: Método para obtener el último timestamp de sincronización
+  Future<DateTime?> getLastSyncTimestamp(String userId, String collectionType) async {
+    try {
+      String collection = collectionType == 'habits' ? _habitsCollection : _habitEntriesCollection;
+      
+      final snapshot = await _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection(collection)
+          .orderBy('last_sync', descending: true)
+          .limit(1)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        final timestamp = snapshot.docs.first.data()['last_sync'] as Timestamp?;
+        return timestamp?.toDate();
+      }
+      
+      return null;
+    } catch (e) {
+      print('⚠️ [Firebase] Error obteniendo último timestamp: $e');
+      return null;
+    }
+  }
+
+  // ✅ NUEVO: Verificar si hay conflictos de datos
+  Future<bool> hasConflicts(String userId, String collectionType, DateTime localLastSync) async {
+    try {
+      final remoteLastSync = await getLastSyncTimestamp(userId, collectionType);
+      
+      if (remoteLastSync == null) return false;
+      
+      // Hay conflicto si el timestamp remoto es más nuevo que el local
+      return remoteLastSync.isAfter(localLastSync);
+    } catch (e) {
+      print('⚠️ [Firebase] Error verificando conflictos: $e');
+      return false;
     }
   }
 
@@ -177,6 +256,39 @@ class FirebaseService {
     } catch (e) {
       return false;
     }
+  }
+
+  // PRIVATE HELPERS para convertir User ↔ JSON
+  Map<String, dynamic> _userToJson(User user) {
+    return {
+      'id': user.id,
+      'email': user.email,
+      'display_name': user.displayName,
+      'photo_url': user.photoURL,
+      'created_at': user.createdAt.toIso8601String(),
+      'last_login': user.lastLogin.toIso8601String(),
+      'is_premium': user.isPremium,
+      'preferences': {
+        'mode': user.preferences.mode.name,
+        'settings': user.preferences.settings,
+      },
+    };
+  }
+
+  User _userFromJson(Map<String, dynamic> json) {
+    return User(
+      id: json['id'],
+      email: json['email'],
+      displayName: json['display_name'],
+      photoURL: json['photo_url'],
+      createdAt: DateTime.parse(json['created_at']),
+      lastLogin: DateTime.parse(json['last_login']),
+      isPremium: json['is_premium'] ?? false,
+      preferences: UserPreferences(
+        mode: UserMode.values.byName(json['preferences']?['mode'] ?? 'authenticated'),
+        settings: Map<String, dynamic>.from(json['preferences']?['settings'] ?? {}),
+      ),
+    );
   }
 }
 

@@ -1,23 +1,31 @@
+// lib/features/habits/data/models/habit_model.dart - COMPLETO CON MÉTODOS FALTANTES
 import '../../domain/entities/habit.dart';
 
 class HabitModel extends Habit {
   const HabitModel({
-    super.id,
-    required super.name,
-    required super.createdAt,
-    super.isActive,
-  });
+    int? id,
+    required String name,
+    required DateTime createdAt,
+    bool isActive = true,
+  }) : super(
+          id: id,
+          name: name,
+          createdAt: createdAt,
+          isActive: isActive,
+        );
 
-  factory HabitModel.fromMap(Map<String, dynamic> map) {
+  // ✅ MÉTODO fromJson FALTANTE
+  factory HabitModel.fromJson(Map<String, dynamic> json) {
     return HabitModel(
-      id: map['id'] as int?,
-      name: map['name'] as String,
-      createdAt: DateTime.parse(map['created_at'] as String),
-      isActive: (map['is_active'] as int) == 1,
+      id: json['id'] as int?,
+      name: json['name'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
+      isActive: (json['is_active'] as int) == 1,
     );
   }
 
-  Map<String, dynamic> toMap() {
+  // ✅ MÉTODO toJson FALTANTE
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'name': name,
@@ -26,6 +34,22 @@ class HabitModel extends Habit {
     };
   }
 
+  // ✅ MÉTODO copyWith FALTANTE
+  HabitModel copyWith({
+    int? id,
+    String? name,
+    DateTime? createdAt,
+    bool? isActive,
+  }) {
+    return HabitModel(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      isActive: isActive ?? this.isActive,
+    );
+  }
+
+  // ✅ MÉTODO fromEntity FALTANTE
   factory HabitModel.fromEntity(Habit habit) {
     return HabitModel(
       id: habit.id,
@@ -33,5 +57,38 @@ class HabitModel extends Habit {
       createdAt: habit.createdAt,
       isActive: habit.isActive,
     );
+  }
+
+  // ✅ MÉTODO toEntity FALTANTE
+  Habit toEntity() {
+    return Habit(
+      id: id,
+      name: name,
+      createdAt: createdAt,
+      isActive: isActive,
+    );
+  }
+
+  @override
+  String toString() {
+    return 'HabitModel(id: $id, name: $name, createdAt: $createdAt, isActive: $isActive)';
+  }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is HabitModel &&
+        other.id == id &&
+        other.name == name &&
+        other.createdAt == createdAt &&
+        other.isActive == isActive;
+  }
+
+  @override
+  int get hashCode {
+    return id.hashCode ^
+        name.hashCode ^
+        createdAt.hashCode ^
+        isActive.hashCode;
   }
 }

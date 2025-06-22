@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "819697521102",
+    "firebase_url": "https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app",
     "project_id": "habitiurs",
     "storage_bucket": "habitiurs.firebasestorage.app"
   },
@@ -12,7 +13,20 @@
           "package_name": "com.example.habitiurs"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "819697521102-4rpdp15lq4in3uho5sc8cdrrc29vvhs4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.habitiurs",
+            "certificate_hash": "70692add113526de1c1327306d226fe089cc641f"
+          }
+        },
+        {
+          "client_id": "819697521102-is1cej847nom4b4c19ah0o36gr75frev.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyAKAQl97fpJ8AROD3kIu-2MjH6ELmzIK3Q"
@@ -20,7 +34,12 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "819697521102-is1cej847nom4b4c19ah0o36gr75frev.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
         }
       }
     }

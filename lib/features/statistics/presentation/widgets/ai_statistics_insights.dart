@@ -1,7 +1,6 @@
 // lib/features/statistics/presentation/widgets/ai_statistics_insights.dart - CORREGIDO
 import 'package:flutter/material.dart';
 import 'package:habitiurs/core/ai/models/ai_context_builder.dart';
-import 'package:habitiurs/core/ai/models/ai_request_model.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../domain/entities/statistics.dart';
 

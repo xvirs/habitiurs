@@ -1,5 +1,6 @@
+// lib/features/habits/domain/entities/habit_entry.dart
 import 'package:equatable/equatable.dart';
-import 'package:habitiurs/shared/enums/habit_status.dart';
+import '../../../../shared/enums/habit_status.dart';
 
 class HabitEntry extends Equatable {
   final int? id;
@@ -11,11 +12,14 @@ class HabitEntry extends Equatable {
     this.id,
     required this.habitId,
     required this.date,
-    this.status = HabitStatus.pending,
+    required this.status,
   });
-
-  bool get completed => status == HabitStatus.completed;
 
   @override
   List<Object?> get props => [id, habitId, date, status];
+
+  @override
+  String toString() {
+    return 'HabitEntry(id: $id, habitId: $habitId, date: ${date.toIso8601String().split('T')[0]}, status: ${status.name})';
+  }
 }
