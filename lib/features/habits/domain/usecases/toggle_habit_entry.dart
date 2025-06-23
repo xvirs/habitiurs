@@ -1,4 +1,4 @@
-// lib/features/habits/domain/usecases/toggle_habit_entry.dart - SIMPLIFICADO
+// lib/features/habits/domain/usecases/toggle_habit_entry.dart - Se mantiene así
 import '../repositories/habit_repository.dart';
 import '../../../../shared/enums/habit_status.dart';
 import '../../../../shared/utils/date_utils.dart';
@@ -18,7 +18,6 @@ class ToggleHabitEntry {
       return; // No hacer nada si no es el día actual
     }
     
-    // Lógica simplificada: solo alternar entre completed y pending
     HabitStatus nextStatus;
     
     switch (currentStatus) {
@@ -26,11 +25,10 @@ class ToggleHabitEntry {
         nextStatus = HabitStatus.completed;
         break;
       case HabitStatus.completed:
-        nextStatus = HabitStatus.pending;
+        nextStatus = HabitStatus.pending; // Este es el camino que desmarca a pendiente
         break;
       case HabitStatus.skipped:
-        // Si por alguna razón hay un skipped en el día actual, convertir a completed
-        nextStatus = HabitStatus.completed;
+        nextStatus = HabitStatus.completed; 
         break;
     }
     

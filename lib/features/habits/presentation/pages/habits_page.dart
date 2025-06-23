@@ -1,6 +1,7 @@
-// lib/features/habits/presentation/pages/habits_page.dart - MODIFICADO
+// lib/features/habits/presentation/pages/habits_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/features/habits/domain/entities/habit_entry.dart';
 import 'package:habitiurs/features/habits/presentation/widgets/delete_confirmation_dialog.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../bloc/habit_bloc.dart';
@@ -12,21 +13,25 @@ import '../widgets/add_habit_bottom_sheet.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../../../shared/enums/habit_status.dart';
 
-// ✅ MODIFICADO: Ahora es StatefulWidget para exposer refresh
 class HabitsPage extends StatefulWidget {
   const HabitsPage({super.key});
 
   @override
-  State<HabitsPage> createState() => HabitsPageState(); // ← State público
+  State<HabitsPage> createState() => HabitsPageState();
 }
 
-// ✅ NUEVO: State público para poder llamar refreshData()
-class HabitsPageState extends State<HabitsPage> {
+class HabitsPageState extends State<HabitsPage>
+    with AutomaticKeepAliveClientMixin {
   late final HabitBloc _habitBloc;
+  late final DateTime _today;
+
+  @override
+  bool get wantKeepAlive => true;
 
   @override
   void initState() {
     super.initState();
+    _today = DateTime.now();
     _habitBloc = InjectionContainer().habitBloc..add(LoadHabits());
   }
 
@@ -36,122 +41,208 @@ class HabitsPageState extends State<HabitsPage> {
     super.dispose();
   }
 
-  // ✅ MÉTODO PÚBLICO: Para refrescar desde MainPage
   void refreshData() {
-    print('🔄 [HabitsPage] refreshData() llamado');
-    _habitBloc.add(RefreshData());
+    _habitBloc.add(PullToRefresh());
+  }
+
+  Future<void> _onRefresh() async {
+    _habitBloc.add(PullToRefresh());
+    await _waitForRefreshComplete();
+  }
+
+  Future<void> _waitForRefreshComplete() async {
+    await for (final state in _habitBloc.stream) {
+      if (state is HabitLoaded && !state.isRefreshing) break;
+      if (state is HabitError) break;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
+
     return BlocProvider.value(
       value: _habitBloc,
-      child: BlocBuilder<HabitBloc, HabitState>(
+      child: BlocConsumer<HabitBloc, HabitState>(
+        listener: _handleStateChanges,
         builder: (context, state) => _buildBody(context, state),
       ),
     );
   }
 
+  void _handleStateChanges(BuildContext context, HabitState state) {
+    if (state is HabitError) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(state.message),
+          action: SnackBarAction(
+            label: 'Reintentar',
+            onPressed: () => _habitBloc.add(LoadHabits()),
+          ),
+        ),
+      );
+    }
+  }
+
   Widget _buildBody(BuildContext context, HabitState state) {
     return switch (state) {
-      HabitLoading() => const Center(child: CircularProgressIndicator()),
+      HabitLoading() => _buildLoadingView(),
       HabitError() => _buildErrorView(context, state),
       HabitLoaded() => _buildLoadedView(context, state),
-      _ => const Center(child: Text('Estado inicial')),
+      _ => _buildInitialView(),
     };
   }
 
+  Widget _buildLoadingView() {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Cargando hábitos...'),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInitialView() {
+    return const Center(child: Text('Inicializando...'));
+  }
+
   Widget _buildErrorView(BuildContext context, HabitError state) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Theme.of(context).colorScheme.error,
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: SizedBox(
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: Center(
+            child: _ErrorStateWidget(
+              message: state.message,
+              onRetry: () => _habitBloc.add(LoadHabits()),
+              onRefresh: _onRefresh,
             ),
-            const SizedBox(height: 16),
-            Text(
-              state.message,
-              style: Theme.of(context).textTheme.bodyLarge,
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: () => _habitBloc.add(LoadHabits()),
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-            ),
-          ],
+          ),
         ),
       ),
     );
   }
 
   Widget _buildLoadedView(BuildContext context, HabitLoaded state) {
-    final today = DateTime.now();
-    final todayEntries = state.weekEntries
-        .where((entry) => AppDateUtils.isSameDay(entry.date, today)) 
-        .toList();
+    final todayEntriesMap = _getTodayEntriesMap(state.weekEntries);
 
     return Column(
       children: [
-        // Vista semanal de solo lectura - Parte superior
         Expanded(
-          child: WeeklyGrid(
-            habits: state.habits,
-            weekEntries: state.weekEntries,
-            weekStart: state.currentWeekStart,
+          flex: 1,
+          child: RefreshIndicator(
+            onRefresh: _onRefresh,
+            displacement: 40,
+            color: Theme.of(context).colorScheme.primary,
+            child: SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: SizedBox(
+                height: MediaQuery.of(context).size.height * 0.4,
+                child: WeeklyGrid(
+                  habits: state.habits,
+                  weekEntries: state.weekEntries,
+                  weekStart: state.currentWeekStart,
+                ),
+              ),
+            ),
           ),
         ),
-        // Lista de hábitos diarios interactiva - Parte inferior
         Expanded(
+          flex: 1,
           child: DailyHabitsList(
             habits: state.habits,
-            todayEntries: todayEntries,
-            onToggle: (habitId, currentStatus) => _handleToggle(
-              context,
-              habitId,
-              today,
-              currentStatus,
-            ),
-            onDelete: (habitId) => _showDeleteConfirmation(context, habitId),
-            onAdd: () => _showAddHabitBottomSheet(context),
+            todayEntriesMap: todayEntriesMap,
+            onToggle: _handleToggle,
+            onDelete: _handleDelete,
+            onAdd: _handleAdd,
           ),
         ),
       ],
     );
   }
 
-  void _handleToggle(BuildContext context, int habitId, DateTime date, HabitStatus currentStatus) {
+  /// NUEVO: Mapea las entradas de hoy a habitId -> status
+  Map<int, HabitStatus> _getTodayEntriesMap(List<HabitEntry> weekEntries) {
+    return {
+      for (final entry in weekEntries)
+        if (AppDateUtils.isSameDay(entry.date, _today)) entry.habitId: entry.status
+    };
+  }
+
+  void _handleToggle(int habitId, HabitStatus currentStatus) {
     _habitBloc.add(
       ToggleHabitEntryEvent(
         habitId: habitId,
-        date: date,
+        date: _today,
         currentStatus: currentStatus,
       ),
     );
   }
 
-  void _showAddHabitBottomSheet(BuildContext context) {
-    AddHabitBottomSheet.show(
-      context,
-      onAdd: (habitName) => _handleAddHabit(context, habitName),
+  void _handleDelete(int habitId) {
+    showDialog(
+      context: context,
+      builder: (context) => DeleteConfirmationDialog(
+        onConfirm: () => _habitBloc.add(DeleteHabitEvent(habitId)),
+      ),
     );
   }
 
-  void _handleAddHabit(BuildContext context, String habitName) {
-    _habitBloc.add(CreateHabitEvent(habitName));
+  void _handleAdd() {
+    AddHabitBottomSheet.show(
+      context,
+      onAdd: (habitName) => _habitBloc.add(CreateHabitEvent(habitName)),
+    );
   }
+}
 
-  void _showDeleteConfirmation(BuildContext context, int habitId) {
-    showDialog(
-      context: context,
-      builder: (dialogContext) => DeleteConfirmationDialog(
-        onConfirm: () => _habitBloc.add(DeleteHabitEvent(habitId)),
+class _ErrorStateWidget extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+  final VoidCallback onRefresh;
+
+  const _ErrorStateWidget({
+    required this.message,
+    required this.onRetry,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 64,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: Theme.of(context).textTheme.bodyLarge,
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 24),
+          ElevatedButton.icon(
+            onPressed: onRetry,
+            icon: const Icon(Icons.refresh),
+            label: const Text('Reintentar'),
+          ),
+          const SizedBox(height: 12),
+          TextButton(
+            onPressed: onRefresh,
+            child: const Text('Sincronizar con la nube'),
+          ),
+        ],
       ),
     );
   }

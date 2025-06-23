@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/widgets/weekly_grid.dart - VISTA SIMPLE NO SCROLLEABLE
+// lib/features/habits/presentation/widgets/weekly_grid.dart
 import 'package:flutter/material.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/entities/habit.dart';
@@ -23,30 +23,48 @@ class WeeklyGrid extends StatelessWidget {
 
     return Card(
       margin: const EdgeInsets.all(16),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header simple
-            _buildHeader(context, weekDates),
-            const SizedBox(height: 16),
-            
-            // Headers de días
-            _buildDaysHeader(context, weekDates),
-            const SizedBox(height: 12),
-            
-            // Grid de hábitos (expandido para ocupar todo el espacio disponible)
-            Expanded(
-              child: _buildFixedGrid(context, weekDates),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header section (altura fija)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: _HeaderSection(weekDates: weekDates),
+          ),
+          
+          // Days header (altura fija)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+            child: _DaysHeader(weekDates: weekDates),
+          ),
+          
+          // Grid que se expande con el contenido (sin scroll)
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+              child: habits.isEmpty
+                  ? const _EmptyGridState()
+                  : _StackedHabitsGrid(
+                      habits: habits,
+                      weekDates: weekDates,
+                      weekEntries: weekEntries,
+                    ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  Widget _buildHeader(BuildContext context, List<DateTime> weekDates) {
+/// Header de la vista semanal
+class _HeaderSection extends StatelessWidget {
+  final List<DateTime> weekDates;
+
+  const _HeaderSection({required this.weekDates});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Container(
@@ -72,24 +90,49 @@ class WeeklyGrid extends StatelessWidget {
             ),
           ),
         ),
-        Text(
-          '${weekDates.first.day} - ${weekDates.last.day}',
-          style: TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w600,
-            color: Theme.of(context).colorScheme.primary,
-          ),
+        _DateRange(
+          startDay: weekDates.first.day,
+          endDay: weekDates.last.day,
         ),
       ],
     );
   }
+}
 
-  Widget _buildDaysHeader(BuildContext context, List<DateTime> weekDates) {
+/// Rango de fechas en el header
+class _DateRange extends StatelessWidget {
+  final int startDay;
+  final int endDay;
+
+  const _DateRange({
+    required this.startDay,
+    required this.endDay,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      '$startDay - $endDay',
+      style: TextStyle(
+        fontSize: 12,
+        fontWeight: FontWeight.w600,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
+  }
+}
+
+/// Header de días de la semana
+class _DaysHeader extends StatelessWidget {
+  final List<DateTime> weekDates;
+
+  const _DaysHeader({required this.weekDates});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
-        // Espacio para números de hábitos
-        const SizedBox(width: 28),
-        // Headers de días
+        const SizedBox(width: 28), // Espacio para números de hábitos
         ...AppDateUtils.weekDayNames.asMap().entries.map((entry) {
           final index = entry.key;
           final dayName = entry.value;
@@ -97,68 +140,238 @@ class WeeklyGrid extends StatelessWidget {
           final isToday = AppDateUtils.isToday(date);
 
           return Expanded(
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 6),
-              decoration: isToday
-                  ? BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
-                          width: 1.5,
-                        ),
-                      ),
-                    )
-                  : null,
-              child: Column(
-                children: [
-                  Text(
-                    dayName,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
-                      color: isToday 
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    '${date.day}',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: isToday 
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
+            child: _DayColumn(
+              dayName: dayName,
+              dayNumber: date.day,
+              isToday: isToday,
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
+}
 
-  Widget _buildFixedGrid(BuildContext context, List<DateTime> weekDates) {
-    if (habits.isEmpty) {
-      return _buildEmptyState(context);
-    }
+/// Columna individual de día
+class _DayColumn extends StatelessWidget {
+  final String dayName;
+  final int dayNumber;
+  final bool isToday;
 
+  const _DayColumn({
+    required this.dayName,
+    required this.dayNumber,
+    required this.isToday,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).colorScheme.primary;
+    
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      decoration: isToday
+          ? BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color: primaryColor.withOpacity(0.8),
+                  width: 1.5,
+                ),
+              ),
+            )
+          : null,
+      child: Column(
+        children: [
+          Text(
+            dayName,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
+              color: isToday ? primaryColor : Colors.grey[600],
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            '$dayNumber',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 9,
+              color: isToday ? primaryColor : Colors.grey[500],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Grid de hábitos sin scroll - se apilan verticalmente
+class _StackedHabitsGrid extends StatelessWidget {
+  final List<Habit> habits;
+  final List<DateTime> weekDates;
+  final List<HabitEntry> weekEntries;
+
+  const _StackedHabitsGrid({
+    required this.habits,
+    required this.weekDates,
+    required this.weekEntries,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     return Column(
       children: habits.asMap().entries.map((entry) {
         final index = entry.key;
         final habit = entry.value;
+        
         return Expanded(
-          child: _buildHabitRow(context, habit, index, weekDates),
+          child: Padding(
+            padding: EdgeInsets.only(
+              bottom: index == habits.length - 1 ? 0 : 4, // Separación mínima
+            ),
+            child: _HabitRow(
+              habit: habit,
+              index: index,
+              weekDates: weekDates,
+              weekEntries: weekEntries,
+            ),
+          ),
         );
       }).toList(),
     );
   }
+}
 
-  Widget _buildEmptyState(BuildContext context) {
+/// Fila individual de hábito
+class _HabitRow extends StatelessWidget {
+  final Habit habit;
+  final int index;
+  final List<DateTime> weekDates;
+  final List<HabitEntry> weekEntries;
+
+  const _HabitRow({
+    required this.habit,
+    required this.index,
+    required this.weekDates,
+    required this.weekEntries,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        _HabitNumber(
+          number: index + 1,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 4),
+        ...weekDates.map((date) => Expanded(
+          child: _StatusCell(
+            habitId: habit.id!,
+            date: date,
+            weekEntries: weekEntries,
+          ),
+        )),
+      ],
+    );
+  }
+}
+
+/// Número del hábito en la fila
+class _HabitNumber extends StatelessWidget {
+  final int number;
+  final Color color;
+
+  const _HabitNumber({
+    required this.number,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 24,
+      height: 24,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(4),
+      ),
+      child: Center(
+        child: Text(
+          '$number',
+          style: const TextStyle(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+            fontSize: 12,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Celda individual de estado
+class _StatusCell extends StatelessWidget {
+  final int habitId;
+  final DateTime date;
+  final List<HabitEntry> weekEntries;
+
+  const _StatusCell({
+    required this.habitId,
+    required this.date,
+    required this.weekEntries,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final entry = _findEntryForDate();
+    final status = entry?.status ?? HabitStatus.pending;
+    final isToday = AppDateUtils.isToday(date);
+    final isPastDate = AppDateUtils.isPastDate(date);
+
+    // Auto-skip logic: días pasados sin entrada se consideran "skipped"
+    final displayStatus = (isPastDate && entry == null) 
+        ? HabitStatus.skipped 
+        : status;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 1),
+      decoration: BoxDecoration(
+        color: _getCellColor(displayStatus),
+        border: isToday ? Border.all(
+          color: Theme.of(context).colorScheme.primary,
+          width: 2,
+        ) : null,
+        borderRadius: BorderRadius.circular(4),
+      ),
+    );
+  }
+
+  HabitEntry? _findEntryForDate() {
+    for (final entry in weekEntries) {
+      if (entry.habitId == habitId && AppDateUtils.isSameDay(entry.date, date)) {
+        return entry;
+      }
+    }
+    return null;
+  }
+
+  Color _getCellColor(HabitStatus status) {
+    return switch (status) {
+      HabitStatus.completed => Colors.green[500]!,
+      HabitStatus.skipped => Colors.red[400]!,
+      HabitStatus.pending => Colors.grey[200]!,
+    };
+  }
+}
+
+/// Estado vacío del grid
+class _EmptyGridState extends StatelessWidget {
+  const _EmptyGridState();
+
+  @override
+  Widget build(BuildContext context) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -180,90 +393,5 @@ class WeeklyGrid extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildHabitRow(BuildContext context, Habit habit, int index, List<DateTime> weekDates) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 1),
-      child: Row(
-        children: [
-          // Número del hábito
-          _buildHabitNumber(context, index),
-          const SizedBox(width: 4),
-          // Celdas de días
-          ..._buildDayCells(context, habit, weekDates),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildHabitNumber(BuildContext context, int index) {
-    return Container(
-      width: 24,
-      height: 24,
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Center(
-        child: Text(
-          '${index + 1}',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
-        ),
-      ),
-    );
-  }
-
-  List<Widget> _buildDayCells(BuildContext context, Habit habit, List<DateTime> weekDates) {
-    return weekDates.map((date) {
-      final entry = _findEntryForDate(habit.id!, date);
-      final status = entry?.status ?? HabitStatus.pending;
-      final isToday = AppDateUtils.isToday(date);
-      final isPastDate = AppDateUtils.isPastDate(date);
-
-      // Auto-skip logic: días pasados sin entrada se consideran "skipped"
-      final displayStatus = (isPastDate && entry == null) 
-          ? HabitStatus.skipped 
-          : status;
-
-      return Expanded(
-        child: Container(
-          margin: const EdgeInsets.symmetric(horizontal: 1),
-          height: 24,
-          decoration: BoxDecoration(
-            color: _getCellColor(displayStatus, isToday),
-            border: isToday ? Border.all(
-              color: Theme.of(context).colorScheme.primary,
-              width: 2,
-            ) : null,
-            borderRadius: BorderRadius.circular(4),
-          ),
-        ),
-      );
-    }).toList();
-  }
-
-  Color _getCellColor(HabitStatus status, bool isToday) {
-    switch (status) {
-      case HabitStatus.completed:
-        return Colors.green[500]!;
-      case HabitStatus.skipped:
-        return Colors.red[400]!;
-      case HabitStatus.pending:
-        return Colors.grey[200]!;
-    }
-  }
-
-  HabitEntry? _findEntryForDate(int habitId, DateTime date) {
-    try {
-      return weekEntries.firstWhere(
-        (e) => e.habitId == habitId && AppDateUtils.isSameDay(e.date, date),
-      );
-    } catch (e) {
-      return null;
-    }
-  }
 }
+

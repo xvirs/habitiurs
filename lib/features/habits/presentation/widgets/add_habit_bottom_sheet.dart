@@ -48,7 +48,6 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   static const Duration _animationDuration = Duration(milliseconds: 250);
   static const Duration _evaluationDelay = Duration(seconds: 2);
   static const int _minHabitLength = 3;
-  static const int _maxHabitLength = 60;
   @override
   void initState() {
     super.initState();
@@ -232,8 +231,6 @@ class _BottomSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    
     return Padding(
       padding: EdgeInsets.fromLTRB(
         20,

@@ -1,4 +1,5 @@
-// lib/core/sync/services/sync_manager.dart - CORREGIDO PARA MULTI-DISPOSITIVO
+// lib/core/sync/services/sync_manager.dart - MODIFICADO (ÚLTIMA VERSIÓN PARA SOFT DELETE)
+
 import 'dart:async';
 import '../services/firebase_service.dart';
 import '../../auth/interfaces/i_auth_service.dart';
@@ -92,10 +93,10 @@ class SyncManager {
       // 2. Sincronizar usuario
       await _syncUser(user);
 
-      // 3. ✅ CORREGIDO: Sincronizar hábitos con merge bidireccional completo
+      // 3. Sincronizar hábitos con merge bidireccional completo
       await _syncHabitsWithBidirectionalMerge(user.id);
 
-      // 4. ✅ CORREGIDO: Sincronizar entradas con merge bidireccional completo
+      // 4. Sincronizar entradas con merge bidireccional completo
       await _syncHabitEntriesWithBidirectionalMerge(user.id);
 
       _setLastSyncTime(DateTime.now());
@@ -124,53 +125,59 @@ class SyncManager {
     }
   }
 
-  // ✅ NUEVA IMPLEMENTACIÓN: Sincronización bidireccional completa de hábitos
+  // Sincronización bidireccional completa de hábitos
   Future<void> _syncHabitsWithBidirectionalMerge(String userId) async {
     try {
       print('🔄 [Sync] === SINCRONIZACIÓN BIDIRECCIONAL DE HÁBITOS ===');
       
-      // PASO 1: Obtener datos locales
-      final localHabits = await _habitDataSource.getAllHabits();
+      // PASO 1: Obtener datos locales (ahora incluimos inactivos para la subida)
+      // La UI solo muestra activos, pero para la sync, necesitamos todo lo local.
+      final localHabits = await _habitDataSource.getAllHabits(includeInactive: true); 
       print('📱 [Sync] Hábitos locales encontrados: ${localHabits.length}');
       
       // PASO 2: Subir hábitos locales a Firebase
+      // Esto subirá tanto los activos como los inactivos (is_active = 0)
       if (localHabits.isNotEmpty) {
         final habitsData = localHabits.map((habit) => {
           'id': habit.id,
           'name': habit.name,
           'created_at': habit.createdAt.toIso8601String(),
-          'is_active': habit.isActive ? 1 : 0,
+          'is_active': habit.isActive ? 1 : 0, // Asegurarse de que is_active se guarda
         }).toList();
         
         await _firebaseService.syncHabits(userId, habitsData);
-        print('⬆️ [Sync] ${localHabits.length} hábitos subidos a Firebase');
+        print('⬆️ [Sync] ${habitsData.length} hábitos subidos a Firebase');
       }
       
-      // PASO 3: Descargar hábitos remotos de Firebase
-      final remoteHabits = await _firebaseService.getHabits(userId);
+      // PASO 3: Descargar hábitos remotos de Firebase (incluyendo inactivos)
+      final remoteHabits = await _firebaseService.getHabits(userId); 
       print('☁️ [Sync] Hábitos remotos encontrados: ${remoteHabits.length}');
       
-      // PASO 4: ✅ MERGE BIDIRECCIONAL: Aplicar hábitos remotos que no existen localmente
+      // PASO 4: MERGE BIDIRECCIONAL: Procesar hábitos remotos
       int newHabitsAdded = 0;
       int conflictsResolved = 0;
+      
+      // Conjunto de IDs de hábitos locales para una búsqueda eficiente
+      final Map<int, HabitModel> localHabitsMap = { for (var h in localHabits) h.id!: h };
       
       for (final remoteHabit in remoteHabits) {
         final remoteId = remoteHabit['id'] as int?;
         final remoteName = remoteHabit['name'] as String? ?? '';
         final remoteCreatedAt = remoteHabit['created_at'] as String? ?? DateTime.now().toIso8601String();
-        final remoteIsActive = (remoteHabit['is_active'] as int? ?? 1) == 1;
+        final remoteIsActive = (remoteHabit['is_active'] as int? ?? 1) == 1; // Obtiene el estado activo/inactivo de Firebase
         
         if (remoteId == null || remoteName.isEmpty) {
           print('⚠️ [Sync] Hábito remoto inválido, saltando...');
           continue;
         }
         
-        // Verificar si el hábito ya existe localmente
-        final localHabit = localHabits.where((local) => local.id == remoteId).firstOrNull;
+        final localHabit = localHabitsMap[remoteId]; // Usa el mapa para buscar
         
         if (localHabit == null) {
-          // ✅ NUEVO HÁBITO: No existe localmente, agregarlo
-          if (remoteIsActive) {
+          // ✅ HÁBITO REMOTO NUEVO O QUE FUE ELIMINADO LOCALMENTE Y AHORA ESTÁ EN FIREBASE
+          // Solo lo agregamos localmente si está ACTIVO en remoto.
+          // Si está INACTIVO en remoto (ya fue "soft-deleted" en Firebase), LO IGNORAMOS.
+          if (remoteIsActive) { 
             try {
               final newHabit = HabitModel(
                 id: remoteId,
@@ -185,25 +192,28 @@ class SyncManager {
             } catch (e) {
               print('❌ [Sync] Error agregando hábito remoto "$remoteName": $e');
             }
+          } else {
+            // Este es el caso clave: el hábito está inactivo en Firebase y no existe localmente.
+            // LO IGNORAMOS, no lo re-insertamos.
+            print('ℹ️ [Sync] Hábito remoto $remoteId está inactivo, no se agrega localmente.'); 
           }
         } else {
-          // ✅ RESOLUCIÓN DE CONFLICTOS: Hábito existe, verificar diferencias
+          // ✅ RESOLUCIÓN DE CONFLICTOS: Hábito existe localmente, verificar diferencias
           bool needsUpdate = false;
           HabitModel updatedHabit = localHabit;
           
-          // Comparar y resolver conflictos
+          // Comparar y resolver conflictos de nombre
           if (localHabit.name != remoteName) {
             print('🔀 [Sync] Conflicto de nombre en hábito ID $remoteId: Local="${localHabit.name}" vs Remoto="$remoteName"');
-            // Estrategia: Mantener el nombre más reciente (remoto en este caso)
             updatedHabit = updatedHabit.copyWith(name: remoteName);
             needsUpdate = true;
           }
           
+          // Comparar y resolver conflictos de estado (is_active)
+          // Si el estado activo/inactivo es diferente, el estado remoto (de la nube) gana.
           if (localHabit.isActive != remoteIsActive) {
-            print('🔀 [Sync] Conflicto de estado en hábito ID $remoteId: Local=${localHabit.isActive} vs Remoto=$remoteIsActive');
-            // Estrategia: Priorizar activación (si cualquiera está activo, mantener activo)
-            final resolvedIsActive = localHabit.isActive || remoteIsActive;
-            updatedHabit = updatedHabit.copyWith(isActive: resolvedIsActive);
+            print('🔀 [Sync] Conflicto de estado (activo/inactivo) en hábito ID $remoteId: Local=${localHabit.isActive} vs Remoto=$remoteIsActive');
+            updatedHabit = updatedHabit.copyWith(isActive: remoteIsActive); // El estado remoto (is_active) gana
             needsUpdate = true;
           }
           
@@ -224,13 +234,14 @@ class SyncManager {
       print('   ☁️ Remoto: ${remoteHabits.length}');
       print('   ➕ Nuevos agregados: $newHabitsAdded');
       print('   🔄 Conflictos resueltos: $conflictsResolved');
-      
+      print('   ℹ️ Hábitos remotos inactivos ignorados o actualizados localmente.'); 
+
     } catch (e) {
       throw Exception('Error en sincronización bidireccional de hábitos: $e');
     }
   }
 
-  // ✅ NUEVA IMPLEMENTACIÓN: Sincronización bidireccional completa de entradas
+  // Sincronización bidireccional completa de entradas
   Future<void> _syncHabitEntriesWithBidirectionalMerge(String userId) async {
     try {
       print('🔄 [Sync] === SINCRONIZACIÓN BIDIRECCIONAL DE ENTRADAS ===');
@@ -248,7 +259,7 @@ class SyncManager {
       if (realLocalEntries.isNotEmpty) {
         final entriesData = realLocalEntries.map((entry) => {
           'habit_id': entry.habitId,
-          'date': entry.date.toIso8601String().split('T')[0], // Solo YYYY-MM-DD
+          'date': entry.date.toIso8601String().split('T')[0], // Solo fecha
           'status': entry.status.index,
           'id': entry.id,
         }).toList();
@@ -261,7 +272,7 @@ class SyncManager {
       final remoteEntries = await _firebaseService.getHabitEntries(userId, since: startDate);
       print('☁️ [Sync] Entradas remotas encontradas: ${remoteEntries.length}');
       
-      // PASO 4: ✅ MERGE BIDIRECCIONAL: Aplicar entradas remotas
+      // PASO 4: MERGE BIDIRECCIONAL: Aplicar entradas remotas
       int newEntriesAdded = 0;
       int conflictsResolved = 0;
       
@@ -283,12 +294,13 @@ class SyncManager {
           final existingLocalEntry = await _habitDataSource.getHabitEntryForDate(remoteHabitId, remoteDate);
           
           if (existingLocalEntry == null || existingLocalEntry.id == null) {
-            // ✅ NUEVA ENTRADA: No existe localmente, agregarla
+            // NUEVA ENTRADA: No existe localmente, agregarla
             try {
               final newEntry = HabitEntryModel(
                 habitId: remoteHabitId,
                 date: remoteDate,
                 status: remoteStatus,
+                 id: remoteEntry['entry_id'],
               );
               
               await _habitDataSource.insertHabitEntry(newEntry);
@@ -298,14 +310,24 @@ class SyncManager {
               print('❌ [Sync] Error agregando entrada remota: $e');
             }
           } else {
-            // ✅ RESOLUCIÓN DE CONFLICTOS: Entrada existe, verificar diferencias
+            // RESOLUCIÓN DE CONFLICTOS: Entrada existe, verificar diferencias
             if (existingLocalEntry.status != remoteStatus) {
               print('🔀 [Sync] Conflicto de estado en entrada: Hábito $remoteHabitId - $remoteDateStr');
               print('    Local: ${existingLocalEntry.status.name} vs Remoto: ${remoteStatus.name}');
               
-              // Estrategia: Priorizar completed > skipped > pending
-              HabitStatus resolvedStatus = _resolveStatusConflict(existingLocalEntry.status, remoteStatus);
+              HabitStatus resolvedStatus = existingLocalEntry.status; 
               
+              // Lógica para priorizar el estado local en caso de conflicto entre PENDING y COMPLETED
+              if (remoteStatus == HabitStatus.completed && existingLocalEntry.status == HabitStatus.pending) {
+                  resolvedStatus = HabitStatus.pending;
+              } else if (remoteStatus == HabitStatus.pending && existingLocalEntry.status == HabitStatus.completed) {
+                  resolvedStatus = HabitStatus.completed;
+              } else {
+                  // Para cualquier otro caso (ej. skipped vs completed, o ambos iguales),
+                  // usa la lógica original de prioridad
+                  resolvedStatus = _resolveStatusConflict(existingLocalEntry.status, remoteStatus);
+              }
+
               if (resolvedStatus != existingLocalEntry.status) {
                 try {
                   final updatedEntry = HabitEntryModel(
@@ -340,7 +362,8 @@ class SyncManager {
     }
   }
 
-  // ✅ NUEVA: Estrategia de resolución de conflictos para estados de hábitos
+  // Estrategia de resolución de conflictos para estados de hábitos
+  // Se mantiene si no se modifica en la lógica de syncEntries
   HabitStatus _resolveStatusConflict(HabitStatus local, HabitStatus remote) {
     // Prioridad: completed > skipped > pending
     const priority = {

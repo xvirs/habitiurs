@@ -1,18 +1,20 @@
-// lib/features/habits/data/datasources/habit_local_datasource.dart - MÉTODOS FALTANTES AGREGADOS
-import 'package:sqflite/sqflite.dart'; // ✅ IMPORT FALTANTE
+// lib/features/habits/data/datasources/habit_local_datasource.dart - MODIFICADO (QUITADO permanentlyDeleteHabit)
+
+import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 import '../models/habit_model.dart';
 import '../models/habit_entry_model.dart';
 import '../../../../shared/enums/habit_status.dart';
 
 abstract class HabitLocalDataSource {
-  Future<List<HabitModel>> getAllHabits();
+  Future<List<HabitModel>> getAllHabits({bool includeInactive = false}); 
   Future<int> insertHabit(HabitModel habit);
   Future<void> updateHabit(HabitModel habit);
-  Future<void> deleteHabit(int id);
-  Future<void> permanentlyDeleteHabit(int id);
-  
-  // ✅ NUEVO: Insertar hábito con ID específico (para sync)
+  // ✅ MODIFICADO: Este método es ahora el ÚNICO para "borrar" un hábito localmente (soft delete)
+  Future<void> deleteHabit(int id); 
+  // Future<void> permanentlyDeleteHabit(int id); // ✅ ELIMINADO del abstract
+
+  // NUEVO: Insertar hábito con ID específico (para sync)
   Future<void> insertHabitWithId(HabitModel habit);
   
   Future<List<HabitEntryModel>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate);
@@ -28,15 +30,23 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   HabitLocalDataSourceImpl(this._databaseHelper);
 
   @override
-  Future<List<HabitModel>> getAllHabits() async {
+  Future<List<HabitModel>> getAllHabits({bool includeInactive = false}) async {
     final db = await _databaseHelper.database;
-    final List<Map<String, dynamic>> maps = await db.query(
-      'habits',
-      where: 'is_active = ?',
-      whereArgs: [1],
-      orderBy: 'created_at DESC',
-    );
+    List<Map<String, dynamic>> maps;
 
+    if (includeInactive) {
+      maps = await db.query(
+        'habits',
+        orderBy: 'created_at DESC',
+      );
+    } else {
+      maps = await db.query(
+        'habits',
+        where: 'is_active = ?',
+        whereArgs: [1],
+        orderBy: 'created_at DESC',
+      );
+    }
     return List.generate(maps.length, (i) => HabitModel.fromJson(maps[i]));
   }
 
@@ -46,7 +56,7 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
     return await db.insert('habits', habit.toJson());
   }
 
-  // ✅ NUEVO MÉTODO: Insertar hábito con ID específico (para sincronización)
+  // NUEVO MÉTODO: Insertar hábito con ID específico (para sincronización)
   @override
   Future<void> insertHabitWithId(HabitModel habit) async {
     final db = await _databaseHelper.database;
@@ -82,37 +92,22 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   }
 
   @override
-  Future<void> deleteHabit(int id) async {
+  // ✅ MODIFICADO: Este método es ahora el soft delete local.
+  // Su implementación ya era correcta para esto.
+  Future<void> deleteHabit(int id) async { 
     final db = await _databaseHelper.database;
     await db.update(
       'habits',
-      {'is_active': 0},
+      {'is_active': 0}, // Marca como inactivo
       where: 'id = ?',
       whereArgs: [id],
     );
   }
 
-  @override
-  Future<void> permanentlyDeleteHabit(int id) async {
-    final db = await _databaseHelper.database;
-    
-    // Usar transacción para eliminar hábito y sus entradas
-    await db.transaction((txn) async {
-      // Primero eliminar entradas del hábito
-      await txn.delete(
-        'habit_entries',
-        where: 'habit_id = ?',
-        whereArgs: [id],
-      );
-      
-      // Luego eliminar el hábito
-      await txn.delete(
-        'habits',
-        where: 'id = ?',
-        whereArgs: [id],
-      );
-    });
-  }
+  // @override
+  // Future<void> permanentlyDeleteHabit(int id) async { // ✅ ELIMINADO la implementación
+  //   // ... (código anterior)
+  // }
 
   @override
   Future<List<HabitEntryModel>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate) async {
@@ -158,7 +153,7 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
       final result = await db.insert(
         'habit_entries',
         entry.toJson(),
-        conflictAlgorithm: ConflictAlgorithm.replace, // ✅ Manejar duplicados
+        conflictAlgorithm: ConflictAlgorithm.replace,
       );
       
       print('✅ [DB] Entrada insertada: Hábito ${entry.habitId} - ${entry.date.toIso8601String().split('T')[0]} - ${entry.status.name}');

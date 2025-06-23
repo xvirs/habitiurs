@@ -1,3 +1,4 @@
+// lib/features/habits/presentation/bloc/habit_event.dart - ACTUALIZADO
 import 'package:equatable/equatable.dart';
 import '../../../../shared/enums/habit_status.dart';
 
@@ -44,3 +45,8 @@ class DeleteHabitEvent extends HabitEvent {
 }
 
 class RefreshData extends HabitEvent {}
+
+// ✅ NUEVO: Evento específico para pull-to-refresh
+class PullToRefresh extends HabitEvent {
+  const PullToRefresh();
+}

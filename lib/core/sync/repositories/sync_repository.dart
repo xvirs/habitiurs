@@ -1,4 +1,5 @@
-// lib/core/sync/repositories/sync_repository.dart - IMPLEMENTACIÓN COMPLETA
+// lib/core/sync/repositories/sync_repository.dart - CORREGIDO (Error de método en FirebaseService)
+
 import '../models/sync_models.dart';
 import '../services/firebase_service.dart';
 import '../services/sync_manager.dart';
@@ -18,6 +19,9 @@ abstract class SyncRepository {
   Future<DateTime?> getLastRemoteSync(String collectionType);
   Future<bool> hasConflicts(String collectionType, DateTime localLastSync);
   
+  // ✅ NUEVO: Método para marcar hábito como inactivo en la nube
+  Future<void> markHabitAsInactive(String userId, int habitId); 
+
   void pauseAutoSync();
   void resumeAutoSync();
 }
@@ -67,6 +71,8 @@ class SyncRepositoryImpl implements SyncRepository {
     } catch (e) {
       print('❌ [SyncRepo] Error en syncHabitsOnly: $e');
       return false;
+    } finally {
+      // Asegurar que la UI se actualice después de un sync de hábitos, si es necesario
     }
   }
 
@@ -80,6 +86,8 @@ class SyncRepositoryImpl implements SyncRepository {
     } catch (e) {
       print('❌ [SyncRepo] Error en syncEntriesOnly: $e');
       return false;
+    } finally {
+      // Asegurar que la UI se actualice después de un sync de entradas, si es necesario
     }
   }
 
@@ -127,6 +135,18 @@ class SyncRepositoryImpl implements SyncRepository {
     } catch (e) {
       print('❌ [SyncRepo] Error verificando conflictos: $e');
       return false;
+    }
+  }
+
+  @override
+  Future<void> markHabitAsInactive(String userId, int habitId) async {
+    try {
+      // ✅ CORRECCIÓN: Usar el nombre de método correcto en FirebaseService
+      await _firebaseService.markHabitAsInactiveInFirestore(userId, habitId); 
+      print('✅ [SyncRepo] Hábito $habitId marcado inactivo en Firebase a través de SyncRepo.');
+    } catch (e) {
+      print('❌ [SyncRepo] Error marcando hábito $habitId como inactivo en SyncRepo: $e');
+      rethrow;
     }
   }
 

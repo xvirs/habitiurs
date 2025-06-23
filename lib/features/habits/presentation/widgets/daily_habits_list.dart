@@ -1,21 +1,19 @@
-// lib/features/habits/presentation/widgets/daily_habits_list.dart - LIMPIO CON BOTÓN +
 import 'package:flutter/material.dart';
 import '../../domain/entities/habit.dart';
-import '../../domain/entities/habit_entry.dart';
-import '../widgets/habit_status_icon.dart';
+import 'habit_tile.dart';
 import '../../../../shared/enums/habit_status.dart';
 
 class DailyHabitsList extends StatelessWidget {
   final List<Habit> habits;
-  final List<HabitEntry> todayEntries;
+  final Map<int, HabitStatus> todayEntriesMap;
   final Function(int habitId, HabitStatus currentStatus) onToggle;
   final Function(int habitId) onDelete;
-  final VoidCallback onAdd; // SIMPLIFICADO: Solo callback sin parámetros
+  final VoidCallback onAdd;
 
   const DailyHabitsList({
     super.key,
     required this.habits,
-    required this.todayEntries,
+    required this.todayEntriesMap,
     required this.onToggle,
     required this.onDelete,
     required this.onAdd,
@@ -28,257 +26,182 @@ class DailyHabitsList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header con botón + a la derecha
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: Row(
-              children: [
-                Container(
-                  width: 3,
-                  height: 20,
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primary,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Icon(
-                  Icons.today,
-                  color: Theme.of(context).colorScheme.primary,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Hábitos de hoy',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                // Botón + reemplazando el número de hábitos
-                GestureDetector(
-                  onTap: onAdd,
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    decoration: BoxDecoration(
-                      color: Theme.of(context).colorScheme.primary,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.add,
-                      color: Colors.white,
-                      size: 20,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          // Lista de hábitos
+          _HeaderSection(onAdd: onAdd),
           Expanded(
             child: habits.isEmpty
-                ? _buildEmptyState(context)
-                : ClipRRect(
-                    borderRadius: const BorderRadius.vertical(
-                      bottom: Radius.circular(12),
-                    ),
-                    child: ListView.builder(
-                      itemCount: habits.length,
-                      itemBuilder: (context, index) {
-                        final habit = habits[index];
-
-                        HabitEntry? habitEntry;
-                        try {
-                          habitEntry = todayEntries.firstWhere(
-                            (e) => e.habitId == habit.id,
-                          );
-                        } catch (e) {
-                          habitEntry = null;
-                        }
-
-                        final status = habitEntry?.status ?? HabitStatus.pending;
-
-                        return GestureDetector(
-                          onTap: () => _handleToggle(habit.id!, status),
-                          child: Container(
-                            margin: EdgeInsets.only(
-                              bottom: index == habits.length - 1 ? 0 : 8,
-                            ),
-                            padding: EdgeInsets.fromLTRB(
-                              16,
-                              12,
-                              16,
-                              index == habits.length - 1 ? 16 : 12,
-                            ),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: _getSimplifiedBorderColor(status),
-                                width: 1,
-                              ),
-                              borderRadius: BorderRadius.circular(8),
-                              color: status == HabitStatus.completed 
-                                  ? Colors.green.withOpacity(0.05)
-                                  : null,
-                            ),
-                            child: Row(
-                              children: [
-                                GestureDetector(
-                                  onLongPress: () => onDelete(habit.id!),
-                                  child: Container(
-                                    width: 24,
-                                    height: 24,
-                                    decoration: BoxDecoration(
-                                      color: Theme.of(context).colorScheme.primary,
-                                      borderRadius: BorderRadius.circular(4),
-                                    ),
-                                    child: Center(
-                                      child: Text(
-                                        '${index + 1}',
-                                        style: const TextStyle(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 12,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Text(
-                                    habit.name,
-                                    style: TextStyle(
-                                      decoration: status == HabitStatus.completed
-                                          ? TextDecoration.lineThrough
-                                          : null,
-                                      color: status == HabitStatus.completed
-                                          ? Colors.grey[600]
-                                          : null,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                ),
-                                Container(
-                                  width: 32,
-                                  height: 32,
-                                  decoration: BoxDecoration(
-                                    color: _getToggleBackgroundColor(status),
-                                    border: Border.all(
-                                      color: _getToggleBorderColor(status),
-                                      width: 2,
-                                    ),
-                                    borderRadius: BorderRadius.circular(6),
-                                  ),
-                                  child: Center(
-                                    child: _getToggleIcon(status),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
+                ? const _EmptyStateWidget()
+                : _HabitsListView(
+                    habits: habits,
+                    todayEntriesMap: todayEntriesMap,
+                    onToggle: onToggle,
+                    onDelete: onDelete,
                   ),
           ),
         ],
       ),
     );
   }
+}
 
-  void _handleToggle(int habitId, HabitStatus currentStatus) {
-    onToggle(habitId, currentStatus);
-  }
+/// Header section con botón de agregar
+class _HeaderSection extends StatelessWidget {
+  final VoidCallback onAdd;
 
-  Widget _buildEmptyState(BuildContext context) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+  const _HeaderSection({required this.onAdd});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
         children: [
+          _VerticalAccent(color: Theme.of(context).colorScheme.primary),
+          const SizedBox(width: 12),
           Icon(
-            Icons.add_task,
-            size: 48,
-            color: Colors.grey[400],
+            Icons.today,
+            color: Theme.of(context).colorScheme.primary,
+            size: 20,
           ),
-          const SizedBox(height: 16),
-          Text(
-            'No tienes hábitos',
-            style: TextStyle(
-              fontSize: 16,
-              color: Colors.grey[600],
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Hábitos de hoy',
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    fontWeight: FontWeight.bold,
+                  ),
             ),
           ),
-          const SizedBox(height: 8),
-          Text(
-            'Toca el botón + para agregar tu primer hábito',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[400],
-            ),
-            textAlign: TextAlign.center,
-          ),
+          _AddButton(onPressed: onAdd),
         ],
       ),
     );
   }
+}
 
-  // Métodos de colores (sin cambios)
-  Color _getSimplifiedBorderColor(HabitStatus status) {
-    switch (status) {
-      case HabitStatus.completed:
-        return Colors.green.withOpacity(0.3);
-      case HabitStatus.pending:
-        return Colors.grey.withOpacity(0.3);
-      case HabitStatus.skipped:
-        return Colors.red.withOpacity(0.3);
-    }
+/// Acento vertical decorativo
+class _VerticalAccent extends StatelessWidget {
+  final Color color;
+
+  const _VerticalAccent({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 3,
+      height: 20,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2),
+      ),
+    );
   }
+}
 
-  Color _getToggleBackgroundColor(HabitStatus status) {
-    switch (status) {
-      case HabitStatus.completed:
-        return Colors.green[500]!;
-      case HabitStatus.pending:
-        return Colors.grey[100]!;
-      case HabitStatus.skipped:
-        return Colors.red[400]!;
-    }
+/// Botón de agregar optimizado
+class _AddButton extends StatelessWidget {
+  final VoidCallback onPressed;
+
+  const _AddButton({required this.onPressed});
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: Theme.of(context).colorScheme.primary,
+      borderRadius: BorderRadius.circular(8),
+      child: InkWell(
+        onTap: onPressed,
+        borderRadius: BorderRadius.circular(8),
+        child: const SizedBox(
+          width: 32,
+          height: 32,
+          child: Icon(
+            Icons.add,
+            color: Colors.white,
+            size: 20,
+          ),
+        ),
+      ),
+    );
   }
+}
 
-  Color _getToggleBorderColor(HabitStatus status) {
-    switch (status) {
-      case HabitStatus.completed:
-        return Colors.green[600]!;
-      case HabitStatus.pending:
-        return Colors.grey[400]!;
-      case HabitStatus.skipped:
-        return Colors.red[500]!;
-    }
+/// Lista de hábitos optimizada con ListView.builder
+class _HabitsListView extends StatelessWidget {
+  final List<Habit> habits;
+  final Map<int, HabitStatus> todayEntriesMap;
+  final Function(int habitId, HabitStatus currentStatus) onToggle;
+  final Function(int habitId) onDelete;
+
+  const _HabitsListView({
+    required this.habits,
+    required this.todayEntriesMap,
+    required this.onToggle,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
+      child: ListView.separated(
+        padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        itemCount: habits.length,
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        itemBuilder: (context, index) {
+          final habit = habits[index];
+          final status = todayEntriesMap[habit.id!] ?? HabitStatus.pending;
+
+          return HabitTile(
+            habit: habit,
+            index: index,
+            status: status,
+            onToggle: () => onToggle(habit.id!, status),
+            onDelete: () => onDelete(habit.id!),
+          );
+        },
+      ),
+    );
   }
+}
 
-  Widget _getToggleIcon(HabitStatus status) {
-    switch (status) {
-      case HabitStatus.completed:
-        return const Icon(
-          Icons.check,
-          color: Colors.white,
-          size: 18,
-        );
-      case HabitStatus.pending:
-        return Icon(
-          Icons.add,
-          color: Colors.grey[600],
-          size: 18,
-        );
-      case HabitStatus.skipped:
-        return const Icon(
-          Icons.close,
-          color: Colors.white,
-          size: 18,
-        );
-    }
+/// Estado vacío
+class _EmptyStateWidget extends StatelessWidget {
+  const _EmptyStateWidget();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.add_task,
+              size: 48,
+              color: Colors.grey[400],
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'No tienes hábitos',
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey[600],
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Toca el botón + para agregar tu primer hábito',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[400],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
