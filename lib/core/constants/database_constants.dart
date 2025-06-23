@@ -1,7 +1,7 @@
 // lib/core/constants/database_constants.dart
 class DatabaseConstants {
   static const String databaseName = 'habitiurs.db';
-  static const int databaseVersion = 3;
+  static const int databaseVersion = 4; // ✅ MODIFICADO: Incrementar la versión de la base de datos
 
   // Table names
   static const String habitsTable = 'habits';
@@ -23,17 +23,20 @@ class DatabaseConstants {
       habit_id INTEGER NOT NULL,
       date TEXT NOT NULL,
       status INTEGER NOT NULL DEFAULT 0,
+      last_modified TEXT, -- ✅ NUEVO: Columna para el timestamp de última modificación
       FOREIGN KEY (habit_id) REFERENCES $habitsTable (id),
       UNIQUE(habit_id, date)
     )
   ''';
 
+  // Esta tabla temporal también debe reflejar el nuevo esquema
   static const String createTempHabitEntriesTable = '''
     CREATE TABLE habit_entries_new (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       habit_id INTEGER NOT NULL,
       date TEXT NOT NULL,
       status INTEGER NOT NULL DEFAULT 0,
+      last_modified TEXT, -- ✅ NUEVO: Columna para el timestamp de última modificación
       FOREIGN KEY (habit_id) REFERENCES $habitsTable (id),
       UNIQUE(habit_id, date)
     )
@@ -51,8 +54,15 @@ class DatabaseConstants {
     WHERE typeof(status) = 'text'
   ''';
 
+  // Esta query de copia de datos también debe incluir el nuevo campo
+  // Si estás migrando datos antiguos que no tienen 'last_modified', puedes poner NULL
   static const String copyHabitEntriesData = '''
-    INSERT INTO habit_entries_new (id, habit_id, date, status)
-    SELECT id, habit_id, date, status FROM habit_entries
+    INSERT INTO habit_entries_new (id, habit_id, date, status, last_modified) -- ✅ MODIFICADO
+    SELECT id, habit_id, date, status, NULL FROM habit_entries -- ✅ MODIFICADO: Puedes poner NULL para datos antiguos
+  ''';
+
+  // ✅ NUEVO: Query para añadir la columna 'last_modified' si es una migración incremental
+  static const String addLastModifiedColumnToHabitEntries = '''
+    ALTER TABLE $habitEntriesTable ADD COLUMN last_modified TEXT;
   ''';
 }

@@ -80,23 +80,40 @@ class GeminiService {
   // ✅ PROMPT BUILDERS (movidos desde AIRepository)
   String _buildHabitEvaluationPrompt(String habit) {
     return '''
-Eres un experto en formación de hábitos. Evalúa este hábito propuesto:
+Eres un experto en el seguimiento y la asistencia de hábitos mediante IA. Tu enfoque es ayudar al usuario a formular hábitos que sean fáciles de **trakear** y mantener diariamente, **sin que la aplicación se convierta en una herramienta de gestión de tareas o horarios**. Evalúa el siguiente hábito propuesto.
 
 HÁBITO: "$habit"
 
-Evalúa según estos criterios:
-1. Especificidad (¿es específico y medible?)
-2. Viabilidad (¿es realista para principiantes?)
-3. Claridad temporal (¿tiene frecuencia/horario claro?)
-4. Motivación intrínseca (¿es personalmente significativo?)
+Criterios de Evaluación:
+1.  **Claridad:** ¿Es el hábito fácil de entender y recordar para marcar su cumplimiento diario?
+2.  **Viabilidad:** ¿Es realista y alcanzable para una persona común, facilitando el seguimiento constante?
+3.  **Simplicidad:** ¿El hábito es conciso y directo, sin detalles excesivos o que requieran planificación de tiempo específica?
+4.  **Enfoque en el Tracking:** ¿El hábito es adecuado para un seguimiento binario (hecho/no hecho) sin complicaciones?
 
-Responde en máximo 3 líneas con:
-✅ Fortalezas principales
-💡 Sugerencia específica de mejora
-🎯 Probabilidad de éxito: Alta/Media/Baja
+Instrucciones para la Respuesta:
+* **Formato de Salida:** Responde siempre en **exactamente 2 líneas cortas y concisas**.
+* **Contenido:**
+    * **Línea 1:**
+        * Si el hábito es excelente bajo los criterios, coloca: "Es un excelente hábito para trackear." 
+        * Si hay una fortaleza clave o una sugerencia breve y muy útil (que mejore significativamente la efectividad o conveniencia para el tracking), usa "✅" o "💡". **No es obligatorio dar una sugerencia o fortaleza si no hay algo realmente valioso que aportar.**
+        * Prioriza una sola idea por línea. Evita cualquier mención de horarios o planificación.
+    * **Línea 2:** Siempre incluye la "🎯 Probabilidad de éxito: [Alta/Media/Baja]". Esta línea debe ser la última y no debe contener otra información.
+* **Tono:** Sé directo, objetivo y realista. Solo proporciona insights si suman a la claridad y facilidad de seguimiento diario.
 
-Mantén un tono motivador pero realista.
+Ejemplos de Formato de Salida (adaptado según necesidad):
+-   Es un excelente hábito para trackear.
+-   🎯 Probabilidad de éxito: Alta.
+
+-   ✅ Muy claro y viable para el seguimiento.
+-   🎯 Probabilidad de éxito: Alta.
+
+-   💡 Simplifica la acción para facilitar el marcado diario.
+-   🎯 Probabilidad de éxito: Media.
+
+-   Necesita ser más conciso para el tracking.
+-   🎯 Probabilidad de éxito: Baja.
 ''';
+
   }
 
   Future<bool> checkConnectivity() async {

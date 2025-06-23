@@ -1,10 +1,10 @@
-// lib/features/habits/data/datasources/habit_local_datasource.dart - MODIFICADO (QUITADO permanentlyDeleteHabit)
+// lib/features/habits/data/datasources/habit_local_datasource.dart - MODIFICADO (QUITADO permanentlyDeleteHabit, AÑADIDO last_modified en entries)
 
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 import '../models/habit_model.dart';
 import '../models/habit_entry_model.dart';
-import '../../../../shared/enums/habit_status.dart';
+import '../../../../shared/enums/habit_status.dart'; // Asegúrate de que este import está aquí
 
 abstract class HabitLocalDataSource {
   Future<List<HabitModel>> getAllHabits({bool includeInactive = false}); 
@@ -106,7 +106,7 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
 
   // @override
   // Future<void> permanentlyDeleteHabit(int id) async { // ✅ ELIMINADO la implementación
-  //   // ... (código anterior)
+  //   // Este método se elimina completamente ya que soft delete será el estándar.
   // }
 
   @override
@@ -150,9 +150,14 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
     final db = await _databaseHelper.database;
     
     try {
+      // ✅ MODIFICADO: Asegurar que last_modified se incluye
+      final entryJson = entry.toJson();
+      // Si el modelo no trae lastModified (ej. una nueva entrada), usa DateTime.now()
+      entryJson['last_modified'] = entry.lastModified?.toIso8601String() ?? DateTime.now().toIso8601String(); 
+
       final result = await db.insert(
         'habit_entries',
-        entry.toJson(),
+        entryJson, // Usar el JSON con el timestamp
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
       
@@ -170,9 +175,13 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
     final dateStr = entry.date.toIso8601String().split('T')[0];
     
     try {
+      // ✅ MODIFICADO: Asegurar que last_modified se actualiza
+      final entryJson = entry.toJson();
+      entryJson['last_modified'] = DateTime.now().toIso8601String(); // Siempre actualizar al momento actual al modificar
+
       final result = await db.update(
         'habit_entries',
-        entry.toJson(),
+        entryJson, // Usar el JSON con el timestamp actualizado
         where: 'habit_id = ? AND date = ?',
         whereArgs: [entry.habitId, dateStr],
       );

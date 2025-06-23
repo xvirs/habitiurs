@@ -1,5 +1,9 @@
-// lib/features/habits/presentation/widgets/add_habit_bottom_sheet.dart - OPTIMIZADO
+// lib/features/habits/presentation/widgets/add_habit_bottom_sheet.dart - OPTIMIZADO y CON IA REAL
 import 'package:flutter/material.dart';
+import '../../../../core/di/injection_container.dart'; // Importar para acceder a AIRepository
+import '../../../../core/ai/repositories/ai_repository.dart'; // Importar el repositorio de IA
+import '../../../../core/ai/models/ai_request_model.dart'; // Para AIRequestType
+import '../../../../core/ai/models/ai_response_model.dart'; // Para AIResponse
 
 class AddHabitBottomSheet extends StatefulWidget {
   final Function(String) onAdd;
@@ -44,15 +48,20 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   bool _showEvaluation = false;
   String _evaluationText = '';
 
+  // Dependencia de IA
+  late final AIRepository _aiRepository; // ✅ NUEVO: Referencia al repositorio de IA
+
   // Constantes
   static const Duration _animationDuration = Duration(milliseconds: 250);
-  static const Duration _evaluationDelay = Duration(seconds: 2);
+  // static const Duration _evaluationDelay = Duration(seconds: 2); // Ya no es necesario, usaremos la IA real
   static const int _minHabitLength = 3;
+
   @override
   void initState() {
     super.initState();
     _initializeControllers();
     _setupAnimation();
+    _aiRepository = InjectionContainer().aiRepository; // ✅ NUEVO: Inicializar el repositorio de IA
   }
 
   void _initializeControllers() {
@@ -124,18 +133,40 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
     setState(() {
       _isEvaluating = true;
       _showEvaluation = true;
+      _evaluationText = 'Analizando...'; // Mostrar un texto de carga inicial
     });
     
     _animationController.forward();
 
-    // Simular evaluación de IA
-    await Future.delayed(_evaluationDelay);
-    
-    if (mounted) {
-      setState(() {
-        _isEvaluating = false;
-        _evaluationText = _MockEvaluationGenerator.generate(_controller.text.trim());
-      });
+    String habitDescription = _controller.text.trim();
+    AIResponse aiResponse;
+
+    try {
+      // ✅ CAMBIO CLAVE: Llamar a la IA real
+      aiResponse = await _aiRepository.evaluateHabit(habitDescription);
+      
+      if (mounted) {
+        setState(() {
+          _evaluationText = aiResponse.content; // Mostrar la respuesta de la IA
+          _isEvaluating = false;
+        });
+      }
+    } catch (e) {
+      print('❌ [AddHabitBottomSheet] Error al evaluar hábito con IA: $e');
+      if (mounted) {
+        setState(() {
+          _evaluationText = 'Error al obtener evaluación de IA. Intenta de nuevo.'; // Mensaje de error
+          _isEvaluating = false;
+        });
+      }
+    } finally {
+      // Asegurarse de que la animación termina y el estado es coherente
+      if (mounted && _animationController.status == AnimationStatus.forward) {
+         await _animationController.forward(); // Completar la animación si no lo hizo
+      }
+      if (mounted && _animationController.status == AnimationStatus.completed) {
+        // Nada que hacer, ya está adelante
+      }
     }
   }
 
@@ -352,6 +383,7 @@ class _HeaderText extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[600],
+              height: 1.2,
             ),
           ),
         ],

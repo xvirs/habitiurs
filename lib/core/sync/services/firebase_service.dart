@@ -1,4 +1,4 @@
-// lib/core/sync/services/firebase_service.dart - MODIFICADO (NOMBRE DE MÉTODO CORREGIDO)
+// lib/core/sync/services/firebase_service.dart - MODIFICADO (TIMESTAMP DE SERVIDOR para last_modified en ENTRADAS)
 
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:habitiurs/core/auth/models/user_preferences.dart';
@@ -53,21 +53,18 @@ class FirebaseService {
           .doc(userId)
           .collection(_habitsCollection);
 
-      // CAMBIO CRÍTICO: No limpiar hábitos existentes, solo hacer merge
       for (final habit in habits) {
         final habitId = habit['id'].toString();
         final docRef = userHabitsRef.doc(habitId);
         
-        // Usar merge para no sobrescribir datos de otros dispositivos
-        // Esto incluye el campo 'is_active'
         batch.set(docRef, {
           'id': habit['id'],
           'name': habit['name'],
           'created_at': habit['created_at'],
-          'is_active': habit['is_active'], // Asegurarse de que is_active se guarda
+          'is_active': habit['is_active'],
           'user_id': userId,
           'last_sync': FieldValue.serverTimestamp(),
-          'device_sync_time': DateTime.now().toIso8601String(), // Timestamp del dispositivo
+          'device_sync_time': DateTime.now().toIso8601String(),
         }, SetOptions(merge: true));
       }
 
@@ -84,7 +81,6 @@ class FirebaseService {
           .collection(_usersCollection)
           .doc(userId)
           .collection(_habitsCollection)
-          // .where('is_active', isEqualTo: 1) // ELIMINAR ESTA LÍNEA si existía para obtener todos los hábitos
           .orderBy('created_at')
           .get();
 
@@ -107,7 +103,6 @@ class FirebaseService {
     }
   }
 
-  // ✅ CORREGIDO: Renombrado de 'deleteHabitFromFirestore' a 'markHabitAsInactiveInFirestore'
   Future<void> markHabitAsInactiveInFirestore(String userId, int habitId) async {
     try {
       await _firestore
@@ -115,14 +110,14 @@ class FirebaseService {
           .doc(userId)
           .collection(_habitsCollection)
           .doc(habitId.toString())
-          .update({'is_active': 0, 'last_sync': FieldValue.serverTimestamp()}); // Marca como inactivo
+          .update({'is_active': 0, 'last_sync': FieldValue.serverTimestamp()});
       print('✅ [Firebase] Hábito marcado como inactivo en Firestore: $habitId');
     } catch (e) {
       throw FirebaseException('Error marcando hábito como inactivo en Firestore: $e');
     }
   }
 
-  // HABIT ENTRIES SYNC - CORREGIDO PARA MULTI-DISPOSITIVO
+  // ✅ HABIT ENTRIES SYNC - MODIFICADO (last_modified con FieldValue.serverTimestamp())
   Future<void> syncHabitEntries(String userId, List<Map<String, dynamic>> entries) async {
     try {
       final batch = _firestore.batch();
@@ -131,18 +126,15 @@ class FirebaseService {
           .doc(userId)
           .collection(_habitEntriesCollection);
 
-      // Sync por chunks para evitar límites de Firestore
       const chunkSize = 500;
       
       for (int i = 0; i < entries.length; i += chunkSize) {
         final chunk = entries.skip(i).take(chunkSize).toList();
         
         for (final entry in chunk) {
-          // CLAVE ÚNICA: habitId_fecha para evitar duplicados
           final entryKey = '${entry['habit_id']}_${entry['date']}';
           final docRef = userEntriesRef.doc(entryKey);
           
-          // Usar merge para preservar datos de otros dispositivos
           batch.set(docRef, {
             'habit_id': entry['habit_id'],
             'date': entry['date'],
@@ -151,6 +143,7 @@ class FirebaseService {
             'user_id': userId,
             'last_sync': FieldValue.serverTimestamp(),
             'device_sync_time': DateTime.now().toIso8601String(),
+            'last_modified': FieldValue.serverTimestamp(), // ✅ CAMBIO CLAVE: Usar timestamp del servidor
           }, SetOptions(merge: true));
         }
         
@@ -162,7 +155,7 @@ class FirebaseService {
     }
   }
 
-  // MEJORADO: Descarga de entradas con filtro por fecha
+  // ✅ MEJORADO: Descarga de entradas con lectura de last_modified (que ahora será un Timestamp)
   Future<List<Map<String, dynamic>>> getHabitEntries(String userId, {DateTime? since}) async {
     try {
       Query query = _firestore
@@ -170,9 +163,8 @@ class FirebaseService {
           .doc(userId)
           .collection(_habitEntriesCollection);
 
-      // CORRECCIÓN: Filtrar por fecha de la entrada, no por last_sync
       if (since != null) {
-        final sinceString = since.toIso8601String().split('T')[0]; // Solo fecha
+        final sinceString = since.toIso8601String().split('T')[0]; 
         query = query.where('date', isGreaterThanOrEqualTo: sinceString);
       }
 
@@ -187,6 +179,7 @@ class FirebaseService {
           'entry_id': data['entry_id'],
           'last_sync': data['last_sync'],
           'firestore_id': doc.id,
+          'last_modified': (data['last_modified'] as Timestamp?)?.toDate().toIso8601String(), // ✅ Leer como Timestamp y convertir a String ISO
         };
       }).toList();
 
@@ -197,7 +190,6 @@ class FirebaseService {
     }
   }
 
-  // Método para obtener el último timestamp de sincronización
   Future<DateTime?> getLastSyncTimestamp(String userId, String collectionType) async {
     try {
       String collection = collectionType == 'habits' ? _habitsCollection : _habitEntriesCollection;
@@ -222,14 +214,12 @@ class FirebaseService {
     }
   }
 
-  // Verificar si hay conflictos de datos
   Future<bool> hasConflicts(String userId, String collectionType, DateTime localLastSync) async {
     try {
       final remoteLastSync = await getLastSyncTimestamp(userId, collectionType);
       
       if (remoteLastSync == null) return false;
       
-      // Hay conflicto si el timestamp remoto es más nuevo que el local
       return remoteLastSync.isAfter(localLastSync);
     } catch (e) {
       print('⚠️ [Firebase] Error verificando conflictos: $e');
@@ -246,11 +236,9 @@ class FirebaseService {
           .set(operation.toJson());
     } catch (e) {
       print('⚠️ Error logging sync operation: $e');
-      // No lanzar excepción para no interrumpir el flujo principal
     }
   }
 
-  // UTILITIES
   Future<DateTime> getServerTimestamp() async {
     try {
       final doc = await _firestore.collection('_timestamp').add({
@@ -258,12 +246,12 @@ class FirebaseService {
       });
       
       final snapshot = await doc.get();
-      await doc.delete(); // Limpiar
+      await doc.delete(); 
       
       final timestamp = snapshot.data()?['timestamp'] as Timestamp?;
       return timestamp?.toDate() ?? DateTime.now();
     } catch (e) {
-      return DateTime.now(); // Fallback
+      return DateTime.now();
     }
   }
 
