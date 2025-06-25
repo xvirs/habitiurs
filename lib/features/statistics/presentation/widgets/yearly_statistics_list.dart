@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/statistics.dart';
+import 'dart:math' as math;
 
 class YearlyStatisticsList extends StatelessWidget {
   final List<MonthlyStatistics> statistics;
-  
+
   const YearlyStatisticsList({
     super.key,
     required this.statistics,
@@ -14,8 +15,8 @@ class YearlyStatisticsList extends StatelessWidget {
     if (statistics.isEmpty) {
       return Card(
         margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-        child: SizedBox(
-          height: 200, // Altura fija para que el mensaje "no hay datos" se vea
+        child: const SizedBox(
+          height: 200,
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -23,13 +24,13 @@ class YearlyStatisticsList extends StatelessWidget {
                 Icon(
                   Icons.bar_chart,
                   size: 48,
-                  color: Colors.grey[400],
+                  color: Colors.grey,
                 ),
-                const SizedBox(height: 16),
+                SizedBox(height: 16),
                 Text(
-                  'No hay datos disponibles para el año', // Mensaje más específico
+                  'No hay datos disponibles para el año',
                   style: TextStyle(
-                    color: Colors.grey[600],
+                    color: Colors.grey,
                     fontSize: 16,
                   ),
                 ),
@@ -40,6 +41,7 @@ class YearlyStatisticsList extends StatelessWidget {
       );
     }
 
+    const double estimatedMonthItemHeight = 50.0;
     final bool shouldScrollInternally = statistics.length > 3;
 
     return Card(
@@ -51,8 +53,13 @@ class YearlyStatisticsList extends StatelessWidget {
           _buildHeader(context),
           shouldScrollInternally
               ? SizedBox(
-                  height: 200,
+                  height: math.min(
+                    statistics.length * estimatedMonthItemHeight,
+                    200.0,
+                  ),
                   child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const ClampingScrollPhysics(),
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     itemCount: statistics.length,
                     itemBuilder: (context, index) {
@@ -65,7 +72,7 @@ class YearlyStatisticsList extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(horizontal: 16),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
-                    children: statistics.map((monthStats) => 
+                    children: statistics.map((monthStats) =>
                       _buildMonthItem(context, monthStats)
                     ).toList(),
                   ),

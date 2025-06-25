@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/statistics/presentation/widgets/yearly_statistics_list.dart';
-import '../../../../core/di/injection_container.dart';
 import '../bloc/statistics_bloc.dart';
 import '../bloc/statistics_event.dart';
 import '../bloc/statistics_state.dart';
@@ -13,28 +12,14 @@ class StatisticsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => InjectionContainer().statisticsBloc..add(LoadStatistics()),
-      child: const StatisticsContent(),
-    );
-  }
-}
-
-class StatisticsContent extends StatelessWidget {
-  const StatisticsContent({super.key});
-
-  @override
-  Widget build(BuildContext context) {
     return BlocBuilder<StatisticsBloc, StatisticsState>(
       builder: (context, state) {
-        // --- DIAGNÓSTICO: Imprime el estado actual del BLoC ---
         print('📊 StatisticsPage - Estado actual: $state');
         if (state is StatisticsLoaded) {
           print('📊 StatisticsPage - currentMonth: ${state.currentMonth.monthName}');
           print('📊 StatisticsPage - currentYear count: ${state.currentYear.length}');
           print('📊 StatisticsPage - historicalData count: ${state.historicalData.length}');
         }
-        // --- FIN DIAGNÓSTICO ---
 
         if (state is StatisticsLoading) {
           return const Center(child: CircularProgressIndicator());
@@ -74,30 +59,25 @@ class StatisticsContent extends StatelessWidget {
         }
 
         if (state is StatisticsLoaded) {
-          return RefreshIndicator(
-            onRefresh: () async {
-              context.read<StatisticsBloc>().add(RefreshStatistics());
-            },
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  // CurrentMonthSummary se ajusta a su contenido
-                  CurrentMonthSummary(statistics: state.currentMonth),
-
-                  // YearlyStatisticsList y HistoricalChart distribuyen el espacio restante
-                  Flexible(
-                    flex: 1, // Proporción de espacio para la lista anual
-                    child: YearlyStatisticsList(statistics: state.currentYear),
-                  ),
-
-                  Flexible(
-                    flex: 2, // Proporción de espacio para el gráfico histórico (le damos más)
-                    child: HistoricalChart(data: state.historicalData),
-                  ),
-                  const SizedBox(height: 16),
-                ],
+          return Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                context.read<StatisticsBloc>().add(RefreshStatistics());
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.only(top: 16.0),
+                      child: CurrentMonthSummary(statistics: state.currentMonth),
+                    ),
+                    YearlyStatisticsList(statistics: state.currentYear),
+                    HistoricalChart(data: state.historicalData),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
           );

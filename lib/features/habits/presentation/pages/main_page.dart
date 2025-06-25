@@ -1,14 +1,17 @@
-// lib/features/habits/presentation/pages/main_page.dart - RESTAURADO A SU ESTADO PREVIO
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
+import 'package:habitiurs/features/habits/presentation/bloc/habit_bloc.dart';
+import 'package:habitiurs/features/statistics/presentation/bloc/statistics_bloc.dart';
 import '../../../../shared/widgets/user_drawer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import 'habits_page.dart';
 import '../../../statistics/presentation/pages/statistics_page.dart';
 import '../../../ai_assistant/presentation/pages/ai_assistant_page.dart';
-import '../../../statistics/presentation/bloc/statistics_bloc.dart';
+import '../../../habits/presentation/bloc/habit_event.dart';
 import '../../../statistics/presentation/bloc/statistics_event.dart';
+import '../../../ai_assistant/presentation/bloc/ai_assistant_event.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -19,8 +22,6 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 1;
-  
-  final GlobalKey<HabitsPageState> _habitsPageKey = GlobalKey<HabitsPageState>();
 
   final List<String> _pageTitles = [
     'Asistente IA',
@@ -31,13 +32,29 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _loadInitialDataForCurrentTab(_currentIndex);
+    });
+  }
+
+  void _loadInitialDataForCurrentTab(int index) {
+    switch (index) {
+      case 0:
+        context.read<AIAssistantBloc>().add(LoadAIAssistantData());
+        break;
+      case 1:
+        context.read<HabitBloc>().add(LoadHabits());
+        break;
+      case 2:
+        context.read<StatisticsBloc>().add(LoadStatistics());
+        break;
+    }
   }
 
   @override
   void dispose() {
     super.dispose();
   }
-
 
   @override
   Widget build(BuildContext context) {
@@ -59,26 +76,26 @@ class _MainPageState extends State<MainPage> {
           ),
         ],
       ),
-      
       drawer: UserDrawer(
         onDataSynced: _onDataSynced,
       ),
-      
       body: IndexedStack(
         index: _currentIndex,
-        children: [
-          const AIAssistantPage(),
-          HabitsPage(key: _habitsPageKey),
-          const StatisticsPage(),
+        children: const [
+          AIAssistantPage(),
+          HabitsPage(),
+          StatisticsPage(),
         ],
       ),
-      
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
-            _currentIndex = index;
+            if (_currentIndex != index) {
+              _currentIndex = index;
+              _refreshDataForTab(index);
+            }
           });
         },
         items: const [
@@ -102,18 +119,23 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
+  void _refreshDataForTab(int index) {
+    switch (index) {
+      case 0:
+        context.read<AIAssistantBloc>().add(RefreshAIRecommendation());
+        break;
+      case 1:
+        context.read<HabitBloc>().add(PullToRefresh());
+        break;
+      case 2:
+        context.read<StatisticsBloc>().add(RefreshStatistics());
+        break;
+    }
+  }
+
   void _onDataSynced() {
     print('🔄 [MainPage] Recibido callback de sincronización');
-    
-    if (_currentIndex == 1 && _habitsPageKey.currentState != null) {
-      print('✅ [MainPage] Refrescando HabitsPage...');
-      _habitsPageKey.currentState!.refreshData();
-    }
-    
-    if (_currentIndex == 2) {
-      print('✅ [MainPage] Refrescando StatisticsPage...');
-      context.read<StatisticsBloc>().add(RefreshStatistics());
-    }
+    _refreshDataForTab(_currentIndex);
   }
 
   Widget _buildUserAvatar() {
@@ -131,7 +153,7 @@ class _MainPageState extends State<MainPage> {
 
         final user = state.user;
         final isGuest = user.isGuest;
-        
+
         return _buildAvatarContainer(
           photoURL: user.photoURL,
           child: user.photoURL == null
@@ -165,7 +187,7 @@ class _MainPageState extends State<MainPage> {
         child: CircleAvatar(
           radius: 18,
           backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          backgroundImage: photoURL != null 
+          backgroundImage: photoURL != null
               ? NetworkImage(photoURL)
               : null,
           child: child,
