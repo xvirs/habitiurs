@@ -1,4 +1,3 @@
-// lib/features/statistics/data/models/statistics_model.dart
 import '../../domain/entities/statistics.dart';
 
 class MonthlyStatisticsModel extends MonthlyStatistics {
@@ -20,7 +19,7 @@ class MonthlyStatisticsModel extends MonthlyStatistics {
       completedCount: map['completed_count'] as int,
       skippedCount: map['skipped_count'] as int,
       pendingCount: map['pending_count'] as int,
-      weeks: [], // Se construyen por separado
+      weeks: [],
     );
   }
 
@@ -72,7 +71,6 @@ class HistoricalDataPointModel extends HistoricalDataPoint {
     final skipped = map['skipped_count'] as int;
     final total = completed + skipped;
     final rate = total > 0 ? (completed / total) * 100 : 0.0;
-
     return HistoricalDataPointModel(
       date: DateTime.parse(map['date'] as String),
       completedCount: completed,

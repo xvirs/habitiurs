@@ -1,4 +1,3 @@
-// lib/features/statistics/domain/entities/statistics.dart
 class MonthlyStatistics {
   final int year;
   final int month;

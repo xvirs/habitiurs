@@ -1,4 +1,3 @@
-// lib/features/statistics/presentation/widgets/ai_statistics_insights.dart - CORREGIDO
 import 'package:flutter/material.dart';
 import 'package:habitiurs/core/ai/models/ai_context_builder.dart';
 import '../../../../core/di/injection_container.dart';
@@ -10,11 +9,11 @@ class AIStatisticsInsights extends StatefulWidget {
   final List<HistoricalDataPoint> historicalData;
 
   const AIStatisticsInsights({
-    Key? key,
+    super.key,
     required this.currentMonth,
     required this.yearlyStats,
     required this.historicalData,
-  }) : super(key: key);
+  });
 
   @override
   State<AIStatisticsInsights> createState() => _AIStatisticsInsightsState();
@@ -36,27 +35,8 @@ class _AIStatisticsInsightsState extends State<AIStatisticsInsights> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header
-            Row(
-              children: [
-                Icon(
-                  Icons.analytics,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Insights de IA',
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _buildHeader(context),
             const SizedBox(height: 16),
-
-            // Análisis de Tendencias
             _buildInsightSection(
               title: 'Análisis de Tendencias',
               icon: Icons.trending_up,
@@ -65,10 +45,7 @@ class _AIStatisticsInsightsState extends State<AIStatisticsInsights> {
               onRefresh: _analyzeTrends,
               color: Colors.green,
             ),
-
             const SizedBox(height: 12),
-
-            // Predicción de Éxito
             _buildInsightSection(
               title: 'Predicción de Éxito',
               icon: Icons.psychology,
@@ -77,33 +54,30 @@ class _AIStatisticsInsightsState extends State<AIStatisticsInsights> {
               onRefresh: _predictSuccess,
               color: Colors.blue,
             ),
-
-            if (_error != null) ...[
-              const SizedBox(height: 12),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red[200]!),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.warning, color: Colors.red[600]),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: TextStyle(color: Colors.red[700]),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
+            if (_error != null) _buildErrorDisplay(),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          Icons.analytics,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Insights de IA',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -148,28 +122,7 @@ class _AIStatisticsInsightsState extends State<AIStatisticsInsights> {
           ),
           const SizedBox(height: 8),
           if (isLoading)
-            Center(
-              child: Column(
-                children: [
-                  SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(color[600]!),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Analizando...',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: color[600],
-                    ),
-                  ),
-                ],
-              ),
-            )
+            _buildLoadingIndicator(color)
           else if (content != null)
             Text(
               content,
@@ -180,16 +133,73 @@ class _AIStatisticsInsightsState extends State<AIStatisticsInsights> {
               ),
             )
           else
-            Text(
-              'Toca actualizar para obtener insights',
-              style: TextStyle(
-                color: color[500],
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
+            _buildInitialMessage(color),
         ],
       ),
+    );
+  }
+
+  Widget _buildLoadingIndicator(MaterialColor color) {
+    return Center(
+      child: Column(
+        children: [
+          SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(color[600]!),
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Analizando...',
+            style: TextStyle(
+              fontSize: 11,
+              color: color[600],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInitialMessage(MaterialColor color) {
+    return Text(
+      'Toca actualizar para obtener insights',
+      style: TextStyle(
+        color: color[500],
+        fontSize: 11,
+        fontStyle: FontStyle.italic,
+      ),
+    );
+  }
+
+  Widget _buildErrorDisplay() {
+    return Column(
+      children: [
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.red[50],
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: Colors.red[200]!),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.warning, color: Colors.red[600]),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  _error!,
+                  style: TextStyle(color: Colors.red[700]),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -198,33 +208,28 @@ class _AIStatisticsInsightsState extends State<AIStatisticsInsights> {
       _isLoadingTrends = true;
       _error = null;
     });
-
     try {
       final aiRepository = InjectionContainer().aiRepository;
-      
-      // Construir contexto para análisis de estadísticas
       final context = AIContextBuilder.buildStatsAnalysisContext(
         monthlyCompletionRate: widget.currentMonth.completionRate,
-        weeklyRates: widget.currentMonth.weeks
-            .map((w) => w.completionRate)
-            .toList(),
-        totalDaysTracked: _calculateTotalDays(),
+        weeklyRates: widget.currentMonth.weeks.map((w) => w.completionRate).toList(),
+        totalDaysTracked: _calculateTotalDaysTracked(),
         habitPerformance: _calculateHabitPerformance(),
       );
-
-      // ✅ CORREGIDO: Usar el método correcto
       final response = await aiRepository.analyzeStatisticsTrends(context);
-      
-      setState(() {
-        _trendsInsight = response.content;
-        _isLoadingTrends = false;
-      });
-
+      if (mounted) {
+        setState(() {
+          _trendsInsight = response.content;
+          _isLoadingTrends = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Error analizando tendencias';
-        _isLoadingTrends = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Error analizando tendencias';
+          _isLoadingTrends = false;
+        });
+      }
     }
   }
 
@@ -233,46 +238,45 @@ class _AIStatisticsInsightsState extends State<AIStatisticsInsights> {
       _isLoadingPrediction = true;
       _error = null;
     });
-
     try {
       final aiRepository = InjectionContainer().aiRepository;
-      
-      // Construir contexto para predicción
       final context = AIContextBuilder.buildPredictionContext(
-        historicalData: widget.historicalData
-            .map((point) => {
-              'date': point.date.toIso8601String(),
-              'completion_rate': point.completionRate,
-              'completed_count': point.completedCount,
-              'skipped_count': point.skippedCount,
-            })
-            .toList(),
-        currentHabits: [], // TODO: Obtener de repository
+        historicalData: widget.historicalData.map((point) => {
+          'date': point.date.toIso8601String(),
+          'completion_rate': point.completionRate,
+          'completed_count': point.completedCount,
+          'skipped_count': point.skippedCount,
+        }).toList(),
+        currentHabits: _getCurrentHabitNames(),
         currentTrend: _calculateCurrentTrend(),
       );
-
-      // ✅ CORREGIDO: Usar el método correcto
       final response = await aiRepository.predictHabitSuccess(context);
-      
-      setState(() {
-        _predictionInsight = response.content;
-        _isLoadingPrediction = false;
-      });
-
+      if (mounted) {
+        setState(() {
+          _predictionInsight = response.content;
+          _isLoadingPrediction = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _error = 'Error generando predicción';
-        _isLoadingPrediction = false;
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Error generando predicción';
+          _isLoadingPrediction = false;
+        });
+      }
     }
   }
 
-  int _calculateTotalDays() {
-    return widget.currentMonth.totalHabits;
+  int _calculateTotalDaysTracked() {
+    if (widget.historicalData.isEmpty) return 0;
+    // Suma los completedCount y skippedCount de todos los puntos históricos
+    return widget.historicalData.fold(0, (sum, point) => sum + point.completedCount + point.skippedCount);
   }
 
   Map<String, double> _calculateHabitPerformance() {
-    // Simplificado - en implementación real obtener de repository
+    // Para una implementación completa, esto debería venir de un cálculo más detallado
+    // que involucre todos los hábitos individuales y sus tasas de cumplimiento.
+    // Por ahora, se usa la tasa de cumplimiento del mes actual como un indicador general.
     return {
       'overall': widget.currentMonth.completionRate,
     };
@@ -280,10 +284,14 @@ class _AIStatisticsInsightsState extends State<AIStatisticsInsights> {
 
   double _calculateCurrentTrend() {
     if (widget.historicalData.length < 2) return 0.0;
-    
     final recent = widget.historicalData.last.completionRate;
     final previous = widget.historicalData[widget.historicalData.length - 2].completionRate;
-    
     return recent - previous;
+  }
+
+  List<String> _getCurrentHabitNames() {
+    // Esto es un placeholder. En una aplicación real, obtendrías los nombres de los
+    // hábitos activos del repositorio de hábitos.
+    return ['Hábito de ejemplo 1', 'Hábito de ejemplo 2'];
   }
 }
