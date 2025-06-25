@@ -1,3 +1,4 @@
+// lib/features/statistics/presentation/widgets/historical_chart.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'dart:ui' as ui;
@@ -49,13 +50,13 @@ class HistoricalChart extends StatelessWidget {
             _buildHeader(context),
             const SizedBox(height: 16),
             SizedBox(
-              height: 250.0,
+              height: 190.0,
               child: CustomPaint(
-                size: const Size.fromHeight(250.0),
+                size: const Size.fromHeight(190.0),
                 painter: _HistoricalChartPainter(data, chartMaxValue, Directionality.of(context)),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 10),
             _buildLegend(),
           ],
         ),

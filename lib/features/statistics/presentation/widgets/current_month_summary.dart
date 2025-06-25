@@ -1,3 +1,4 @@
+// lib/features/statistics/presentation/widgets/current_month_summary.dart
 import 'package:flutter/material.dart';
 import '../../domain/entities/statistics.dart';
 import 'dart:math' as math;
@@ -27,12 +28,12 @@ class CurrentMonthSummary extends StatelessWidget {
             else
               SizedBox(
                 height: math.min(
-                  statistics.weeks.length * 52.0,
-                  150.0,
+                  statistics.weeks.length * 45.0, // Estimated height per wee
+                  260.0, // Fixed height to ensure all 4-5 weeks are visible
                 ),
                 child: ListView.builder(
                   shrinkWrap: true,
-                  physics: const ClampingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(), // Scrollable only when content exceeds
                   itemCount: statistics.weeks.length,
                   itemBuilder: (context, index) {
                     final week = statistics.weeks[index];

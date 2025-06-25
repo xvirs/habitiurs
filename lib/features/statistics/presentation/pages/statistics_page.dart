@@ -1,3 +1,4 @@
+// lib/features/statistics/presentation/pages/statistics_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/statistics/presentation/widgets/yearly_statistics_list.dart';
@@ -14,13 +15,6 @@ class StatisticsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<StatisticsBloc, StatisticsState>(
       builder: (context, state) {
-        print('📊 StatisticsPage - Estado actual: $state');
-        if (state is StatisticsLoaded) {
-          print('📊 StatisticsPage - currentMonth: ${state.currentMonth.monthName}');
-          print('📊 StatisticsPage - currentYear count: ${state.currentYear.length}');
-          print('📊 StatisticsPage - historicalData count: ${state.historicalData.length}');
-        }
-
         if (state is StatisticsLoading) {
           return const Center(child: CircularProgressIndicator());
         }
@@ -59,26 +53,22 @@ class StatisticsPage extends StatelessWidget {
         }
 
         if (state is StatisticsLoaded) {
-          return Expanded(
-            child: RefreshIndicator(
-              onRefresh: () async {
-                context.read<StatisticsBloc>().add(RefreshStatistics());
-              },
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.only(top: 16.0),
-                      child: CurrentMonthSummary(statistics: state.currentMonth),
-                    ),
-                    YearlyStatisticsList(statistics: state.currentYear),
-                    HistoricalChart(data: state.historicalData),
-                    const SizedBox(height: 16),
-                  ],
+          return RefreshIndicator(
+            onRefresh: () async {
+              context.read<StatisticsBloc>().add(RefreshStatistics());
+            },
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: CurrentMonthSummary(statistics: state.currentMonth),
                 ),
-              ),
+                Expanded(
+                  child: YearlyStatisticsList(statistics: state.currentYear),
+                ),
+                HistoricalChart(data: state.historicalData),
+              ],
             ),
           );
         }

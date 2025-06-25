@@ -1,10 +1,10 @@
+// lib/features/statistics/presentation/widgets/yearly_statistics_list.dart
 import 'package:flutter/material.dart';
 import '../../domain/entities/statistics.dart';
-import 'dart:math' as math;
 
 class YearlyStatisticsList extends StatelessWidget {
   final List<MonthlyStatistics> statistics;
-
+  
   const YearlyStatisticsList({
     super.key,
     required this.statistics,
@@ -41,42 +41,25 @@ class YearlyStatisticsList extends StatelessWidget {
       );
     }
 
-    const double estimatedMonthItemHeight = 50.0;
-    final bool shouldScrollInternally = statistics.length > 3;
-
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
         children: [
           _buildHeader(context),
-          shouldScrollInternally
-              ? SizedBox(
-                  height: math.min(
-                    statistics.length * estimatedMonthItemHeight,
-                    200.0,
-                  ),
-                  child: ListView.builder(
-                    shrinkWrap: true,
-                    physics: const ClampingScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: statistics.length,
-                    itemBuilder: (context, index) {
-                      final monthStats = statistics[index];
-                      return _buildMonthItem(context, monthStats);
-                    },
-                  ),
-                )
-              : Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: statistics.map((monthStats) =>
-                      _buildMonthItem(context, monthStats)
-                    ).toList(),
-                  ),
-                ),
+          // ListView.builder will now take the available height from its Expanded parent
+          Expanded(
+            child: ListView.builder(
+              shrinkWrap: true,
+              physics: const ClampingScrollPhysics(), // Scrollable only when content exceeds
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              itemCount: statistics.length,
+              itemBuilder: (context, index) {
+                final monthStats = statistics[index];
+                return _buildMonthItem(context, monthStats);
+              },
+            ),
+          ),
         ],
       ),
     );
