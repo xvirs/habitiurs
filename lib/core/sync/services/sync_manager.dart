@@ -1,4 +1,4 @@
-// lib/core/sync/services/sync_manager.dart - MODIFICADO (ÚLTIMA VERSIÓN PARA SOFT DELETE Y SYNC DE ENTRADAS)
+// lib/core/sync/services/sync_manager.dart - MODIFICADO (CONSOLIDACIÓN DE SKIPPED)
 
 import 'dart:async';
 import '../services/firebase_service.dart';
@@ -12,6 +12,7 @@ import '../../../features/statistics/data/datasources/statistics_local_datasourc
 import '../../../features/habits/data/models/habit_model.dart';
 import '../../../features/habits/data/models/habit_entry_model.dart';
 import '../../../shared/enums/habit_status.dart';
+import '../../../shared/utils/date_utils.dart'; // Importar DateUtils
 
 class SyncManager {
   final FirebaseService _firebaseService;
@@ -207,7 +208,7 @@ class SyncManager {
       print('   📱 Local: ${localHabits.length}');
       print('   ☁️ Remoto: ${remoteHabits.length}');
       print('   ➕ Nuevos agregados: $newHabitsAdded');
-      print('   🔄 Conflictos resueltos: $conflictsResolved');
+      print('   🔄 Conflicto de hábitos resueltos: $conflictsResolved');
       print('   ℹ️ Hábitos remotos inactivos ignorados o actualizados localmente.'); 
 
     } catch (e) {
@@ -215,37 +216,80 @@ class SyncManager {
     }
   }
 
-  // ✅ Sincronización bidireccional completa de entradas - MODIFICADO para usar last_modified
+  // ✅ Sincronización bidireccional completa de entradas - MODIFICADO para usar last_modified y CONSOLIDAR SKIPPED
   Future<void> _syncHabitEntriesWithBidirectionalMerge(String userId) async {
     try {
       print('🔄 [Sync] === SINCRONIZACIÓN BIDIRECCIONAL DE ENTRADAS ===');
       
-      final now = DateTime.now();
-      final startDate = now.subtract(const Duration(days: 30));
-      final localEntries = await _habitDataSource.getHabitEntriesForDateRange(startDate, now);
+      // PASO 1: Consolidar entradas 'skipped' para días pasados sin acción
+      print('🔄 [Sync] Consolidando entradas "skipped" para días pasados...');
+      final allHabits = await _habitDataSource.getAllHabits(includeInactive: false); // Solo hábitos activos
+      final today = AppDateUtils.getStartOfDay(DateTime.now());
+      int skippedEntriesConsolidated = 0;
+
+      for (final habit in allHabits) {
+        // Obtenemos las entradas de este hábito desde su creación hasta ayer
+        final entriesForHabit = await _habitDataSource.getHabitEntriesForDateRange(
+          AppDateUtils.getStartOfDay(habit.createdAt), 
+          today.subtract(const Duration(days: 1)), // Hasta ayer
+        );
+        final existingDatesForHabit = entriesForHabit.map((e) => AppDateUtils.getStartOfDay(e.date)).toSet();
+
+        // Iteramos desde la creación del hábito hasta ayer
+        DateTime currentDate = AppDateUtils.getStartOfDay(habit.createdAt);
+        while (currentDate.isBefore(today)) {
+          if (!existingDatesForHabit.contains(currentDate)) {
+            // No existe entrada para este hábito en esta fecha pasada
+            final newSkippedEntry = HabitEntryModel(
+              habitId: habit.id!,
+              date: currentDate,
+              status: HabitStatus.skipped,
+              lastModified: DateTime.now(), // Timestamp del momento de la consolidación
+            );
+            await _habitDataSource.insertHabitEntry(newSkippedEntry);
+            skippedEntriesConsolidated++;
+            print('➕ [Sync] Consolidada entrada "skipped" para Hábito ${habit.id} en ${currentDate.toIso8601String().split('T')[0]}');
+          }
+          currentDate = currentDate.add(const Duration(days: 1));
+        }
+      }
+      print('✅ [Sync] Consolidación de "skipped" completada. ${skippedEntriesConsolidated} entradas añadidas.');
+
+      // PASO 2: Obtener todas las entradas locales (incluidas las nuevas 'skipped')
+      final latestLocalEntries = await _habitDataSource.getHabitEntriesForDateRange(
+        AppDateUtils.getStartOfDay(DateTime.now().subtract(const Duration(days: 365))), // Puedes ajustar el rango si es necesario
+        AppDateUtils.getEndOfDay(DateTime.now()),
+      );
       
       final Map<String, HabitEntryModel> localEntriesMap = {
-        for (var entry in localEntries.where((e) => e.id != null))
+        for (var entry in latestLocalEntries.where((e) => e.id != null))
           '${entry.habitId}_${entry.date.toIso8601String().split('T')[0]}': entry
       };
       print('📱 [Sync] Entradas locales reales encontradas: ${localEntriesMap.length}');
       
+      // PASO 3: Subir entradas locales a Firebase
       if (localEntriesMap.isNotEmpty) {
         final entriesData = localEntriesMap.values.map((entry) => {
           'habit_id': entry.habitId,
           'date': entry.date.toIso8601String().split('T')[0],
           'status': entry.status.index,
           'id': entry.id,
-          'last_modified': entry.lastModified?.toIso8601String(), // ✅ Enviar el last_modified local
+          'last_modified': entry.lastModified?.toIso8601String(), // Enviar el last_modified local
         }).toList();
         
         await _firebaseService.syncHabitEntries(userId, entriesData);
         print('⬆️ [Sync] ${entriesData.length} entradas subidas a Firebase');
       }
       
-      final remoteEntries = await _firebaseService.getHabitEntries(userId, since: startDate);
+      // PASO 4: Descargar entradas remotas de Firebase (rango amplio para cubrir inactivos también)
+      // Descargamos entradas de un rango más amplio para asegurar que se capturen todas las actualizaciones
+      final remoteEntries = await _firebaseService.getHabitEntries(
+        userId, 
+        since: AppDateUtils.getStartOfDay(DateTime.now().subtract(const Duration(days: 365))), // Puedes ajustar el rango
+      );
       print('☁️ [Sync] Entradas remotas encontradas: ${remoteEntries.length}');
       
+      // PASO 5: MERGE BIDIRECCIONAL: Aplicar entradas remotas
       int newEntriesAdded = 0;
       int conflictsResolved = 0;
       
@@ -253,7 +297,7 @@ class SyncManager {
         final remoteHabitId = remoteEntry['habit_id'] as int?;
         final remoteDateStr = remoteEntry['date'] as String?;
         final remoteStatusInt = remoteEntry['status'] as int?;
-        final remoteLastModifiedStr = remoteEntry['last_modified'] as String?; // ✅ Leer timestamp remoto
+        final remoteLastModifiedStr = remoteEntry['last_modified'] as String?; 
         
         if (remoteHabitId == null || remoteDateStr == null || remoteStatusInt == null) {
           print('⚠️ [Sync] Entrada remota inválida, saltando...');
@@ -277,7 +321,7 @@ class SyncManager {
                   habitId: remoteHabitId,
                   date: remoteDate,
                   status: remoteStatus,
-                   id: remoteEntry['entry_id'],
+                  id: remoteEntry['entry_id'], // ID de Firebase, se puede usar si quieres mantener el mismo ID entre BDs
                   lastModified: remoteLastModified,
                 );
                 
@@ -294,8 +338,9 @@ class SyncManager {
             // RESOLUCIÓN DE CONFLICTOS: Entrada existe localmente, verificar diferencias
             final localLastModified = existingLocalEntry.lastModified;
 
-            // Si los estados son diferentes Y el timestamp remoto es más reciente, o local no tiene timestamp, remoto gana.
+            // Si los estados son diferentes
             if (existingLocalEntry.status != remoteStatus) {
+                // Comparamos los timestamps para ver cuál es más reciente
                 if (localLastModified == null || (remoteLastModified != null && remoteLastModified.isAfter(localLastModified))) {
                     // Remoto es más reciente o local no tiene timestamp: Remoto gana
                     print('🔀 [Sync] Conflicto de estado resuelto por timestamp más reciente (remoto gana): Hábito $remoteHabitId - $remoteDateStr. Local:${existingLocalEntry.status.name} (${localLastModified?.toIso8601String() ?? 'null'}) vs Remoto:${remoteStatus.name} (${remoteLastModified?.toIso8601String() ?? 'null'})');
@@ -308,18 +353,12 @@ class SyncManager {
                 } else {
                     // Local es más reciente: Local gana (no hace falta actualizar porque ya lo tiene)
                     print('🔀 [Sync] Conflicto de estado resuelto por timestamp más reciente (local gana): Hábito $remoteHabitId - $remoteDateStr. Local:${existingLocalEntry.status.name} (${localLastModified?.toIso8601String() ?? 'null'}) vs Remoto:${remoteStatus.name} (${remoteLastModified?.toIso8601String() ?? 'null'})');
-                    // No es necesario actualizar la BD local si ya el estado local es el que prevalece.
-                    // Opcional: Actualizar el last_modified local si el remoto es más viejo pero el local no tenía, para evitar futuros conflictos
-                    if (localLastModified == null && remoteLastModified != null) {
-                       final updatedEntry = existingLocalEntry.copyWith(lastModified: remoteLastModified); // Usar el remoto ya que local no tenía
-                       await _habitDataSource.updateHabitEntry(updatedEntry);
-                    }
                 }
             } else {
               // Los estados son iguales, pero actualizamos el timestamp local si el remoto es más reciente
               if (localLastModified == null || (remoteLastModified != null && remoteLastModified.isAfter(localLastModified))) {
                  final updatedEntry = existingLocalEntry.copyWith(lastModified: remoteLastModified);
-                 if (updatedEntry != existingLocalEntry) {
+                 if (updatedEntry != existingLocalEntry) { 
                     await _habitDataSource.updateHabitEntry(updatedEntry);
                  }
               }

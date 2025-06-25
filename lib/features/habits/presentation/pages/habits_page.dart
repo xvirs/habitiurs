@@ -132,7 +132,7 @@ class HabitsPageState extends State<HabitsPage>
   Widget _buildLoadedView(BuildContext context, HabitLoaded state) {
     final todayEntriesMap = _getTodayEntriesMap(state.weekEntries);
 
-    return Column(
+    return Column( // ✅ MODIFICADO: REMOVED SafeArea(top: true)
       children: [
         Expanded(
           flex: 1,

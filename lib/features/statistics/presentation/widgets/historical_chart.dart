@@ -1,5 +1,8 @@
-// lib/features/statistics/presentation/widgets/historical_chart.dart - DISEÑO MINIMALISTA
+// lib/features/statistics/presentation/widgets/historical_chart.dart - DISEÑO MÁS ATRACTIVO Y ALTURA AJUSTADA (CORRECCIÓN DE TextDirection)
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
+import 'dart:ui' as ui; 
+
 import '../../domain/entities/statistics.dart';
 
 class HistoricalChart extends StatelessWidget {
@@ -11,9 +14,9 @@ class HistoricalChart extends StatelessWidget {
   Widget build(BuildContext context) {
     if (data.isEmpty) {
       return Card(
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         child: Container(
-          height: 200,
+          height: 250, 
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -21,7 +24,7 @@ class HistoricalChart extends StatelessWidget {
                 Icon(Icons.show_chart, size: 48, color: Colors.grey[400]),
                 const SizedBox(height: 16),
                 Text(
-                  'No hay datos históricos',
+                  'No hay datos históricos para mostrar',
                   style: TextStyle(color: Colors.grey[600], fontSize: 16),
                 ),
               ],
@@ -31,14 +34,18 @@ class HistoricalChart extends StatelessWidget {
       );
     }
 
+    final int maxCount = data
+        .map((e) => e.completedCount + e.skippedCount)
+        .reduce((a, b) => a > b ? a : b);
+    final int chartMaxValue = (maxCount * 1.2).ceil();
+
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header con diseño consistente
             Row(
               children: [
                 Container(
@@ -77,8 +84,11 @@ class HistoricalChart extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            SizedBox(height: 180, child: _buildSimpleChart(context)),
-            const SizedBox(height: 12),
+            // ✅ MODIFICADO: Eliminar SizedBox de altura fija aquí
+            Expanded( // Permitir que el contenido del gráfico tome el espacio restante del Card
+              child: _buildChartContent(context, chartMaxValue),
+            ),
+            const SizedBox(height: 12), // Espacio entre gráfico y leyenda
             _buildLegend(),
           ],
         ),
@@ -86,24 +96,25 @@ class HistoricalChart extends StatelessWidget {
     );
   }
 
-  Widget _buildSimpleChart(BuildContext context) {
-    if (data.length < 1) {
+  Widget _buildChartContent(BuildContext context, int chartMaxValue) {
+    if (data.isEmpty) { 
       return Center(
         child: Text(
-          'Se necesita al menos 1 mes de datos',
+          'Se necesita al menos 1 mes de datos para el gráfico',
           style: TextStyle(color: Colors.grey[600], fontSize: 14),
         ),
       );
     }
 
-    final maxValue = data
-        .map((e) => e.completedCount + e.skippedCount)
-        .reduce((a, b) => a > b ? a : b);
-    final chartWidth = MediaQuery.of(context).size.width - 64;
+    final ui.TextDirection textDirection = Directionality.of(context)!;
 
-    return CustomPaint(
-      size: Size(chartWidth, 180),
-      painter: _HistoricalChartPainter(data, maxValue),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return CustomPaint(
+          size: Size(constraints.maxWidth, constraints.maxHeight), // ✅ Usar el tamaño completo disponible
+          painter: _HistoricalChartPainter(data, chartMaxValue, textDirection),
+        );
+      },
     );
   }
 
@@ -113,7 +124,7 @@ class HistoricalChart extends StatelessWidget {
       children: [
         _buildLegendItem('Cumplidos', Colors.green[600]!),
         const SizedBox(width: 16),
-        _buildLegendItem('No cumplidos', Colors.red[500]!),
+        _buildLegendItem('Omitidos', Colors.red[500]!),
         const SizedBox(width: 16),
         _buildLegendItem('% Constancia', Colors.blue[600]!),
       ],
@@ -142,116 +153,104 @@ class HistoricalChart extends StatelessWidget {
 class _HistoricalChartPainter extends CustomPainter {
   final List<HistoricalDataPoint> data;
   final int maxValue;
+  final ui.TextDirection textDirection; 
 
-  _HistoricalChartPainter(this.data, this.maxValue);
+  _HistoricalChartPainter(this.data, this.maxValue, this.textDirection);
 
   @override
   void paint(Canvas canvas, Size size) {
     if (data.isEmpty) return;
 
-    // Configuración de colores más delicados
-    final completedPaint =
-        Paint()
-          ..color = Colors.green[600]!
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke;
+    final completedBarPaint = Paint()..color = Colors.green[500]!;
+    final skippedBarPaint = Paint()..color = Colors.red[400]!;
+    final rateLinePaint = Paint()
+      ..color = Colors.blue[600]!
+      ..strokeWidth = 2.5
+      ..style = PaintingStyle.stroke;
 
-    final skippedPaint =
-        Paint()
-          ..color = Colors.red[500]!
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke;
+    final axisPaint = Paint()
+      ..color = Colors.grey[300]!
+      ..strokeWidth = 0.8;
 
-    final ratePaint =
-        Paint()
-          ..color = Colors.blue[600]!
-          ..strokeWidth = 2
-          ..style = PaintingStyle.stroke;
-
-    // Ejes más sutiles
-    final axisPaint =
-        Paint()
-          ..color = Colors.grey[200]!
-          ..strokeWidth = 0.5;
-
-    // Eje Y
-    canvas.drawLine(const Offset(0, 0), Offset(0, size.height), axisPaint);
-
-    // Eje X
-    canvas.drawLine(
-      Offset(0, size.height),
-      Offset(size.width, size.height),
-      axisPaint,
+    final textPainter = TextPainter(
+      textAlign: TextAlign.center,
+      textDirection: textDirection, 
     );
 
-    // Calcular pasos para comenzar desde el primer dato
-    final stepX =
-        data.length == 1 ? size.width : size.width / (data.length - 1);
-    final stepY = maxValue == 0 ? 0 : size.height / maxValue;
+    const double yAxisLabelWidth = 20.0;
+    const double xAxisLabelHeight = 15.0;
+    final double chartAreaWidth = size.width - yAxisLabelWidth;
+    final double chartAreaHeight = size.height - xAxisLabelHeight;
+    final Offset chartOrigin = Offset(yAxisLabelWidth, chartAreaHeight);
 
-    // Dibujar líneas si hay más de un punto
-    if (data.length > 1) {
-      for (int i = 0; i < data.length - 1; i++) {
-        final currentX = i * stepX;
-        final nextX = (i + 1) * stepX;
+    canvas.drawLine(
+        Offset(yAxisLabelWidth, 0), Offset(yAxisLabelWidth, chartAreaHeight), axisPaint);
 
-        // Línea de completados
-        final currentCompletedY =
-            size.height - (data[i].completedCount * stepY);
-        final nextCompletedY =
-            size.height - (data[i + 1].completedCount * stepY);
+    canvas.drawLine(
+        Offset(yAxisLabelWidth, chartAreaHeight), Offset(size.width, chartAreaHeight), axisPaint);
 
-        canvas.drawLine(
-          Offset(currentX, currentCompletedY),
-          Offset(nextX, nextCompletedY),
-          completedPaint,
-        );
+    final int yAxisSegments = 2;
+    for (int i = 0; i <= yAxisSegments; i++) {
+      final value = (maxValue / yAxisSegments * i).round();
+      final y = chartAreaHeight - (value / maxValue * chartAreaHeight);
 
-        // Línea de no cumplidos
-        final currentSkippedY = size.height - (data[i].skippedCount * stepY);
-        final nextSkippedY = size.height - (data[i + 1].skippedCount * stepY);
-
-        canvas.drawLine(
-          Offset(currentX, currentSkippedY),
-          Offset(nextX, nextSkippedY),
-          skippedPaint,
-        );
-
-        // Línea de porcentaje
-        final currentRateY =
-            size.height - ((data[i].completionRate / 100) * size.height);
-        final nextRateY =
-            size.height - ((data[i + 1].completionRate / 100) * size.height);
-
-        canvas.drawLine(
-          Offset(currentX, currentRateY),
-          Offset(nextX, nextRateY),
-          ratePaint,
-        );
-      }
+      textPainter.text = TextSpan(
+        text: '$value',
+        style: TextStyle(color: Colors.grey[600], fontSize: 9),
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(yAxisLabelWidth - textPainter.width - 5, y - textPainter.height / 2));
     }
 
-    // Dibujar puntos (incluso para un solo dato)
-    final pointPaint = Paint()..style = PaintingStyle.fill;
+    final double barWidth = (chartAreaWidth / data.length) * 0.4;
+    final double spacing = (chartAreaWidth / data.length) * 0.6;
+
+    Offset? previousRatePoint;
 
     for (int i = 0; i < data.length; i++) {
-      final x = data.length == 1 ? size.width / 2 : i * stepX;
+      final currentData = data[i];
+      final xPos = chartOrigin.dx + (i * (barWidth + spacing) + spacing / 2);
+      final barLeft = xPos - barWidth / 2;
+      
+      final completedHeight = (currentData.completedCount / maxValue) * chartAreaHeight;
+      final skippedHeight = (currentData.skippedCount / maxValue) * chartAreaHeight;
+      final rateY = chartAreaHeight - (currentData.completionRate / 100) * chartAreaHeight;
 
-      // Punto completados
-      pointPaint.color = Colors.green[600]!;
-      final completedY = size.height - (data[i].completedCount * stepY);
-      canvas.drawCircle(Offset(x, completedY), 3, pointPaint);
+      final double barSegmentWidth = barWidth / 2.5;
+      final double currentXOffset = barLeft + (barWidth - barSegmentWidth * 2) / 2;
 
-      // Punto no cumplidos
-      pointPaint.color = Colors.red[500]!;
-      final skippedY = size.height - (data[i].skippedCount * stepY);
-      canvas.drawCircle(Offset(x, skippedY), 3, pointPaint);
+      canvas.drawRect(
+        Rect.fromLTWH(
+          currentXOffset,
+          chartAreaHeight - completedHeight,
+          barSegmentWidth,
+          completedHeight,
+        ),
+        completedBarPaint,
+      );
 
-      // Punto porcentaje
-      pointPaint.color = Colors.blue[600]!;
-      final rateY =
-          size.height - ((data[i].completionRate / 100) * size.height);
-      canvas.drawCircle(Offset(x, rateY), 2, pointPaint);
+      canvas.drawRect(
+        Rect.fromLTWH(
+          currentXOffset + barSegmentWidth + 2,
+          chartAreaHeight - skippedHeight,
+          barSegmentWidth,
+          skippedHeight,
+        ),
+        skippedBarPaint,
+      );
+
+      final currentRatePoint = Offset(xPos, rateY);
+      if (previousRatePoint != null) {
+        canvas.drawLine(previousRatePoint, currentRatePoint, rateLinePaint);
+      }
+      previousRatePoint = currentRatePoint;
+
+      textPainter.text = TextSpan(
+        text: DateFormat('MMM').format(currentData.date),
+        style: TextStyle(color: Colors.grey[700], fontSize: 9),
+      );
+      textPainter.layout();
+      textPainter.paint(canvas, Offset(xPos - textPainter.width / 2, chartAreaHeight + 5));
     }
   }
 

@@ -1,4 +1,4 @@
-// lib/core/di/injection_container.dart - MODIFICADO
+// lib/core/di/injection_container.dart - MODIFICADO (Añadido getter para AuthBloc)
 
 import 'package:firebase_core/firebase_core.dart';
 import 'package:habitiurs/features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
@@ -12,8 +12,14 @@ import '../ai/repositories/ai_repository.dart';
 // Auth Core
 import '../auth/services/auth_service.dart';
 import '../auth/interfaces/i_auth_service.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart'; // ✅ NUEVO: Importar AuthBloc
+import '../../features/auth/domain/usecases/check_auth_status.dart'; // ✅ NUEVO: Importar CheckAuthStatus
+import '../../features/auth/domain/usecases/create_guest_session.dart'; // ✅ NUEVO: Importar CreateGuestSession
+import '../../features/auth/domain/usecases/login_with_google.dart'; // ✅ NUEVO: Importar LoginWithGoogle
+import '../../features/auth/domain/usecases/logout_user.dart'; // ✅ NUEVO: Importar LogoutUser
 
-// Sync Core - ✅ ACTUALIZADO: Agregar SyncRepository
+
+// Sync Core - ACTUALIZADO: Agregar SyncRepository
 import '../sync/services/firebase_service.dart';
 import '../sync/services/sync_manager.dart';
 import '../sync/repositories/sync_repository.dart';
@@ -27,6 +33,9 @@ import '../../features/habits/domain/usecases/get_all_habits.dart';
 import '../../features/habits/domain/usecases/get_week_entries.dart';
 import '../../features/habits/domain/usecases/toggle_habit_entry.dart';
 import '../../features/habits/presentation/bloc/habit_bloc.dart';
+
+// NUEVO: Importar HabitEvaluationCubit
+import '../../features/habits/presentation/bloc/habit_evaluation_cubit.dart'; 
 
 // Features - Statistics
 import '../../features/statistics/data/datasources/statistics_local_datasource.dart';
@@ -63,6 +72,13 @@ class InjectionContainer {
   late final HabitRepository _habitRepository;
   late final StatisticsRepository _statisticsRepository;
   late final AIAssistantRepository _aiAssistantRepository;
+
+  // USE CASES - Auth (NUEVOS)
+  late final CheckAuthStatus _checkAuthStatus;
+  late final CreateGuestSession _createGuestSession;
+  late final LoginWithGoogle _loginWithGoogle;
+  late final LogoutUser _logoutUser;
+
 
   // USE CASES - Habits
   late final GetAllHabits _getAllHabits;
@@ -158,7 +174,6 @@ class InjectionContainer {
   }
 
   void _initializeRepositories() {
-    // ✅ CAMBIO: Inyectar _syncRepository y _authService en HabitRepositoryImpl
     _habitRepository = HabitRepositoryImpl(_habitLocalDataSource, _syncRepository, _authService); 
     _statisticsRepository = StatisticsRepositoryImpl(localDatasource: _statisticsLocalDatasource);
     
@@ -171,19 +186,25 @@ class InjectionContainer {
   }
 
   void _initializeUseCases() {
-    // Habits
+    // Auth Use Cases (NUEVOS)
+    _checkAuthStatus = CheckAuthStatus(_authService);
+    _createGuestSession = CreateGuestSession(_authService);
+    _loginWithGoogle = LoginWithGoogle(_authService);
+    _logoutUser = LogoutUser(_authService);
+
+    // Habits Use Cases
     _getAllHabits = GetAllHabits(_habitRepository);
     _createHabit = CreateHabit(_habitRepository);
     _getWeekEntries = GetWeekEntries(_habitRepository);
     _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
-    _deleteHabit = DeleteHabit(_habitRepository, _authService); // Este es el use case para borrar permanentemente
+    _deleteHabit = DeleteHabit(_habitRepository, _authService);
 
-    // Statistics
+    // Statistics Use Cases
     _getCurrentMonthStatistics = GetCurrentMonthStatistics(_statisticsRepository);
     _getCurrentYearStatistics = GetCurrentYearStatistics(_statisticsRepository);
     _getHistoricalData = GetHistoricalData(_statisticsRepository);
 
-    // AI Assistant
+    // AI Assistant Use Cases
     _getEducationalContent = GetEducationalContent(_aiAssistantRepository);
     _getAppGuides = GetAppGuides(_aiAssistantRepository);
     _getAIRecommendation = GetAIRecommendation(_aiAssistantRepository);
@@ -191,7 +212,15 @@ class InjectionContainer {
     print('✅ [UseCases] Inicializados');
   }
 
-  // GETTERS PARA BLOCS
+  // GETTERS PARA BLOCS (Ajustados para no disparar eventos de carga aquí)
+  // ✅ NUEVO GETTER para AuthBloc
+  AuthBloc get authBloc => AuthBloc(
+    checkAuthStatus: _checkAuthStatus,
+    createGuestSession: _createGuestSession,
+    loginWithGoogle: _loginWithGoogle,
+    logoutUser: _logoutUser,
+  );
+  
   HabitBloc get habitBloc => HabitBloc(
     getAllHabits: _getAllHabits,
     createHabit: _createHabit,
@@ -209,20 +238,18 @@ class InjectionContainer {
     getAppGuides: _getAppGuides,
     getAIRecommendation: _getAIRecommendation,
   );
+
+  // NUEVO GETTER: Para el HabitEvaluationCubit
+  HabitEvaluationCubit get habitEvaluationCubit => HabitEvaluationCubit(
+    aiRepository: _aiRepository,
+  );
+
 // GETTERS PARA SERVICIOS CORE
-  /// AI Repository centralizado
   AIRepository get aiRepository => _aiRepository;
-  /// Auth Service
   IAuthService get authService => _authService;
-
-  /// NUEVO: Sync Repository (interface limpia)
   SyncRepository get syncRepository => _syncRepository;
-  /// Sync Manager (para operaciones avanzadas)
   SyncManager get syncManager => _syncManager;
-  /// Firebase Service
   FirebaseService get firebaseService => _firebaseService;
-
-  /// Database Helper
   DatabaseHelper get databaseHelper => _databaseHelper;
 // GETTERS PARA REPOSITORIES
   HabitRepository get habitRepository => _habitRepository;

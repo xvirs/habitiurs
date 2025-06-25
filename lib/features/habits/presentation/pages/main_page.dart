@@ -1,4 +1,4 @@
-// lib/features/habits/presentation/pages/main_page.dart - MODIFICADO
+// lib/features/habits/presentation/pages/main_page.dart - RESTAURADO A SU ESTADO PREVIO
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/widgets/user_drawer.dart';
@@ -7,6 +7,8 @@ import '../../../auth/presentation/bloc/auth_state.dart';
 import 'habits_page.dart';
 import '../../../statistics/presentation/pages/statistics_page.dart';
 import '../../../ai_assistant/presentation/pages/ai_assistant_page.dart';
+import '../../../statistics/presentation/bloc/statistics_bloc.dart';
+import '../../../statistics/presentation/bloc/statistics_event.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -16,9 +18,8 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  int _currentIndex = 1; // Empezar en Hábitos (índice 1)
+  int _currentIndex = 1;
   
-  // ✅ NUEVO: GlobalKey para acceder al HabitBloc
   final GlobalKey<HabitsPageState> _habitsPageKey = GlobalKey<HabitsPageState>();
 
   final List<String> _pageTitles = [
@@ -28,16 +29,19 @@ class _MainPageState extends State<MainPage> {
   ];
 
   @override
-  Widget build(BuildContext context) {
-    // ✅ NUEVO: Lista de páginas con key para HabitsPage
-    final List<Widget> pages = [
-      const AIAssistantPage(),    // IA (índice 0)
-      HabitsPage(key: _habitsPageKey), // Hábitos (índice 1) - CON KEY
-      const StatisticsPage(),     // Estadísticas (índice 2)
-    ];
+  void initState() {
+    super.initState();
+  }
 
+  @override
+  void dispose() {
+    super.dispose();
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
     return Scaffold(
-      // AppBar con avatar
       appBar: AppBar(
         title: Text(
           _pageTitles[_currentIndex],
@@ -56,14 +60,17 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
       
-      // ✅ MODIFICADO: Drawer con callback de sync
       drawer: UserDrawer(
-        onDataSynced: _onDataSynced, // ← CALLBACK AGREGADO
+        onDataSynced: _onDataSynced,
       ),
       
       body: IndexedStack(
         index: _currentIndex,
-        children: pages,
+        children: [
+          const AIAssistantPage(),
+          HabitsPage(key: _habitsPageKey),
+          const StatisticsPage(),
+        ],
       ),
       
       bottomNavigationBar: BottomNavigationBar(
@@ -95,18 +102,18 @@ class _MainPageState extends State<MainPage> {
     );
   }
 
-  // ✅ NUEVO: Callback que se ejecuta después del sync
   void _onDataSynced() {
     print('🔄 [MainPage] Recibido callback de sincronización');
     
-    // Solo actualizar si estamos en la página de hábitos
     if (_currentIndex == 1 && _habitsPageKey.currentState != null) {
       print('✅ [MainPage] Refrescando HabitsPage...');
       _habitsPageKey.currentState!.refreshData();
     }
     
-    // TODO: Si en el futuro queremos actualizar Statistics también:
-    // if (_currentIndex == 2) { ... }
+    if (_currentIndex == 2) {
+      print('✅ [MainPage] Refrescando StatisticsPage...');
+      context.read<StatisticsBloc>().add(RefreshStatistics());
+    }
   }
 
   Widget _buildUserAvatar() {

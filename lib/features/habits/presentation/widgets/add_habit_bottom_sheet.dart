@@ -1,10 +1,9 @@
 // lib/features/habits/presentation/widgets/add_habit_bottom_sheet.dart - OPTIMIZADO y CON IA REAL
 import 'package:flutter/material.dart';
-import '../../../../core/di/injection_container.dart'; // Importar para acceder a AIRepository
-import '../../../../core/ai/repositories/ai_repository.dart'; // Importar el repositorio de IA
-import '../../../../core/ai/models/ai_request_model.dart'; // Para AIRequestType
-import '../../../../core/ai/models/ai_response_model.dart'; // Para AIResponse
-
+import 'package:flutter_bloc/flutter_bloc.dart'; // Importar BlocProvider y BlocBuilder
+import 'package:habitiurs/features/habits/presentation/bloc/habit_evaluation_cubit.dart';
+import 'package:habitiurs/features/habits/presentation/bloc/habit_evaluation_state.dart';
+import '../../../../core/di/injection_container.dart'; // Para obtener el Cubit
 class AddHabitBottomSheet extends StatefulWidget {
   final Function(String) onAdd;
 
@@ -25,7 +24,10 @@ class AddHabitBottomSheet extends StatefulWidget {
       enableDrag: true,
       isDismissible: true,
       builder: (context) => _AdaptiveBottomSheet(
-        child: AddHabitBottomSheet(onAdd: onAdd),
+        child: BlocProvider<HabitEvaluationCubit>( // ✅ NUEVO: Proveer el Cubit
+          create: (ctx) => InjectionContainer().habitEvaluationCubit,
+          child: AddHabitBottomSheet(onAdd: onAdd),
+        ),
       ),
     );
   }
@@ -43,17 +45,8 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   late final AnimationController _animationController;
   late final Animation<double> _fadeAnimation;
   
-  // Estado
-  bool _isEvaluating = false;
-  bool _showEvaluation = false;
-  String _evaluationText = '';
-
-  // Dependencia de IA
-  late final AIRepository _aiRepository; // ✅ NUEVO: Referencia al repositorio de IA
-
   // Constantes
   static const Duration _animationDuration = Duration(milliseconds: 250);
-  // static const Duration _evaluationDelay = Duration(seconds: 2); // Ya no es necesario, usaremos la IA real
   static const int _minHabitLength = 3;
 
   @override
@@ -61,7 +54,9 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
     super.initState();
     _initializeControllers();
     _setupAnimation();
-    _aiRepository = InjectionContainer().aiRepository; // ✅ NUEVO: Inicializar el repositorio de IA
+    
+    // Escuchar cambios en el controlador para ocultar la evaluación
+    _controller.addListener(_onTextChangedListener);
   }
 
   void _initializeControllers() {
@@ -86,99 +81,35 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
 
   @override
   void dispose() {
+    _controller.removeListener(_onTextChangedListener); // Limpiar listener
     _controller.dispose();
     _focusNode.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
-    final hasKeyboard = keyboardHeight > 0;
-    
-    return _BottomSheetContainer(
-      child: _BottomSheetContent(
-        hasKeyboard: hasKeyboard,
-        formKey: _formKey,
-        controller: _controller,
-        focusNode: _focusNode,
-        isEvaluating: _isEvaluating,
-        showEvaluation: _showEvaluation,
-        evaluationText: _evaluationText,
-        fadeAnimation: _fadeAnimation,
-        onEvaluate: _evaluateHabit,
-        onHideEvaluation: _hideEvaluation,
-        onAddHabit: _addHabit,
-        onTextChanged: _onTextChanged,
-        canAddHabit: _canAddHabit,
-      ),
-    );
-  }
-
-  // Métodos de negocio
-  bool get _canAddHabit => _controller.text.trim().length >= _minHabitLength;
-
-  void _onTextChanged(String value) {
-    setState(() {
-      if (_showEvaluation && value.trim().length < _minHabitLength) {
-        _hideEvaluation();
-      }
-    });
-  }
-
-  Future<void> _evaluateHabit() async {
-    if (!_canAddHabit) return;
-    
-    setState(() {
-      _isEvaluating = true;
-      _showEvaluation = true;
-      _evaluationText = 'Analizando...'; // Mostrar un texto de carga inicial
-    });
-    
-    _animationController.forward();
-
-    String habitDescription = _controller.text.trim();
-    AIResponse aiResponse;
-
-    try {
-      // ✅ CAMBIO CLAVE: Llamar a la IA real
-      aiResponse = await _aiRepository.evaluateHabit(habitDescription);
-      
-      if (mounted) {
-        setState(() {
-          _evaluationText = aiResponse.content; // Mostrar la respuesta de la IA
-          _isEvaluating = false;
-        });
-      }
-    } catch (e) {
-      print('❌ [AddHabitBottomSheet] Error al evaluar hábito con IA: $e');
-      if (mounted) {
-        setState(() {
-          _evaluationText = 'Error al obtener evaluación de IA. Intenta de nuevo.'; // Mensaje de error
-          _isEvaluating = false;
-        });
-      }
-    } finally {
-      // Asegurarse de que la animación termina y el estado es coherente
-      if (mounted && _animationController.status == AnimationStatus.forward) {
-         await _animationController.forward(); // Completar la animación si no lo hizo
-      }
-      if (mounted && _animationController.status == AnimationStatus.completed) {
-        // Nada que hacer, ya está adelante
+  // Listener para el campo de texto (dispara hideEvaluation)
+  void _onTextChangedListener() {
+    // Si la evaluación está mostrándose y el texto es muy corto, ocultarla.
+    // Usamos context.read para evitar recrear el Cubit si el texto cambia.
+    final currentCubitState = context.read<HabitEvaluationCubit>().state;
+    if (currentCubitState is HabitEvaluationSuccess || currentCubitState is HabitEvaluationError) {
+      if (_controller.text.trim().length < _minHabitLength) {
+        context.read<HabitEvaluationCubit>().hideEvaluation();
       }
     }
   }
 
+  // Método para disparar la evaluación de la IA
+  void _evaluateHabit() {
+    if (!_canAddHabit) return;
+    // Disparar el evento de evaluación al Cubit
+    context.read<HabitEvaluationCubit>().evaluateHabit(_controller.text.trim());
+  }
+
+  // Método para ocultar la evaluación (disparado desde el botón de cerrar)
   void _hideEvaluation() {
-    _animationController.reverse().then((_) {
-      if (mounted) {
-        setState(() {
-          _showEvaluation = false;
-          _evaluationText = '';
-        });
-      }
-    });
+    context.read<HabitEvaluationCubit>().hideEvaluation();
   }
 
   void _addHabit() {
@@ -188,9 +119,53 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
       Navigator.of(context).pop();
     }
   }
-}
 
-// Widget para detectar teclado de forma reactiva (ELIMINADO - no se usa)
+  bool get _canAddHabit => _controller.text.trim().length >= _minHabitLength;
+
+  @override
+  Widget build(BuildContext context) {
+    final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final hasKeyboard = keyboardHeight > 0;
+    
+    return _BottomSheetContainer(
+      child: BlocConsumer<HabitEvaluationCubit, HabitEvaluationState>( // ✅ NUEVO: BlocConsumer para manejar los estados de la IA
+        listener: (context, state) {
+          if (state is HabitEvaluationSuccess) {
+            _animationController.forward();
+          } else if (state is HabitEvaluationError || state is HabitEvaluationInitial || state is HabitEvaluationHidden) {
+            _animationController.reverse(); // Ocultar si hay error o se reinicia/oculta
+          } else if (state is HabitEvaluationLoading) {
+             _animationController.forward(); // Mostrar spinner si carga
+          }
+        },
+        builder: (context, state) {
+          bool showEvaluation = state is HabitEvaluationSuccess || state is HabitEvaluationLoading || state is HabitEvaluationError;
+          bool isEvaluating = state is HabitEvaluationLoading;
+          String evaluationText = '';
+          if (state is HabitEvaluationSuccess) evaluationText = state.evaluationText;
+          if (state is HabitEvaluationError) evaluationText = state.message;
+          if (state is HabitEvaluationLoading) evaluationText = 'Analizando...';
+
+          return _BottomSheetContent(
+            hasKeyboard: hasKeyboard,
+            formKey: _formKey,
+            controller: _controller,
+            focusNode: _focusNode,
+            isEvaluating: isEvaluating,
+            showEvaluation: showEvaluation,
+            evaluationText: evaluationText,
+            fadeAnimation: _fadeAnimation,
+            onEvaluate: _evaluateHabit,
+            onHideEvaluation: _hideEvaluation,
+            onAddHabit: _addHabit,
+            onTextChanged: (value) { /* handled by listener */ }, // La lógica de `onTextChanged` ahora está en el listener del controlador
+            canAddHabit: _canAddHabit,
+          );
+        },
+      ),
+    );
+  }
+}
 
 // Contenedor principal del bottom sheet
 class _BottomSheetContainer extends StatelessWidget {
@@ -241,7 +216,7 @@ class _BottomSheetContent extends StatelessWidget {
   final VoidCallback onEvaluate;
   final VoidCallback onHideEvaluation;
   final VoidCallback onAddHabit;
-  final ValueChanged<String> onTextChanged;
+  final ValueChanged<String> onTextChanged; // Se mantiene por la estructura del TextFormField, pero su lógica es pasiva
   final bool canAddHabit;
 
   const _BottomSheetContent({
@@ -282,7 +257,7 @@ class _BottomSheetContent extends StatelessWidget {
               isEvaluating: isEvaluating,
               evaluationText: evaluationText,
               fadeAnimation: fadeAnimation,
-              onHideEvaluation: onHideEvaluation,
+              onClose: onHideEvaluation,
             ),
             SizedBox(height: hasKeyboard ? 16 : 12),
             _HabitTextField(
@@ -376,10 +351,11 @@ class _HeaderText extends StatelessWidget {
               fontSize: hasKeyboard ? 17 : 18,
             ),
           ),
+          // ✅ MODIFICADO: Mensaje instructivo para el usuario
           Text(
             hasKeyboard 
-                ? 'Describe tu hábito ideal'
-                : 'Crea un hábito sostenible',
+                ? 'Describe un hábito claro y breve para trackear diario.'
+                : 'Define tu hábito: simple, claro y conciso para seguir.',
             style: TextStyle(
               fontSize: 12,
               color: Colors.grey[600],
@@ -399,7 +375,7 @@ class _InfoSection extends StatelessWidget {
   final bool isEvaluating;
   final String evaluationText;
   final Animation<double> fadeAnimation;
-  final VoidCallback onHideEvaluation;
+  final VoidCallback onClose;
 
   const _InfoSection({
     required this.hasKeyboard,
@@ -407,7 +383,7 @@ class _InfoSection extends StatelessWidget {
     required this.isEvaluating,
     required this.evaluationText,
     required this.fadeAnimation,
-    required this.onHideEvaluation,
+    required this.onClose,
   });
 
   @override
@@ -418,7 +394,7 @@ class _InfoSection extends StatelessWidget {
             isEvaluating: isEvaluating,
             evaluationText: evaluationText,
             fadeAnimation: fadeAnimation,
-            onClose: onHideEvaluation,
+            onClose: onClose,
           )
         : _TipsCard(hasKeyboard: hasKeyboard);
   }
@@ -533,7 +509,8 @@ class _EvaluationCard extends StatelessWidget {
             _buildEvaluationHeader(),
             if (!isEvaluating) ...[
               SizedBox(height: hasKeyboard ? 8 : 6),
-              _buildEvaluationContent(),
+              // ✅ MODIFICADO: Usar RichText para parsear las líneas y mostrar emojis
+              _buildEvaluationContent(evaluationText, hasKeyboard), 
             ],
           ],
         ),
@@ -582,14 +559,27 @@ class _EvaluationCard extends StatelessWidget {
     );
   }
 
-  Widget _buildEvaluationContent() {
-    return Text(
-      evaluationText,
-      style: TextStyle(
-        fontSize: hasKeyboard ? 12 : 11,
-        color: Colors.green[700],
-        height: 1.2,
-      ),
+  // ✅ MODIFICADO: Ahora es un método que construye RichText para manejar múltiples líneas y emojis
+  Widget _buildEvaluationContent(String text, bool hasKeyboard) {
+    final lines = text.split('\n'); // Dividir por saltos de línea
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: lines.map((line) {
+        // Opcional: Puedes hacer un parsing más sofisticado si la IA usa patrones como "✅ Texto"
+        // Por ahora, solo mostramos cada línea.
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 2.0), // Espacio entre líneas
+          child: Text(
+            line.trim(), // Eliminar espacios al inicio/final de la línea
+            style: TextStyle(
+              fontSize: hasKeyboard ? 12 : 11,
+              color: Colors.green[700],
+              height: 1.2,
+            ),
+          ),
+        );
+      }).toList(),
     );
   }
 }
@@ -810,10 +800,11 @@ class _TipModel {
 }
 
 class _TipsData {
+  // ✅ MODIFICADO: Consejos alineados con la filosofía de la app
   static const List<_TipModel> tips = [
-    _TipModel(emoji: '📝', text: 'Sé específico: "Leer 10 páginas"'),
-    _TipModel(emoji: '🎯', text: 'Comienza pequeño: 5 min diarios'),
-    _TipModel(emoji: '🔗', text: 'Vincúlalo con rutina existente'),
+    _TipModel(emoji: '📝', text: 'Sé claro: "Meditar" es mejor que "Meditar 10 mins"'),
+    _TipModel(emoji: '🎯', text: 'Hazlo simple: Es más fácil trackear "Leer" que "Leer 100 páginas"'),
+    _TipModel(emoji: '👌', text: 'Concéntrate en la acción, no en el detalle específico'),
   ];
 }
 

@@ -5,10 +5,8 @@ import '../../domain/entities/educational_content.dart';
 class EducationalContentSection extends StatelessWidget {
   final List<EducationalContent> content;
 
-  const EducationalContentSection({
-    Key? key,
-    required this.content,
-  }) : super(key: key);
+  const EducationalContentSection({Key? key, required this.content})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -28,9 +26,9 @@ class EducationalContentSection extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'Contenido Educativo',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
@@ -69,7 +67,10 @@ class EducationalContentSection extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.blue[100],
                         borderRadius: BorderRadius.circular(12),
@@ -106,28 +107,18 @@ class EducationalContentSection extends StatelessWidget {
                 const SizedBox(height: 8),
                 Text(
                   article.content,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   maxLines: 4,
                   overflow: TextOverflow.ellipsis,
                 ),
                 const Spacer(),
                 Row(
                   children: [
-                    Icon(
-                      Icons.access_time,
-                      size: 14,
-                      color: Colors.grey[500],
-                    ),
+                    Icon(Icons.access_time, size: 14, color: Colors.grey[500]),
                     const SizedBox(width: 4),
                     Text(
                       '${article.readTimeMinutes} min',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[500],
-                      ),
+                      style: TextStyle(fontSize: 11, color: Colors.grey[500]),
                     ),
                     const Spacer(),
                     Text(
@@ -151,51 +142,51 @@ class EducationalContentSection extends StatelessWidget {
   void _showContentDialog(BuildContext context, EducationalContent article) {
     showDialog(
       context: context,
-      builder: (context) => Dialog(
-        child: Container(
-          constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
-          child: Column(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-                ),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        article.title,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+      builder:
+          (context) => Dialog(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 500, maxHeight: 600),
+              child: Column(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(12),
                       ),
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-              ),
-              Expanded(
-                child: SingleChildScrollView(
-                  padding: const EdgeInsets.all(16),
-                  child: Text(
-                    article.content,
-                    style: const TextStyle(
-                      fontSize: 14,
-                      height: 1.5,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            article.title,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
                     ),
                   ),
-                ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        article.content,
+                        style: const TextStyle(fontSize: 14, height: 1.5),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
-      ),
     );
   }
 }

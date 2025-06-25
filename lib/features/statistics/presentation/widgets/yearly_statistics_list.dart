@@ -4,19 +4,41 @@ import '../../domain/entities/statistics.dart';
 
 class YearlyStatisticsList extends StatelessWidget {
   final List<MonthlyStatistics> statistics;
-
   const YearlyStatisticsList({
     Key? key,
     required this.statistics,
   }) : super(key: key);
 
+  // ✅ NUEVO: Método para calcular la altura mínima del CONTENIDO del Card
+  // Si no scrollea, esta es la altura que toma.
+  static double calculateMinHeightForContent(List<MonthlyStatistics> stats) {
+    // Altura del padding interno del Card (16 top + 16 bottom)
+    const double cardInnerPaddingVertical = 16.0 * 2; 
+    // Altura del header (padding 16 + Row height ~20)
+    const double headerHeight = 16.0; // Solo padding top/bottom de la fila del header
+    const double headerRowVisualHeight = 20.0; // Altura de la fila de texto/icono del header
+    const double headerPaddingBottom = 16.0; // padding inferior del Padding que envuelve la Row del header
+
+    // Altura de cada item mensual (margin bottom 8 + padding vertical 8 + text height ~15)
+    // Contenedor tiene padding horizontal:12, vertical:8. Margin bottom 8.
+    // Altura del texto dentro del item (aprox. 13 + line-height).
+    const double monthItemHeight = (8.0 * 2) + 13.0; // Vertical padding + text height
+    const double monthItemMarginBottom = 8.0;
+
+    final int monthsToDisplay = stats.length;
+    final double totalMonthsListHeight = monthsToDisplay * (monthItemHeight + monthItemMarginBottom);
+
+    return cardInnerPaddingVertical + headerHeight + headerRowVisualHeight + headerPaddingBottom + totalMonthsListHeight;
+  }
+
+
   @override
   Widget build(BuildContext context) {
     if (statistics.isEmpty) {
       return Card(
-        margin: const EdgeInsets.all(16),
+        margin: const EdgeInsets.fromLTRB(16, 0, 16, 16), 
         child: Container(
-          height: 200,
+          height: 200, 
           child: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -41,17 +63,15 @@ class YearlyStatisticsList extends StatelessWidget {
       );
     }
 
-    final shouldScroll = statistics.length > 3;
-    final containerHeight = shouldScroll 
-        ? 240.0 
-        : (statistics.length * 60.0) + 16;
+    // `shouldScroll` ya está en tu código, pero no lo usaremos para decidir la altura EXTERNA.
+    final bool shouldScrollInternally = statistics.length > 3; // Lógica para scroll interno
 
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 16), 
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min, // Sigue ajustándose al contenido
         children: [
-          // Header con diseño consistente
           Padding(
             padding: const EdgeInsets.all(16),
             child: Row(
@@ -82,26 +102,30 @@ class YearlyStatisticsList extends StatelessWidget {
               ],
             ),
           ),
-          SizedBox(
-            height: containerHeight,
-            child: shouldScroll 
-                ? ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    itemCount: statistics.length,
-                    itemBuilder: (context, index) {
-                      final monthStats = statistics[index];
-                      return _buildMonthItem(context, monthStats);
-                    },
-                  )
-                : Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    child: Column(
-                      children: statistics.map((monthStats) => 
-                        _buildMonthItem(context, monthStats)
-                      ).toList(),
-                    ),
-                  ),
-          ),
+          // ✅ MODIFICADO: El contenedor interno de la lista.
+          // Si scrollea, lo limitamos con SizedBox para que no ocupe demasiado.
+          // Si no scrollea, se ajusta a su contenido.
+          shouldScrollInternally 
+            ? SizedBox(
+                height: 200, // Altura fija si tiene scroll interno. Ajusta este valor si es necesario.
+                child: ListView.builder(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  itemCount: statistics.length,
+                  itemBuilder: (context, index) {
+                    final monthStats = statistics[index];
+                    return _buildMonthItem(context, monthStats);
+                  },
+                ),
+              )
+            : Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min, // Asegura que Column se ajusta al contenido
+                  children: statistics.map((monthStats) => 
+                    _buildMonthItem(context, monthStats)
+                  ).toList(),
+                ),
+              ),
         ],
       ),
     );
@@ -120,7 +144,6 @@ class YearlyStatisticsList extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // Nombre del mes
           Expanded(
             flex: 2,
             child: Text(
@@ -131,7 +154,6 @@ class YearlyStatisticsList extends StatelessWidget {
               ),
             ),
           ),
-          // Porcentaje
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(
@@ -151,7 +173,6 @@ class YearlyStatisticsList extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // Stats simples
           Row(
             children: [
               _buildStatText(

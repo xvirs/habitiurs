@@ -1,4 +1,5 @@
-// lib/features/statistics/presentation/bloc/statistics_bloc.dart
+// lib/features/statistics/presentation/bloc/statistics_bloc.dart - MODIFICADO
+
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/statistics/domain/entities/statistics.dart';
 import '../../domain/usecases/get_current_month_statistics.dart';
@@ -24,19 +25,17 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     Emitter<StatisticsState> emit,
   ) async {
     emit(StatisticsLoading());
-    
     try {
-      // Cargar todos los datos en paralelo
       final results = await Future.wait([
         getCurrentMonthStatistics(),
         getCurrentYearStatistics(),
         getHistoricalData(),
       ]);
-
       emit(StatisticsLoaded(
         currentMonth: results[0] as MonthlyStatistics,
         currentYear: results[1] as List<MonthlyStatistics>,
         historicalData: results[2] as List<HistoricalDataPoint>,
+        isRefreshing: false, // Al cargar inicialmente, no estamos refrescando
       ));
     } catch (e) {
       emit(StatisticsError('Error al cargar estadísticas: ${e.toString()}'));
@@ -47,25 +46,34 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     RefreshStatistics event,
     Emitter<StatisticsState> emit,
   ) async {
-    // Mantener el estado actual mientras se actualiza
     final currentState = state;
-    
     try {
+      // Si ya hay datos, emitir un estado con isRefreshing = true
+      if (currentState is StatisticsLoaded) {
+        emit(currentState.copyWith(isRefreshing: true));
+      } else {
+        // Si no hay datos cargados, mostrar loading completo
+        emit(StatisticsLoading());
+      }
+
       final results = await Future.wait([
         getCurrentMonthStatistics(),
         getCurrentYearStatistics(),
         getHistoricalData(),
       ]);
-
+      
       emit(StatisticsLoaded(
         currentMonth: results[0] as MonthlyStatistics,
         currentYear: results[1] as List<MonthlyStatistics>,
         historicalData: results[2] as List<HistoricalDataPoint>,
+        isRefreshing: false, // ✅ Termina de refrescar
       ));
     } catch (e) {
-      // Si hay error, mantener el estado anterior
       if (currentState is StatisticsLoaded) {
-        emit(currentState);
+        emit(currentState.copyWith(
+          isRefreshing: false, // ✅ Termina de refrescar, pero con error
+          errorMessage: 'Error al actualizar: ${e.toString()}', // Opcional: pasar mensaje de error
+        ));
       } else {
         emit(StatisticsError('Error al actualizar estadísticas: ${e.toString()}'));
       }
