@@ -1,7 +1,6 @@
-// lib/features/habits/domain/usecases/get_week_entries.dart 
 import '../entities/habit_entry.dart';
 import '../repositories/habit_repository.dart';
-import '../../../../shared/utils/date_utils.dart' as app_date_utils;
+import '../../../../shared/utils/date_utils.dart';
 
 class GetWeekEntries {
   final HabitRepository repository;
@@ -9,7 +8,7 @@ class GetWeekEntries {
   GetWeekEntries(this.repository);
 
   Future<List<HabitEntry>> call(DateTime date) async {
-    final startOfWeek = app_date_utils.AppDateUtils.getStartOfWeek(date);
+    final startOfWeek = AppDateUtils.getStartOfWeek(date);
     return await repository.getHabitEntriesForWeek(startOfWeek);
   }
 }

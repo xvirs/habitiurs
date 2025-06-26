@@ -1,4 +1,3 @@
-// lib/features/habits/data/models/habit_model.dart - COMPLETO CON MÉTODOS FALTANTES
 import '../../domain/entities/habit.dart';
 
 class HabitModel extends Habit {
@@ -14,7 +13,6 @@ class HabitModel extends Habit {
           isActive: isActive,
         );
 
-  // ✅ MÉTODO fromJson FALTANTE
   factory HabitModel.fromJson(Map<String, dynamic> json) {
     return HabitModel(
       id: json['id'] as int?,
@@ -24,7 +22,6 @@ class HabitModel extends Habit {
     );
   }
 
-  // ✅ MÉTODO toJson FALTANTE
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -34,7 +31,6 @@ class HabitModel extends Habit {
     };
   }
 
-  // ✅ MÉTODO copyWith FALTANTE
   HabitModel copyWith({
     int? id,
     String? name,
@@ -49,7 +45,6 @@ class HabitModel extends Habit {
     );
   }
 
-  // ✅ MÉTODO fromEntity FALTANTE
   factory HabitModel.fromEntity(Habit habit) {
     return HabitModel(
       id: habit.id,
@@ -59,7 +54,6 @@ class HabitModel extends Habit {
     );
   }
 
-  // ✅ MÉTODO toEntity FALTANTE
   Habit toEntity() {
     return Habit(
       id: id,

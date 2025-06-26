@@ -1,4 +1,3 @@
-// lib/features/habits/presentation/widgets/weekly_grid.dart
 import 'package:flutter/material.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/entities/habit.dart';
@@ -9,7 +8,7 @@ class WeeklyGrid extends StatelessWidget {
   final List<Habit> habits;
   final List<HabitEntry> weekEntries;
   final DateTime weekStart;
-  
+
   const WeeklyGrid({
     super.key,
     required this.habits,
@@ -26,19 +25,14 @@ class WeeklyGrid extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header section (altura fija)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
             child: _HeaderSection(weekDates: weekDates),
           ),
-          
-          // Days header (altura fija)
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
             child: _DaysHeader(weekDates: weekDates),
           ),
-          
-          // Grid que se expande con el contenido (sin scroll)
           Expanded(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
@@ -57,7 +51,6 @@ class WeeklyGrid extends StatelessWidget {
   }
 }
 
-/// Header de la vista semanal
 class _HeaderSection extends StatelessWidget {
   final List<DateTime> weekDates;
 
@@ -86,8 +79,8 @@ class _HeaderSection extends StatelessWidget {
           child: Text(
             'Vista semanal',
             style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+                  fontWeight: FontWeight.bold,
+                ),
           ),
         ),
         _DateRange(
@@ -99,7 +92,6 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 
-/// Rango de fechas en el header
 class _DateRange extends StatelessWidget {
   final int startDay;
   final int endDay;
@@ -122,7 +114,6 @@ class _DateRange extends StatelessWidget {
   }
 }
 
-/// Header de días de la semana
 class _DaysHeader extends StatelessWidget {
   final List<DateTime> weekDates;
 
@@ -132,7 +123,7 @@ class _DaysHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        const SizedBox(width: 28), // Espacio para números de hábitos
+        const SizedBox(width: 28),
         ...AppDateUtils.weekDayNames.asMap().entries.map((entry) {
           final index = entry.key;
           final dayName = entry.value;
@@ -152,7 +143,6 @@ class _DaysHeader extends StatelessWidget {
   }
 }
 
-/// Columna individual de día
 class _DayColumn extends StatelessWidget {
   final String dayName;
   final int dayNumber;
@@ -167,7 +157,7 @@ class _DayColumn extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final primaryColor = Theme.of(context).colorScheme.primary;
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
       decoration: isToday
@@ -206,7 +196,6 @@ class _DayColumn extends StatelessWidget {
   }
 }
 
-/// Grid de hábitos sin scroll - se apilan verticalmente
 class _StackedHabitsGrid extends StatelessWidget {
   final List<Habit> habits;
   final List<DateTime> weekDates;
@@ -224,11 +213,11 @@ class _StackedHabitsGrid extends StatelessWidget {
       children: habits.asMap().entries.map((entry) {
         final index = entry.key;
         final habit = entry.value;
-        
+
         return Expanded(
           child: Padding(
             padding: EdgeInsets.only(
-              bottom: index == habits.length - 1 ? 0 : 4, // Separación mínima
+              bottom: index == habits.length - 1 ? 0 : 4,
             ),
             child: _HabitRow(
               habit: habit,
@@ -243,7 +232,6 @@ class _StackedHabitsGrid extends StatelessWidget {
   }
 }
 
-/// Fila individual de hábito
 class _HabitRow extends StatelessWidget {
   final Habit habit;
   final int index;
@@ -267,18 +255,17 @@ class _HabitRow extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         ...weekDates.map((date) => Expanded(
-          child: _StatusCell(
-            habitId: habit.id!,
-            date: date,
-            weekEntries: weekEntries,
-          ),
-        )),
+              child: _StatusCell(
+                habitId: habit.id!,
+                date: date,
+                weekEntries: weekEntries,
+              ),
+            )),
       ],
     );
   }
 }
 
-/// Número del hábito en la fila
 class _HabitNumber extends StatelessWidget {
   final int number;
   final Color color;
@@ -311,7 +298,6 @@ class _HabitNumber extends StatelessWidget {
   }
 }
 
-/// Celda individual de estado
 class _StatusCell extends StatelessWidget {
   final int habitId;
   final DateTime date;
@@ -330,19 +316,20 @@ class _StatusCell extends StatelessWidget {
     final isToday = AppDateUtils.isToday(date);
     final isPastDate = AppDateUtils.isPastDate(date);
 
-    // Auto-skip logic: días pasados sin entrada se consideran "skipped"
-    final displayStatus = (isPastDate && entry == null) 
-        ? HabitStatus.skipped 
+    final displayStatus = (isPastDate && entry == null)
+        ? HabitStatus.skipped
         : status;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
         color: _getCellColor(displayStatus),
-        border: isToday ? Border.all(
-          color: Theme.of(context).colorScheme.primary,
-          width: 2,
-        ) : null,
+        border: isToday
+            ? Border.all(
+                color: Theme.of(context).colorScheme.primary,
+                width: 2,
+              )
+            : null,
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -366,32 +353,42 @@ class _StatusCell extends StatelessWidget {
   }
 }
 
-/// Estado vacío del grid
 class _EmptyGridState extends StatelessWidget {
   const _EmptyGridState();
 
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.view_week,
-            size: 40,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 12),
-          Text(
-            'No tienes hábitos',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[500],
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.view_week,
+              size: 40,
+              color: Colors.grey[300],
             ),
-          ),
-        ],
+            const SizedBox(height: 12),
+            Text(
+              'No tienes hábitos',
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.grey[500],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Agrega tu primer hábito para ver el progreso semanal aquí.',
+              style: TextStyle(
+                fontSize: 12,
+                color: Colors.grey[400],
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }
 }
-

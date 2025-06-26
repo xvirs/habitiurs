@@ -37,13 +37,13 @@ class DailyHabitsList extends StatelessWidget {
                     onDelete: onDelete,
                   ),
           ),
+          // Eliminado el widget: AIHabitSuggestions
         ],
       ),
     );
   }
 }
 
-/// Header section con botón de agregar
 class _HeaderSection extends StatelessWidget {
   final VoidCallback onAdd;
 
@@ -78,7 +78,6 @@ class _HeaderSection extends StatelessWidget {
   }
 }
 
-/// Acento vertical decorativo
 class _VerticalAccent extends StatelessWidget {
   final Color color;
 
@@ -97,7 +96,6 @@ class _VerticalAccent extends StatelessWidget {
   }
 }
 
-/// Botón de agregar optimizado
 class _AddButton extends StatelessWidget {
   final VoidCallback onPressed;
 
@@ -125,7 +123,6 @@ class _AddButton extends StatelessWidget {
   }
 }
 
-/// Lista de hábitos optimizada con ListView.builder
 class _HabitsListView extends StatelessWidget {
   final List<Habit> habits;
   final Map<int, HabitStatus> todayEntriesMap;
@@ -164,7 +161,6 @@ class _HabitsListView extends StatelessWidget {
   }
 }
 
-/// Estado vacío
 class _EmptyStateWidget extends StatelessWidget {
   const _EmptyStateWidget();
 

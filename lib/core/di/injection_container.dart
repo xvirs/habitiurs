@@ -27,8 +27,8 @@ import '../../features/statistics/data/datasources/statistics_local_datasource.d
 import '../../features/statistics/data/repositories/statistics_repository_impl.dart';
 import '../../features/statistics/domain/repositories/statistics_repository.dart';
 import '../../features/statistics/domain/usecases/get_current_month_statistics.dart';
-import '../../features/statistics/domain/usecases/get_current_year_statistics.dart'; // Importado para uso en _initializeUseCases
-import '../../features/statistics/domain/usecases/get_historical_data.dart'; // Importado para uso en _initializeUseCases
+import '../../features/statistics/domain/usecases/get_current_year_statistics.dart';
+import '../../features/statistics/domain/usecases/get_historical_data.dart';
 import '../../features/statistics/presentation/bloc/statistics_bloc.dart';
 import '../../features/ai_assistant/data/datasources/offline_content_datasource.dart';
 import '../../features/ai_assistant/data/repositories/ai_assistant_repository_impl.dart';
@@ -74,6 +74,7 @@ class InjectionContainer {
 
   // Use Cases - Statistics
   late final GetCurrentMonthStatistics _getCurrentMonthStatistics;
+  // Añadir estas dos líneas para declarar las variables
   late final GetCurrentYearStatistics _getCurrentYearStatistics;
   late final GetHistoricalData _getHistoricalData;
 
@@ -86,8 +87,6 @@ class InjectionContainer {
 
   Future<void> init() async {
     if (_isInitialized) return;
-    print('🚀 [DI] Inicializando servicios...');
-
     try {
       await _initializeFirebase();
       await _initializeCoreServices();
@@ -95,10 +94,9 @@ class InjectionContainer {
       _initializeUseCases();
 
       _isInitialized = true;
-      print('✅ [DI] Servicios inicializados correctamente');
     } catch (e) {
-      print('❌ [DI] Error en inicialización: $e');
       _isInitialized = false;
+      rethrow; // Propagate the error for app-level handling
     }
   }
 
@@ -107,27 +105,22 @@ class InjectionContainer {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp();
       }
-      print('✅ [Firebase] Inicializado');
     } catch (e) {
-      print('⚠️ [Firebase] Error inicializando: $e');
+      rethrow;
     }
   }
 
   Future<void> _initializeCoreServices() async {
     _databaseHelper = SqliteDatabaseHelper();
     await _databaseHelper.database;
-    print('✅ [Database] SQLite inicializado');
 
     _initializeDataSources();
 
     _aiRepository = AIRepository();
-    print('✅ [AI] Repository inicializado');
 
     _authService = AuthService();
-    print('✅ [Auth] Service inicializado');
 
     _firebaseService = FirebaseService();
-    print('✅ [Firebase] Service inicializado');
 
     _syncManager = SyncManager(
       firebaseService: _firebaseService,
@@ -135,33 +128,29 @@ class InjectionContainer {
       habitDataSource: _habitLocalDataSource,
       statisticsDataSource: _statisticsLocalDatasource,
     );
-    print('✅ [Sync] Manager inicializado');
 
     _syncRepository = SyncRepositoryImpl(
       syncManager: _syncManager,
       firebaseService: _firebaseService,
       authService: _authService,
     );
-    print('✅ [Sync] Repository inicializado');
   }
 
   void _initializeDataSources() {
     _habitLocalDataSource = HabitLocalDataSourceImpl(_databaseHelper);
     _statisticsLocalDatasource = StatisticsLocalDatasourceImpl(databaseHelper: _databaseHelper);
     _offlineContentDatasource = OfflineContentDatasourceImpl();
-    print('✅ [DataSources] Inicializados');
   }
 
   void _initializeRepositories() {
-    _habitRepository = HabitRepositoryImpl(_habitLocalDataSource, _syncRepository, _authService);
+    _habitRepository = HabitRepositoryImpl(_habitLocalDataSource, _syncRepository);
     _statisticsRepository = StatisticsRepositoryImpl(localDatasource: _statisticsLocalDatasource);
-    
+
     _aiAssistantRepository = AIAssistantRepositoryImpl(
       offlineContentDatasource: _offlineContentDatasource,
       aiRepository: _aiRepository,
       habitRepository: _habitRepository,
     );
-    print('✅ [Repositories] Inicializados');
   }
 
   void _initializeUseCases() {
@@ -180,6 +169,7 @@ class InjectionContainer {
 
     // Statistics Use Cases
     _getCurrentMonthStatistics = GetCurrentMonthStatistics(_statisticsRepository);
+    // Inicializar las variables que faltaban aquí
     _getCurrentYearStatistics = GetCurrentYearStatistics(_statisticsRepository);
     _getHistoricalData = GetHistoricalData(_statisticsRepository);
 
@@ -187,41 +177,40 @@ class InjectionContainer {
     _getEducationalContent = GetEducationalContent(_aiAssistantRepository);
     _getAppGuides = GetAppGuides(_aiAssistantRepository);
     _getAIRecommendation = GetAIRecommendation(_aiAssistantRepository);
-
-    print('✅ [UseCases] Inicializados');
   }
 
   // Getters for Blocs
   AuthBloc get authBloc => AuthBloc(
-    checkAuthStatus: _checkAuthStatus,
-    createGuestSession: _createGuestSession,
-    loginWithGoogle: _loginWithGoogle,
-    logoutUser: _logoutUser,
-  );
-  
+        checkAuthStatus: _checkAuthStatus,
+        createGuestSession: _createGuestSession,
+        loginWithGoogle: _loginWithGoogle,
+        logoutUser: _logoutUser,
+      );
+
   HabitBloc get habitBloc => HabitBloc(
-    getAllHabits: _getAllHabits,
-    createHabit: _createHabit,
-    getWeekEntries: _getWeekEntries,
-    toggleHabitEntry: _toggleHabitEntry,
-    deleteHabit: _deleteHabit,
-  );
+        getAllHabits: _getAllHabits,
+        createHabit: _createHabit,
+        getWeekEntries: _getWeekEntries,
+        toggleHabitEntry: _toggleHabitEntry,
+        deleteHabit: _deleteHabit,
+      );
 
   StatisticsBloc get statisticsBloc => StatisticsBloc(
-    getCurrentMonthStatistics: _getCurrentMonthStatistics,
-    getCurrentYearStatistics: _getCurrentYearStatistics,
-    getHistoricalData: _getHistoricalData,
-  );
+        getCurrentMonthStatistics: _getCurrentMonthStatistics,
+        // Pasar las nuevas instancias a StatisticsBloc
+        getCurrentYearStatistics: _getCurrentYearStatistics,
+        getHistoricalData: _getHistoricalData,
+      );
 
   AIAssistantBloc get aiAssistantBloc => AIAssistantBloc(
-    getEducationalContent: _getEducationalContent,
-    getAppGuides: _getAppGuides,
-    getAIRecommendation: _getAIRecommendation,
-  );
+        getEducationalContent: _getEducationalContent,
+        getAppGuides: _getAppGuides,
+        getAIRecommendation: _getAIRecommendation,
+      );
 
   HabitEvaluationCubit get habitEvaluationCubit => HabitEvaluationCubit(
-    aiRepository: _aiRepository,
-  );
+        aiRepository: _aiRepository,
+      );
 
   // Getters for Core Services
   AIRepository get aiRepository => _aiRepository;
@@ -238,14 +227,12 @@ class InjectionContainer {
 
   // Cleanup
   Future<void> dispose() async {
-    print('🧹 [DI] Limpiando recursos...');
     try {
       _aiRepository.dispose();
       await _syncManager.dispose();
       await _databaseHelper.close();
-      print('✅ [DI] Recursos liberados');
     } catch (e) {
-      print('⚠️ [DI] Error limpiando recursos: $e');
+      rethrow;
     }
   }
 }

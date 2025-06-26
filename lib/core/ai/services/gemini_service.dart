@@ -1,4 +1,3 @@
-// lib/core/ai/services/gemini_service.dart - ACTUALIZADO
 import 'dart:convert';
 import 'dart:io';
 import 'package:habitiurs/core/ai/models/ai_response_model.dart';
@@ -15,10 +14,7 @@ class GeminiService {
   factory GeminiService() => _instance;
   GeminiService._internal() : _client = http.Client();
 
-  /// Método principal para cualquier request de IA
   Future<AIResponse> generateContent(AIRequest request) async {
-    print('🤖 [Gemini] Request type: ${request.type}');
-    
     if (_apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
       throw AIException('API Key no configurada');
     }
@@ -36,9 +32,7 @@ class GeminiService {
         Uri.parse('$_baseUrl?key=$_apiKey'),
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode(requestBody),
-      ).timeout(const Duration(seconds: 20)); // Más tiempo para análisis complejos
-
-      print('🤖 [Gemini] Status: ${response.statusCode}');
+      ).timeout(const Duration(seconds: 20));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -65,55 +59,13 @@ class GeminiService {
     }
   }
 
-  /// Métodos específicos por feature (mantener compatibilidad)
-  
-  // HABITS
-  Future<AIResponse> evaluateHabit(String habitDescription) async {
+  Future<AIResponse> evaluateHabit(String prompt) async {
     final request = AIRequest(
       type: AIRequestType.habitEvaluation,
-      prompt: _buildHabitEvaluationPrompt(habitDescription),
-      metadata: {'habit': habitDescription},
+      prompt: prompt,
+      metadata: {},
     );
     return await generateContent(request);
-  }
-
-  // ✅ PROMPT BUILDERS (movidos desde AIRepository)
-  String _buildHabitEvaluationPrompt(String habit) {
-    return '''
-Eres un experto en el seguimiento y la asistencia de hábitos mediante IA. Tu enfoque es ayudar al usuario a formular hábitos que sean fáciles de **trakear** y mantener diariamente, **sin que la aplicación se convierta en una herramienta de gestión de tareas o horarios**. Evalúa el siguiente hábito propuesto.
-
-HÁBITO: "$habit"
-
-Criterios de Evaluación:
-1.  **Claridad:** ¿Es el hábito fácil de entender y recordar para marcar su cumplimiento diario?
-2.  **Viabilidad:** ¿Es realista y alcanzable para una persona común, facilitando el seguimiento constante?
-3.  **Simplicidad:** ¿El hábito es conciso y directo, sin detalles excesivos o que requieran planificación de tiempo específica?
-4.  **Enfoque en el Tracking:** ¿El hábito es adecuado para un seguimiento binario (hecho/no hecho) sin complicaciones?
-
-Instrucciones para la Respuesta:
-* **Formato de Salida:** Responde siempre en **exactamente 2 líneas cortas y concisas**.
-* **Contenido:**
-    * **Línea 1:**
-        * Si el hábito es excelente bajo los criterios, coloca: "Es un excelente hábito para trackear." 
-        * Si hay una fortaleza clave o una sugerencia breve y muy útil (que mejore significativamente la efectividad o conveniencia para el tracking), usa "✅" o "💡". **No es obligatorio dar una sugerencia o fortaleza si no hay algo realmente valioso que aportar.**
-        * Prioriza una sola idea por línea. Evita cualquier mención de horarios o planificación.
-    * **Línea 2:** Siempre incluye la "🎯 Probabilidad de éxito: [Alta/Media/Baja]". Esta línea debe ser la última y no debe contener otra información.
-* **Tono:** Sé directo, objetivo y realista. Solo proporciona insights si suman a la claridad y facilidad de seguimiento diario.
-
-Ejemplos de Formato de Salida (adaptado según necesidad):
--   Es un excelente hábito para trackear.
--   🎯 Probabilidad de éxito: Alta.
-
--   ✅ Muy claro y viable para el seguimiento.
--   🎯 Probabilidad de éxito: Alta.
-
--   💡 Simplifica la acción para facilitar el marcado diario.
--   🎯 Probabilidad de éxito: Media.
-
--   Necesita ser más conciso para el tracking.
--   🎯 Probabilidad de éxito: Baja.
-''';
-
   }
 
   Future<bool> checkConnectivity() async {
@@ -147,7 +99,6 @@ Ejemplos de Formato de Salida (adaptado según necesidad):
   }
 }
 
-// Excepciones específicas
 class AIException implements Exception {
   final String message;
   AIException(this.message);

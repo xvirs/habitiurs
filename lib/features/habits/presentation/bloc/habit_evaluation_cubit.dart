@@ -1,13 +1,15 @@
-// lib/features/habits/presentation/bloc/habit_evaluation_cubit.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/ai/repositories/ai_repository.dart'; // Asegúrate de que esta ruta sea correcta
-import 'habit_evaluation_state.dart'; // Asegúrate de que esta ruta sea correcta
+import '../../../../core/ai/repositories/ai_repository.dart';
+import 'habit_evaluation_state.dart';
+import '../../domain/services/habit_ai_prompt_builder.dart';
 
 class HabitEvaluationCubit extends Cubit<HabitEvaluationState> {
   final AIRepository _aiRepository;
+  final HabitAIPromptBuilder _promptBuilder;
 
   HabitEvaluationCubit({required AIRepository aiRepository})
       : _aiRepository = aiRepository,
+        _promptBuilder = HabitAIPromptBuilder(),
         super(HabitEvaluationInitial());
 
   Future<void> evaluateHabit(String habitDescription) async {
@@ -18,10 +20,15 @@ class HabitEvaluationCubit extends Cubit<HabitEvaluationState> {
 
     emit(const HabitEvaluationLoading());
     try {
-      final aiResponse = await _aiRepository.evaluateHabit(habitDescription);
+      final prompt = _promptBuilder.buildHabitEvaluationPrompt(habitDescription);
+      final metadata = {'habit': habitDescription};
+
+      final aiResponse = await _aiRepository.evaluateHabit(
+        prompt: prompt,
+        metadata: metadata,
+      );
       emit(HabitEvaluationSuccess(aiResponse.content));
     } catch (e) {
-      print('❌ [HabitEvaluationCubit] Error al evaluar hábito: $e');
       emit(HabitEvaluationError('Error al obtener evaluación de IA. Intenta de nuevo: ${e.toString()}'));
     }
   }

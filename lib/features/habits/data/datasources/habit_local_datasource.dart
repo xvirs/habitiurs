@@ -1,23 +1,16 @@
-// lib/features/habits/data/datasources/habit_local_datasource.dart - MODIFICADO (QUITADO permanentlyDeleteHabit, AÑADIDO last_modified en entries)
-
 import 'package:sqflite/sqflite.dart';
 import '../../../../core/database/database_helper.dart';
 import '../models/habit_model.dart';
 import '../models/habit_entry_model.dart';
-import '../../../../shared/enums/habit_status.dart'; // Asegúrate de que este import está aquí
 
 abstract class HabitLocalDataSource {
-  Future<List<HabitModel>> getAllHabits({bool includeInactive = false}); 
+  Future<List<HabitModel>> getAllHabits({bool includeInactive = false});
   Future<int> insertHabit(HabitModel habit);
-  Future<void> updateHabit(HabitModel habit);
-  // ✅ MODIFICADO: Este método es ahora el ÚNICO para "borrar" un hábito localmente (soft delete)
-  Future<void> deleteHabit(int id); 
-  // Future<void> permanentlyDeleteHabit(int id); // ✅ ELIMINADO del abstract
-
-  // NUEVO: Insertar hábito con ID específico (para sync)
   Future<void> insertHabitWithId(HabitModel habit);
-  
-  Future<List<HabitEntryModel>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate);
+  Future<void> updateHabit(HabitModel habit);
+  Future<void> deleteHabit(int id);
+  Future<List<HabitEntryModel>> getHabitEntriesForDateRange(
+      DateTime startDate, DateTime endDate);
   Future<HabitEntryModel?> getHabitEntryForDate(int habitId, DateTime date);
   Future<int> insertHabitEntry(HabitEntryModel entry);
   Future<void> updateHabitEntry(HabitEntryModel entry);
@@ -56,13 +49,10 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
     return await db.insert('habits', habit.toJson());
   }
 
-  // NUEVO MÉTODO: Insertar hábito con ID específico (para sincronización)
   @override
   Future<void> insertHabitWithId(HabitModel habit) async {
     final db = await _databaseHelper.database;
-    
     try {
-      // Usar REPLACE para manejar conflictos de ID
       await db.execute('''
         INSERT OR REPLACE INTO habits (id, name, created_at, is_active)
         VALUES (?, ?, ?, ?)
@@ -72,10 +62,7 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
         habit.createdAt.toIso8601String(),
         habit.isActive ? 1 : 0,
       ]);
-      
-      print('✅ [DB] Hábito insertado con ID específico: ${habit.id} - "${habit.name}"');
     } catch (e) {
-      print('❌ [DB] Error insertando hábito con ID ${habit.id}: $e');
       rethrow;
     }
   }
@@ -92,45 +79,38 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   }
 
   @override
-  // ✅ MODIFICADO: Este método es ahora el soft delete local.
-  // Su implementación ya era correcta para esto.
-  Future<void> deleteHabit(int id) async { 
+  Future<void> deleteHabit(int id) async {
     final db = await _databaseHelper.database;
     await db.update(
       'habits',
-      {'is_active': 0}, // Marca como inactivo
+      {'is_active': 0},
       where: 'id = ?',
       whereArgs: [id],
     );
   }
 
-  // @override
-  // Future<void> permanentlyDeleteHabit(int id) async { // ✅ ELIMINADO la implementación
-  //   // Este método se elimina completamente ya que soft delete será el estándar.
-  // }
-
   @override
-  Future<List<HabitEntryModel>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate) async {
+  Future<List<HabitEntryModel>> getHabitEntriesForDateRange(
+      DateTime startDate, DateTime endDate) async {
     final db = await _databaseHelper.database;
-    
     final startDateStr = startDate.toIso8601String().split('T')[0];
     final endDateStr = endDate.toIso8601String().split('T')[0];
-    
+
     final List<Map<String, dynamic>> maps = await db.query(
       'habit_entries',
       where: 'date >= ? AND date <= ?',
       whereArgs: [startDateStr, endDateStr],
       orderBy: 'date DESC, habit_id',
     );
-
     return List.generate(maps.length, (i) => HabitEntryModel.fromJson(maps[i]));
   }
 
   @override
-  Future<HabitEntryModel?> getHabitEntryForDate(int habitId, DateTime date) async {
+  Future<HabitEntryModel?> getHabitEntryForDate(
+      int habitId, DateTime date) async {
     final db = await _databaseHelper.database;
     final dateStr = date.toIso8601String().split('T')[0];
-    
+
     final List<Map<String, dynamic>> maps = await db.query(
       'habit_entries',
       where: 'habit_id = ? AND date = ?',
@@ -141,30 +121,23 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
     if (maps.isNotEmpty) {
       return HabitEntryModel.fromJson(maps.first);
     }
-    
     return null;
   }
 
   @override
   Future<int> insertHabitEntry(HabitEntryModel entry) async {
     final db = await _databaseHelper.database;
-    
     try {
-      // ✅ MODIFICADO: Asegurar que last_modified se incluye
       final entryJson = entry.toJson();
-      // Si el modelo no trae lastModified (ej. una nueva entrada), usa DateTime.now()
-      entryJson['last_modified'] = entry.lastModified?.toIso8601String() ?? DateTime.now().toIso8601String(); 
+      entryJson['last_modified'] =
+          entry.lastModified?.toIso8601String() ?? DateTime.now().toIso8601String();
 
-      final result = await db.insert(
+      return await db.insert(
         'habit_entries',
-        entryJson, // Usar el JSON con el timestamp
+        entryJson,
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
-      
-      print('✅ [DB] Entrada insertada: Hábito ${entry.habitId} - ${entry.date.toIso8601String().split('T')[0]} - ${entry.status.name}');
-      return result;
     } catch (e) {
-      print('❌ [DB] Error insertando entrada: $e');
       rethrow;
     }
   }
@@ -173,26 +146,18 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   Future<void> updateHabitEntry(HabitEntryModel entry) async {
     final db = await _databaseHelper.database;
     final dateStr = entry.date.toIso8601String().split('T')[0];
-    
-    try {
-      // ✅ MODIFICADO: Asegurar que last_modified se actualiza
-      final entryJson = entry.toJson();
-      entryJson['last_modified'] = DateTime.now().toIso8601String(); // Siempre actualizar al momento actual al modificar
 
-      final result = await db.update(
+    try {
+      final entryJson = entry.toJson();
+      entryJson['last_modified'] = DateTime.now().toIso8601String();
+
+      await db.update(
         'habit_entries',
-        entryJson, // Usar el JSON con el timestamp actualizado
+        entryJson,
         where: 'habit_id = ? AND date = ?',
         whereArgs: [entry.habitId, dateStr],
       );
-      
-      if (result > 0) {
-        print('✅ [DB] Entrada actualizada: Hábito ${entry.habitId} - $dateStr - ${entry.status.name}');
-      } else {
-        print('⚠️ [DB] No se encontró entrada para actualizar: Hábito ${entry.habitId} - $dateStr');
-      }
     } catch (e) {
-      print('❌ [DB] Error actualizando entrada: $e');
       rethrow;
     }
   }
@@ -201,21 +166,14 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   Future<void> deleteHabitEntry(int habitId, DateTime date) async {
     final db = await _databaseHelper.database;
     final dateStr = date.toIso8601String().split('T')[0];
-    
+
     try {
-      final result = await db.delete(
+      await db.delete(
         'habit_entries',
         where: 'habit_id = ? AND date = ?',
         whereArgs: [habitId, dateStr],
       );
-      
-      if (result > 0) {
-        print('✅ [DB] Entrada eliminada: Hábito $habitId - $dateStr');
-      } else {
-        print('⚠️ [DB] No se encontró entrada para eliminar: Hábito $habitId - $dateStr');
-      }
     } catch (e) {
-      print('❌ [DB] Error eliminando entrada: $e');
       rethrow;
     }
   }

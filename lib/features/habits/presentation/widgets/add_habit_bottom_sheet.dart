@@ -1,9 +1,9 @@
-// lib/features/habits/presentation/widgets/add_habit_bottom_sheet.dart - OPTIMIZADO y CON IA REAL
 import 'package:flutter/material.dart';
-import 'package:flutter_bloc/flutter_bloc.dart'; // Importar BlocProvider y BlocBuilder
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_evaluation_cubit.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_evaluation_state.dart';
-import '../../../../core/di/injection_container.dart'; // Para obtener el Cubit
+import '../../../../core/di/injection_container.dart';
+
 class AddHabitBottomSheet extends StatefulWidget {
   final Function(String) onAdd;
 
@@ -15,7 +15,6 @@ class AddHabitBottomSheet extends StatefulWidget {
   @override
   State<AddHabitBottomSheet> createState() => _AddHabitBottomSheetState();
 
-  // Método estático para mostrar el BottomSheet
   static void show(BuildContext context, {required Function(String) onAdd}) {
     showModalBottomSheet(
       context: context,
@@ -23,9 +22,9 @@ class AddHabitBottomSheet extends StatefulWidget {
       backgroundColor: Colors.transparent,
       enableDrag: true,
       isDismissible: true,
-      builder: (context) => _AdaptiveBottomSheet(
-        child: BlocProvider<HabitEvaluationCubit>( // ✅ NUEVO: Proveer el Cubit
-          create: (ctx) => InjectionContainer().habitEvaluationCubit,
+      builder: (context) => BlocProvider<HabitEvaluationCubit>(
+        create: (ctx) => InjectionContainer().habitEvaluationCubit,
+        child: _AdaptiveBottomSheet(
           child: AddHabitBottomSheet(onAdd: onAdd),
         ),
       ),
@@ -33,19 +32,14 @@ class AddHabitBottomSheet extends StatefulWidget {
   }
 }
 
-class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> 
+class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
     with SingleTickerProviderStateMixin {
-  
-  // Controllers y focus
   late final TextEditingController _controller;
   late final GlobalKey<FormState> _formKey;
   late final FocusNode _focusNode;
-  
-  // Animación
   late final AnimationController _animationController;
   late final Animation<double> _fadeAnimation;
-  
-  // Constantes
+
   static const Duration _animationDuration = Duration(milliseconds: 250);
   static const int _minHabitLength = 3;
 
@@ -54,8 +48,6 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
     super.initState();
     _initializeControllers();
     _setupAnimation();
-    
-    // Escuchar cambios en el controlador para ocultar la evaluación
     _controller.addListener(_onTextChangedListener);
   }
 
@@ -81,33 +73,41 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
 
   @override
   void dispose() {
-    _controller.removeListener(_onTextChangedListener); // Limpiar listener
+    _controller.removeListener(_onTextChangedListener);
     _controller.dispose();
     _focusNode.dispose();
     _animationController.dispose();
     super.dispose();
   }
 
-  // Listener para el campo de texto (dispara hideEvaluation)
   void _onTextChangedListener() {
-    // Si la evaluación está mostrándose y el texto es muy corto, ocultarla.
-    // Usamos context.read para evitar recrear el Cubit si el texto cambia.
     final currentCubitState = context.read<HabitEvaluationCubit>().state;
-    if (currentCubitState is HabitEvaluationSuccess || currentCubitState is HabitEvaluationError) {
+    
+    // Si la evaluación está mostrándose (Success, Loading o Error) y el texto cambia,
+    // o si el texto es muy corto, ocultarla para permitir re-evaluar o limpiar.
+    if (currentCubitState is HabitEvaluationSuccess ||
+        currentCubitState is HabitEvaluationError ||
+        currentCubitState is HabitEvaluationLoading) {
       if (_controller.text.trim().length < _minHabitLength) {
+        // Si el texto es muy corto, simplemente ocultamos.
+        context.read<HabitEvaluationCubit>().hideEvaluation();
+      } else if (currentCubitState is! HabitEvaluationLoading) {
+        // Si no está cargando y el texto es lo suficientemente largo,
+        // pero un resultado ya está visible, ocúltalo para permitir re-evaluar.
+        // Esto cubre el caso de editar un resultado ya existente.
         context.read<HabitEvaluationCubit>().hideEvaluation();
       }
     }
+    // IMPORTANTE: Llamar setState para que la UI se reconstruya y
+    // `_canAddHabit` se reevalúe, actualizando el estado de los botones.
+    setState(() {});
   }
 
-  // Método para disparar la evaluación de la IA
   void _evaluateHabit() {
     if (!_canAddHabit) return;
-    // Disparar el evento de evaluación al Cubit
     context.read<HabitEvaluationCubit>().evaluateHabit(_controller.text.trim());
   }
 
-  // Método para ocultar la evaluación (disparado desde el botón de cerrar)
   void _hideEvaluation() {
     context.read<HabitEvaluationCubit>().hideEvaluation();
   }
@@ -126,20 +126,24 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final hasKeyboard = keyboardHeight > 0;
-    
+
     return _BottomSheetContainer(
-      child: BlocConsumer<HabitEvaluationCubit, HabitEvaluationState>( // ✅ NUEVO: BlocConsumer para manejar los estados de la IA
+      child: BlocConsumer<HabitEvaluationCubit, HabitEvaluationState>(
         listener: (context, state) {
           if (state is HabitEvaluationSuccess) {
             _animationController.forward();
-          } else if (state is HabitEvaluationError || state is HabitEvaluationInitial || state is HabitEvaluationHidden) {
-            _animationController.reverse(); // Ocultar si hay error o se reinicia/oculta
+          } else if (state is HabitEvaluationError ||
+              state is HabitEvaluationInitial ||
+              state is HabitEvaluationHidden) {
+            _animationController.reverse();
           } else if (state is HabitEvaluationLoading) {
-             _animationController.forward(); // Mostrar spinner si carga
+            _animationController.forward();
           }
         },
         builder: (context, state) {
-          bool showEvaluation = state is HabitEvaluationSuccess || state is HabitEvaluationLoading || state is HabitEvaluationError;
+          bool showEvaluationSection = state is HabitEvaluationSuccess ||
+              state is HabitEvaluationLoading ||
+              state is HabitEvaluationError;
           bool isEvaluating = state is HabitEvaluationLoading;
           String evaluationText = '';
           if (state is HabitEvaluationSuccess) evaluationText = state.evaluationText;
@@ -152,13 +156,13 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
             controller: _controller,
             focusNode: _focusNode,
             isEvaluating: isEvaluating,
-            showEvaluation: showEvaluation,
+            showEvaluation: showEvaluationSection,
             evaluationText: evaluationText,
             fadeAnimation: _fadeAnimation,
             onEvaluate: _evaluateHabit,
             onHideEvaluation: _hideEvaluation,
             onAddHabit: _addHabit,
-            onTextChanged: (value) { /* handled by listener */ }, // La lógica de `onTextChanged` ahora está en el listener del controlador
+            onTextChanged: (value) {},
             canAddHabit: _canAddHabit,
           );
         },
@@ -167,7 +171,6 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   }
 }
 
-// Contenedor principal del bottom sheet
 class _BottomSheetContainer extends StatelessWidget {
   final Widget child;
 
@@ -203,7 +206,6 @@ class _BottomSheetContainer extends StatelessWidget {
   }
 }
 
-// Contenido principal
 class _BottomSheetContent extends StatelessWidget {
   final bool hasKeyboard;
   final GlobalKey<FormState> formKey;
@@ -216,7 +218,7 @@ class _BottomSheetContent extends StatelessWidget {
   final VoidCallback onEvaluate;
   final VoidCallback onHideEvaluation;
   final VoidCallback onAddHabit;
-  final ValueChanged<String> onTextChanged; // Se mantiene por la estructura del TextFormField, pero su lógica es pasiva
+  final ValueChanged<String> onTextChanged;
   final bool canAddHabit;
 
   const _BottomSheetContent({
@@ -271,7 +273,7 @@ class _BottomSheetContent extends StatelessWidget {
             SizedBox(height: hasKeyboard ? 14 : 10),
             _EvaluateButton(
               hasKeyboard: hasKeyboard,
-              canEvaluate: canAddHabit && !showEvaluation,
+              canEvaluate: canAddHabit && !isEvaluating,
               onPressed: onEvaluate,
             ),
             SizedBox(height: hasKeyboard ? 16 : 12),
@@ -288,7 +290,6 @@ class _BottomSheetContent extends StatelessWidget {
   }
 }
 
-// Header component
 class _Header extends StatelessWidget {
   final bool hasKeyboard;
 
@@ -297,7 +298,7 @@ class _Header extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Row(
       children: [
         _HeaderIcon(hasKeyboard: hasKeyboard, theme: theme),
@@ -345,30 +346,19 @@ class _HeaderText extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Nuevo Hábito',
+            'Nueva Tarea Diaria', // Título ajustado
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               fontSize: hasKeyboard ? 17 : 18,
             ),
           ),
-          // ✅ MODIFICADO: Mensaje instructivo para el usuario
-          Text(
-            hasKeyboard 
-                ? 'Describe un hábito claro y breve para trackear diario.'
-                : 'Define tu hábito: simple, claro y conciso para seguir.',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-              height: 1.2,
-            ),
-          ),
+          // Texto eliminado según solicitud
         ],
       ),
     );
   }
 }
 
-// Sección de información
 class _InfoSection extends StatelessWidget {
   final bool hasKeyboard;
   final bool showEvaluation;
@@ -400,7 +390,6 @@ class _InfoSection extends StatelessWidget {
   }
 }
 
-// Card de consejos
 class _TipsCard extends StatelessWidget {
   final bool hasKeyboard;
 
@@ -475,7 +464,6 @@ class _TipsCard extends StatelessWidget {
   }
 }
 
-// Card de evaluación
 class _EvaluationCard extends StatelessWidget {
   final bool hasKeyboard;
   final bool isEvaluating;
@@ -509,8 +497,7 @@ class _EvaluationCard extends StatelessWidget {
             _buildEvaluationHeader(),
             if (!isEvaluating) ...[
               SizedBox(height: hasKeyboard ? 8 : 6),
-              // ✅ MODIFICADO: Usar RichText para parsear las líneas y mostrar emojis
-              _buildEvaluationContent(evaluationText, hasKeyboard), 
+              _buildEvaluationContent(evaluationText, hasKeyboard),
             ],
           ],
         ),
@@ -559,19 +546,16 @@ class _EvaluationCard extends StatelessWidget {
     );
   }
 
-  // ✅ MODIFICADO: Ahora es un método que construye RichText para manejar múltiples líneas y emojis
   Widget _buildEvaluationContent(String text, bool hasKeyboard) {
-    final lines = text.split('\n'); // Dividir por saltos de línea
+    final lines = text.split('\n');
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: lines.map((line) {
-        // Opcional: Puedes hacer un parsing más sofisticado si la IA usa patrones como "✅ Texto"
-        // Por ahora, solo mostramos cada línea.
         return Padding(
-          padding: const EdgeInsets.only(bottom: 2.0), // Espacio entre líneas
+          padding: const EdgeInsets.only(bottom: 2.0),
           child: Text(
-            line.trim(), // Eliminar espacios al inicio/final de la línea
+            line.trim(),
             style: TextStyle(
               fontSize: hasKeyboard ? 12 : 11,
               color: Colors.green[700],
@@ -584,7 +568,6 @@ class _EvaluationCard extends StatelessWidget {
   }
 }
 
-// Campo de texto
 class _HabitTextField extends StatelessWidget {
   final TextEditingController controller;
   final FocusNode focusNode;
@@ -607,16 +590,22 @@ class _HabitTextField extends StatelessWidget {
     return ListenableBuilder(
       listenable: controller,
       builder: (context, child) {
+        final theme = Theme.of(context);
+
         return TextFormField(
           controller: controller,
           focusNode: focusNode,
           decoration: InputDecoration(
-            labelText: 'Describe tu hábito',
-            hintText: 'Ej: Leer 10 páginas cada mañana',
+            labelText: 'Ej: Beber un vaso de agua',
+            labelStyle: TextStyle(
+              color: theme.colorScheme.onSurface.withOpacity(0.6),
+            ),
+            hintStyle: TextStyle(
+              color: Colors.grey[500]?.withOpacity(0.7), 
+            ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
             ),
-            prefixIcon: const Icon(Icons.track_changes, size: 20),
             suffixIcon: controller.text.isNotEmpty
                 ? IconButton(
                     icon: const Icon(Icons.clear, size: 18),
@@ -643,7 +632,6 @@ class _HabitTextField extends StatelessWidget {
   }
 }
 
-// Botón de evaluación
 class _EvaluateButton extends StatelessWidget {
   final bool hasKeyboard;
   final bool canEvaluate;
@@ -680,7 +668,7 @@ class _EvaluateButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
           side: BorderSide(
-            color: canEvaluate 
+            color: canEvaluate
                 ? Colors.green[600]!.withOpacity(0.3)
                 : Colors.grey[300]!,
           ),
@@ -690,7 +678,6 @@ class _EvaluateButton extends StatelessWidget {
   }
 }
 
-// Botones de acción
 class _ActionButtons extends StatelessWidget {
   final bool hasKeyboard;
   final bool canAddHabit;
@@ -707,7 +694,7 @@ class _ActionButtons extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Row(
       children: [
         Expanded(
@@ -738,8 +725,8 @@ class _ActionButtons extends StatelessWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: canAddHabit 
-                    ? theme.colorScheme.primary 
+                backgroundColor: canAddHabit
+                    ? theme.colorScheme.primary
                     : Colors.grey[300],
               ),
               child: Row(
@@ -752,7 +739,7 @@ class _ActionButtons extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Crear Hábito',
+                    'Crear Tarea', // Texto del botón ajustado
                     style: TextStyle(
                       color: canAddHabit ? Colors.white : Colors.grey[500],
                       fontSize: 15,
@@ -769,7 +756,6 @@ class _ActionButtons extends StatelessWidget {
   }
 }
 
-// Widget wrapper que maneja la altura adaptativa
 class _AdaptiveBottomSheet extends StatelessWidget {
   final Widget child;
 
@@ -779,8 +765,8 @@ class _AdaptiveBottomSheet extends StatelessWidget {
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
-    
-    final height = keyboardHeight > 0 
+
+    final height = keyboardHeight > 0
         ? screenHeight * 0.89
         : screenHeight * 0.47;
 
@@ -791,7 +777,6 @@ class _AdaptiveBottomSheet extends StatelessWidget {
   }
 }
 
-// Clases de datos y utilidades
 class _TipModel {
   final String emoji;
   final String text;
@@ -800,28 +785,20 @@ class _TipModel {
 }
 
 class _TipsData {
-  // ✅ MODIFICADO: Consejos alineados con la filosofía de la app
   static const List<_TipModel> tips = [
-    _TipModel(emoji: '📝', text: 'Sé claro: "Meditar" es mejor que "Meditar 10 mins"'),
-    _TipModel(emoji: '🎯', text: 'Hazlo simple: Es más fácil trackear "Leer" que "Leer 100 páginas"'),
-    _TipModel(emoji: '👌', text: 'Concéntrate en la acción, no en el detalle específico'),
+    _TipModel(emoji: '📅', text: 'Define una acción clara que puedas marcar como "hecha" hoy. No más de una frase.'),
+    _TipModel(emoji: '🎯', text: 'Lo importante es la constancia diaria. No te exijas perfección.'),
   ];
 }
 
 class _HabitValidator {
   static String? validate(String? value) {
     if (value == null || value.trim().isEmpty) {
-      return 'Describe tu hábito';
+      return 'Describe tu tarea diaria'; // Mensaje de validación ajustado
     }
     if (value.trim().length < 3) {
       return 'Mínimo 3 caracteres';
     }
     return null;
-  }
-}
-
-class _MockEvaluationGenerator {
-  static String generate(String habit) {
-    return '✅ Bien estructurado y específico.\n\n💡 Sugerencia: Añade horario específico.\n\n🎯 Éxito probable: Alto';
   }
 }

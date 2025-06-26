@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
+import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_event.dart';
+import 'package:habitiurs/features/ai_assistant/presentation/pages/ai_assistant_page.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_bloc.dart';
+import 'package:habitiurs/features/habits/presentation/bloc/habit_event.dart';
+import 'package:habitiurs/features/habits/presentation/pages/habits_page.dart';
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_bloc.dart';
+import 'package:habitiurs/features/statistics/presentation/bloc/statistics_event.dart';
+import 'package:habitiurs/features/statistics/presentation/pages/statistics_page.dart';
 import '../../../../shared/widgets/user_drawer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
-import 'habits_page.dart';
-import '../../../statistics/presentation/pages/statistics_page.dart';
-import '../../../ai_assistant/presentation/pages/ai_assistant_page.dart';
-import '../../../habits/presentation/bloc/habit_event.dart';
-import '../../../statistics/presentation/bloc/statistics_event.dart';
-import '../../../ai_assistant/presentation/bloc/ai_assistant_event.dart';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -134,7 +134,6 @@ class _MainPageState extends State<MainPage> {
   }
 
   void _onDataSynced() {
-    print('🔄 [MainPage] Recibido callback de sincronización');
     _refreshDataForTab(_currentIndex);
   }
 

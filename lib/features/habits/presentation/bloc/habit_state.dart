@@ -1,4 +1,3 @@
-// lib/features/habits/presentation/bloc/habit_state.dart - ACTUALIZADO
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
@@ -18,13 +17,13 @@ class HabitLoaded extends HabitState {
   final List<Habit> habits;
   final List<HabitEntry> weekEntries;
   final DateTime currentWeekStart;
-  final bool isRefreshing; // ✅ NUEVO: Indicador de pull-to-refresh
+  final bool isRefreshing;
 
   const HabitLoaded({
     required this.habits,
     required this.weekEntries,
     required this.currentWeekStart,
-    this.isRefreshing = false, // ✅ NUEVO: Default false
+    this.isRefreshing = false,
   });
 
   @override
@@ -34,13 +33,13 @@ class HabitLoaded extends HabitState {
     List<Habit>? habits,
     List<HabitEntry>? weekEntries,
     DateTime? currentWeekStart,
-    bool? isRefreshing, // ✅ NUEVO
+    bool? isRefreshing,
   }) {
     return HabitLoaded(
       habits: habits ?? this.habits,
       weekEntries: weekEntries ?? this.weekEntries,
       currentWeekStart: currentWeekStart ?? this.currentWeekStart,
-      isRefreshing: isRefreshing ?? this.isRefreshing, // ✅ NUEVO
+      isRefreshing: isRefreshing ?? this.isRefreshing,
     );
   }
 }

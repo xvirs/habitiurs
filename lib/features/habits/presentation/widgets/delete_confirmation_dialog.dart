@@ -1,4 +1,3 @@
-// lib/features/habits/presentation/widgets/delete_confirmation_dialog.dart - SIMPLE
 import 'package:flutter/material.dart';
 
 class DeleteConfirmationDialog extends StatelessWidget {

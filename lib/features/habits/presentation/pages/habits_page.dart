@@ -1,4 +1,3 @@
-// lib/features/habits/presentation/pages/habits_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/habits/domain/entities/habit_entry.dart';
@@ -132,7 +131,7 @@ class HabitsPageState extends State<HabitsPage>
   Widget _buildLoadedView(BuildContext context, HabitLoaded state) {
     final todayEntriesMap = _getTodayEntriesMap(state.weekEntries);
 
-    return Column( // ✅ MODIFICADO: REMOVED SafeArea(top: true)
+    return Column(
       children: [
         Expanded(
           flex: 1,
@@ -167,7 +166,6 @@ class HabitsPageState extends State<HabitsPage>
     );
   }
 
-  /// NUEVO: Mapea las entradas de hoy a habitId -> status
   Map<int, HabitStatus> _getTodayEntriesMap(List<HabitEntry> weekEntries) {
     return {
       for (final entry in weekEntries)

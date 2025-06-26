@@ -1,4 +1,3 @@
-// lib/features/habits/domain/entities/habit_entry.dart
 import 'package:equatable/equatable.dart';
 import '../../../../shared/enums/habit_status.dart';
 

@@ -1,4 +1,3 @@
-// lib/features/habits/domain/entities/habit.dart
 import 'package:equatable/equatable.dart';
 
 class Habit extends Equatable {

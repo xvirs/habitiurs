@@ -1,4 +1,3 @@
-// lib/features/habits/presentation/bloc/habit_evaluation_state.dart
 import 'package:equatable/equatable.dart';
 
 abstract class HabitEvaluationState extends Equatable {
@@ -32,5 +31,4 @@ class HabitEvaluationError extends HabitEvaluationState {
   List<Object> get props => [message];
 }
 
-// Opcional: Un estado para ocultar la evaluación si no hay texto o se quiere resetear
 class HabitEvaluationHidden extends HabitEvaluationState {}

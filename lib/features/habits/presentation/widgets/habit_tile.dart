@@ -1,7 +1,7 @@
-// lib/features/habits/presentation/widgets/habit_tile.dart
 import 'package:flutter/material.dart';
 import '../../domain/entities/habit.dart';
 import '../../../../shared/enums/habit_status.dart';
+// Eliminadas las importaciones de habit_status_icon.dart y habit_status_styles.dart
 
 class HabitTile extends StatelessWidget {
   final Habit habit;
@@ -34,7 +34,7 @@ class HabitTile extends StatelessWidget {
               width: 1,
             ),
             borderRadius: BorderRadius.circular(8),
-            color: status == HabitStatus.completed 
+            color: status == HabitStatus.completed
                 ? Colors.green.withOpacity(0.05)
                 : null,
           ),
@@ -68,7 +68,6 @@ class HabitTile extends StatelessWidget {
   }
 }
 
-/// Número del hábito con funcionalidad de eliminación
 class _HabitNumber extends StatelessWidget {
   final int number;
   final VoidCallback onLongPress;
@@ -104,7 +103,6 @@ class _HabitNumber extends StatelessWidget {
   }
 }
 
-/// Nombre del hábito con estilo condicional
 class _HabitName extends StatelessWidget {
   final String name;
   final HabitStatus status;
@@ -131,7 +129,6 @@ class _HabitName extends StatelessWidget {
   }
 }
 
-/// Toggle de estado optimizado
 class _StatusToggle extends StatelessWidget {
   final HabitStatus status;
 

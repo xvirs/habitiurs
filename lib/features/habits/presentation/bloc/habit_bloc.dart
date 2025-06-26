@@ -1,4 +1,3 @@
-// lib/features/habits/presentation/bloc/habit_bloc.dart - CON SINCRONIZACIÓN AUTOMÁTICA
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/usecases/get_all_habits.dart';
@@ -27,125 +26,97 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
         _createHabit = createHabit,
         _getWeekEntries = getWeekEntries,
         _toggleHabitEntry = toggleHabitEntry,
-        _deleteHabit = deleteHabit,
+        _deleteHabit = deleteHabit, // Corregido: de 'deleteHabiet' a 'deleteHabit'
         super(HabitInitial()) {
     on<LoadHabits>(_onLoadHabits);
     on<CreateHabitEvent>(_onCreateHabit);
     on<ToggleHabitEntryEvent>(_onToggleHabitEntry);
     on<DeleteHabitEvent>(_onDeleteHabit);
     on<RefreshData>(_onRefreshData);
-    on<PullToRefresh>(_onPullToRefresh); // ✅ NUEVO
+    on<PullToRefresh>(_onPullToRefresh);
   }
 
   Future<void> _onLoadHabits(LoadHabits event, Emitter<HabitState> emit) async {
+    print('🔄 HabitBloc: Iniciando carga de hábitos...');
     emit(HabitLoading());
     try {
       await _loadAndEmitData(emit);
+      print('✅ HabitBloc: Hábitos cargados exitosamente.');
     } catch (e) {
+      print('❌ HabitBloc: Error al cargar hábitos: $e');
       emit(HabitError('Error cargando hábitos: ${e.toString()}'));
     }
   }
 
-  // ✅ MEJORADO: Crear hábito + sync automático
   Future<void> _onCreateHabit(CreateHabitEvent event, Emitter<HabitState> emit) async {
+    print('🔄 HabitBloc: Creando hábito "${event.name}"...');
     try {
-      print('🔄 [HabitBloc] Creando hábito: "${event.name}"');
-      
-      // 1. Crear hábito localmente
       await _createHabit(event.name);
-      print('✅ [HabitBloc] Hábito creado localmente');
-      
-      // 2. Recargar datos inmediatamente
+      print('✅ HabitBloc: Hábito "${event.name}" creado localmente.');
       await _loadAndEmitData(emit);
-      
-      // 3. ✅ NUEVO: Sincronizar automáticamente en background
       _syncInBackground('create_habit');
-      
+      print('✅ HabitBloc: Datos recargados después de crear hábito.');
     } catch (e) {
-      print('❌ [HabitBloc] Error creando hábito: $e');
+      print('❌ HabitBloc: Error al crear hábito "${event.name}": $e');
       emit(HabitError('Error creando hábito: ${e.toString()}'));
     }
   }
 
-  // ✅ MEJORADO: Toggle + sync automático
   Future<void> _onToggleHabitEntry(ToggleHabitEntryEvent event, Emitter<HabitState> emit) async {
+    print('🔄 HabitBloc: Alternando estado de entrada para hábito ${event.habitId} en ${event.date.toIso8601String().split('T')[0]} a ${event.currentStatus.name}...');
     try {
-      print('🔄 [HabitBloc] Toggle hábito ${event.habitId}: ${event.currentStatus.name}');
-      
-      // 1. Actualizar localmente
       await _toggleHabitEntry(event.habitId, event.date, event.currentStatus);
-      print('✅ [HabitBloc] Toggle realizado localmente');
-      
-      // 2. Recargar datos inmediatamente
+      print('✅ HabitBloc: Estado de entrada actualizado localmente.');
       await _loadAndEmitData(emit);
-      
-      // 3. ✅ NUEVO: Sincronizar automáticamente en background
       _syncInBackground('toggle_entry');
-      
+      print('✅ HabitBloc: Datos recargados después de alternar entrada.');
     } catch (e) {
-      print('❌ [HabitBloc] Error en toggle: $e');
+      print('❌ HabitBloc: Error al actualizar entrada de hábito ${event.habitId}: $e');
       emit(HabitError('Error actualizando hábito: ${e.toString()}'));
     }
   }
 
-  // ✅ MEJORADO: Delete + sync automático
   Future<void> _onDeleteHabit(DeleteHabitEvent event, Emitter<HabitState> emit) async {
+    print('🔄 HabitBloc: Eliminando hábito ${event.habitId}...');
     try {
-      print('🔄 [HabitBloc] Eliminando hábito: ${event.habitId}');
-      
-      // 1. Eliminar localmente
       await _deleteHabit(event.habitId);
-      print('✅ [HabitBloc] Hábito eliminado localmente');
-      
-      // 2. Recargar datos inmediatamente
+      print('✅ HabitBloc: Hábito ${event.habitId} eliminado localmente (soft delete).');
       await _loadAndEmitData(emit);
-      
-      // 3. ✅ NUEVO: Sincronizar automáticamente en background
       _syncInBackground('delete_habit');
-      
+      print('✅ HabitBloc: Datos recargados después de eliminar hábito.');
     } catch (e) {
-      print('❌ [HabitBloc] Error eliminando hábito: $e');
+      print('❌ HabitBloc: Error al eliminar hábito ${event.habitId}: $e');
       emit(HabitError('Error eliminando hábito: ${e.toString()}'));
     }
   }
 
-  // ✅ REFRESH NORMAL: Solo recarga datos locales
   Future<void> _onRefreshData(RefreshData event, Emitter<HabitState> emit) async {
     if (state is HabitLoaded) {
+      print('🔄 HabitBloc: Refrescando datos locales...');
       try {
-        print('🔄 [HabitBloc] Refrescando datos locales...');
         await _loadAndEmitData(emit);
-        print('✅ [HabitBloc] Datos refrescados');
+        print('✅ HabitBloc: Datos locales refrescados.');
       } catch (e) {
-        print('❌ [HabitBloc] Error refrescando: $e');
+        print('❌ HabitBloc: Error al refrescar datos locales: $e');
         emit(HabitError('Error actualizando datos: ${e.toString()}'));
       }
     }
   }
 
-  // ✅ NUEVO: Pull-to-refresh con sincronización completa
   Future<void> _onPullToRefresh(PullToRefresh event, Emitter<HabitState> emit) async {
+    print('🔄 HabitBloc: Iniciando Pull-to-Refresh (sincronización completa)...');
     try {
-      print('🔄 [HabitBloc] Pull-to-refresh iniciado...');
-      
-      // Mostrar estado de refreshing si ya hay datos cargados
       if (state is HabitLoaded) {
         final currentState = state as HabitLoaded;
         emit(currentState.copyWith(isRefreshing: true));
+        print('ℹ️ HabitBloc: Emitting isRefreshing state.');
       }
-      
-      // 1. Sincronizar con Firebase primero
       final syncSuccess = await _performFullSync();
-      
-      // 2. Recargar datos locales (que ahora incluyen datos de Firebase)
+      print('✅ HabitBloc: Sincronización completa finalizada. Éxito: $syncSuccess');
       await _loadAndEmitData(emit, isRefreshing: false);
-      
-      print('✅ [HabitBloc] Pull-to-refresh completado. Sync: ${syncSuccess ? "exitoso" : "falló"}');
-      
+      print('✅ HabitBloc: Datos recargados después de Pull-to-Refresh.');
     } catch (e) {
-      print('❌ [HabitBloc] Error en pull-to-refresh: $e');
-      
-      // Si hay error, al menos mostrar datos locales
+      print('❌ HabitBloc: Error durante Pull-to-Refresh: $e');
       if (state is HabitLoaded) {
         final currentState = state as HabitLoaded;
         emit(currentState.copyWith(isRefreshing: false));
@@ -155,64 +126,58 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     }
   }
 
-  // ✅ NUEVO: Sincronización completa (para pull-to-refresh)
   Future<bool> _performFullSync() async {
+    print('🔄 HabitBloc: Realizando sincronización completa con el repositorio...');
     try {
-      print('🔄 [HabitBloc] Realizando sincronización completa...');
-      
       final syncRepo = InjectionContainer().syncRepository;
       final success = await syncRepo.syncAll();
-      
-      print('${success ? "✅" : "❌"} [HabitBloc] Sincronización completa: ${success ? "exitosa" : "falló"}');
+      print('✅ HabitBloc: Sincronización completa del repositorio exitosa: $success');
       return success;
     } catch (e) {
-      print('❌ [HabitBloc] Error en sincronización completa: $e');
+      print('❌ HabitBloc: Error en _performFullSync: $e');
       return false;
     }
   }
 
-  // ✅ NUEVO: Sincronización en background (no bloquea UI)
   void _syncInBackground(String action) {
-    print('🔄 [HabitBloc] Iniciando sync en background por: $action');
-    
-    // Ejecutar sync sin await para no bloquear UI
+    print('🔄 HabitBloc: Iniciando sincronización en segundo plano para acción: $action');
     _performBackgroundSync(action).then((success) {
-      print('${success ? "✅" : "⚠️"} [HabitBloc] Background sync por $action: ${success ? "exitoso" : "falló"}');
+      print('✅ HabitBloc: Sincronización en segundo plano para "$action" completada. Éxito: $success');
     }).catchError((error) {
-      print('❌ [HabitBloc] Error en background sync por $action: $error');
+      print('❌ HabitBloc: Error en sincronización en segundo plano para "$action": $error');
     });
   }
 
-  // ✅ NUEVO: Sync en background con manejo de errores
   Future<bool> _performBackgroundSync(String action) async {
     try {
       final syncRepo = InjectionContainer().syncRepository;
-      
-      // Verificar conectividad primero
+      print('ℹ️ HabitBloc: Verificando conexión para sincronización en segundo plano...');
       final hasConnection = await syncRepo.hasInternetConnection();
       if (!hasConnection) {
-        print('⚠️ [HabitBloc] Sin conexión, sync pospuesto');
+        print('⚠️ HabitBloc: Sin conexión a internet, omitiendo sincronización en segundo plano.');
         return false;
       }
-      
-      // Realizar sync según el tipo de acción
+
       switch (action) {
         case 'create_habit':
         case 'delete_habit':
+          print('🔄 HabitBloc: Sincronizando solo hábitos en segundo plano.');
           return await syncRepo.syncHabitsOnly();
         case 'toggle_entry':
+          print('🔄 HabitBloc: Sincronizando solo entradas en segundo plano.');
           return await syncRepo.syncEntriesOnly();
         default:
+          print('🔄 HabitBloc: Sincronizando todo en segundo plano (acción por defecto).');
           return await syncRepo.syncAll();
       }
     } catch (e) {
-      print('❌ [HabitBloc] Error en background sync: $e');
+      print('❌ HabitBloc: Error en _performBackgroundSync: $e');
       return false;
     }
   }
 
-  // ✅ MEJORADO: Cargar datos con indicador de refreshing
   Future<void> _loadAndEmitData(Emitter<HabitState> emit, {bool isRefreshing = false}) async {
+    print('🔄 HabitBloc: Cargando datos de hábitos y entradas para emitir estado...');
     final habits = await _getAllHabits();
     final now = DateTime.now();
     final weekEntries = await _getWeekEntries(now);
@@ -224,5 +189,6 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       currentWeekStart: currentWeekStart,
       isRefreshing: isRefreshing,
     ));
+    print('✅ HabitBloc: Datos emitidos (Hábitos: ${habits.length}, Entradas: ${weekEntries.length}).');
   }
 }
