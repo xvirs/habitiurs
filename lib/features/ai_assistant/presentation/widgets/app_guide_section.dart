@@ -1,15 +1,21 @@
 // lib/features/ai_assistant/presentation/widgets/app_guide_section.dart
 import 'package:flutter/material.dart';
 import 'package:habitiurs/features/ai_assistant/domain/entities/app_guide.dart';
-import 'package:habitiurs/features/ai_assistant/domain/entities/educational_content.dart';
 
-class AppGuideSection extends StatelessWidget {
+class AppGuideSection extends StatefulWidget {
   final List<AppGuide> guides;
 
   const AppGuideSection({
     Key? key,
     required this.guides,
   }) : super(key: key);
+
+  @override
+  State<AppGuideSection> createState() => _AppGuideSectionState();
+}
+
+class _AppGuideSectionState extends State<AppGuideSection> {
+  int? _expandedIndex; // Para controlar qué tile está expandida
 
   @override
   Widget build(BuildContext context) {
@@ -36,48 +42,68 @@ class AppGuideSection extends StatelessWidget {
               ],
             ),
             const SizedBox(height: 16),
-            ...guides.map((guide) => _buildGuideItem(context, guide)).toList(),
-          ],
-        ),
-      ),
-    );
-  }
+            // ✅ CORRECCIÓN: Eliminar el Card/Container extra dentro del map
+            // ExpansionPanelList genera su propio Card-like background,
+            // poner un Card adicional a cada ExpansionPanel causa problemas de renderizado.
+            Theme( 
+              data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+              child: ExpansionPanelList(
+                elevation: 0, // Elimina la sombra de los paneles
+                expandedHeaderPadding: EdgeInsets.zero, // Elimina padding extra en el header expandido
+                animationDuration: const Duration(milliseconds: 300),
+                expansionCallback: (int index, bool isExpanded) {
+                  setState(() {
+                    if (isExpanded) {
+                      _expandedIndex = null; 
+                    } else {
+                      _expandedIndex = index; 
+                    }
+                  });
+                },
+                children: widget.guides.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final guide = entry.value;
+                  final isExpanded = _expandedIndex == index;
 
-  Widget _buildGuideItem(BuildContext context, AppGuide guide) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      child: Card(
-        elevation: 1,
-        child: ExpansionTile(
-          leading: CircleAvatar(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            radius: 16,
-            child: Text(
-              '${guide.order}',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontWeight: FontWeight.bold,
-                fontSize: 12,
-              ),
-            ),
-          ),
-          title: Text(
-            guide.title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-          children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Text(
-                guide.content,
-                style: TextStyle(
-                  fontSize: 13,
-                  height: 1.4,
-                  color: Colors.grey[700],
-                ),
+                  return ExpansionPanel(
+                    canTapOnHeader: true,
+                    headerBuilder: (context, isExpanded) {
+                      return ListTile( // ListTile es un buen widget para el header de ExpansionPanel
+                        leading: CircleAvatar(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          radius: 16,
+                          child: Text(
+                            '${guide.order}',
+                            style: TextStyle(
+                              color: Theme.of(context).colorScheme.onPrimary,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                        title: Text(
+                          guide.title,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                      );
+                    },
+                    body: Padding(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                      child: Text(
+                        guide.content,
+                        style: TextStyle(
+                          fontSize: 13,
+                          height: 1.4,
+                          color: Colors.grey[700],
+                        ),
+                      ),
+                    ),
+                    isExpanded: isExpanded,
+                  );
+                }).toList(),
               ),
             ),
           ],
@@ -86,4 +112,3 @@ class AppGuideSection extends StatelessWidget {
     );
   }
 }
-

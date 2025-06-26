@@ -1,11 +1,10 @@
 // lib/features/ai_assistant/presentation/widgets/ai_recommendation_section.dart
-// 🔄 REFACTORIZADO - Usar AIResponse del core en lugar de AIRecommendation
-
 import 'package:flutter/material.dart';
 import '../../../../core/ai/models/ai_response_model.dart';
+import '../../../../core/ai/services/ai_fallback_service.dart'; // Importar el servicio de fallback
 
 class AIRecommendationSection extends StatelessWidget {
-  final AIResponse? recommendation; // ✅ Cambiado de AIRecommendation a AIResponse
+  final AIResponse? recommendation;
   final bool isLoading;
   final bool hasInternetConnection;
   final VoidCallback onRefresh;
@@ -38,8 +37,8 @@ class AIRecommendationSection extends StatelessWidget {
                   child: Text(
                     'Asistente IA Personalizado',
                     style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
+                          fontWeight: FontWeight.bold,
+                        ),
                   ),
                 ),
                 IconButton(
@@ -68,8 +67,8 @@ class AIRecommendationSection extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Text(
-          hasInternetConnection 
-              ? 'Conectado con Gemini AI' 
+          hasInternetConnection
+              ? 'Conectado con Gemini AI'
               : 'Modo offline - Consejos locales',
           style: TextStyle(
             fontSize: 12,
@@ -84,33 +83,66 @@ class AIRecommendationSection extends StatelessWidget {
     if (isLoading) {
       return Container(
         height: 120,
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 8),
-              Text(
-                'Generando recomendación personalizada...',
-                style: TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(),
+            const SizedBox(height: 8),
+            Text(
+              'Generando recomendación personalizada...',
+              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            ),
+          ],
         ),
       );
     }
 
-    if (recommendation == null) {
+    final AIResponse? displayedRecommendation = recommendation;
+
+    if (displayedRecommendation == null || !displayedRecommendation.isFromAI) {
+      // ✅ CORRECCIÓN: Acceder a la instancia singleton de AIFallbackService
+      final fallbackContent = AIFallbackService().getPersonalRecommendationFallbackContent({});
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: Colors.orange[50],
           borderRadius: BorderRadius.circular(8),
+          border: Border.all(
+            color: Colors.orange[200]!,
+          ),
         ),
-        child: const Text(
-          'No se pudo obtener una recomendación en este momento. Intenta refrescar.',
-          style: TextStyle(fontSize: 13),
-          textAlign: TextAlign.center,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  Icons.lightbulb_outline,
+                  size: 16,
+                  color: Colors.orange[600],
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'Consejo general (offline)',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.orange[600],
+                  ),
+                ),
+                const Spacer(),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              fallbackContent,
+              style: const TextStyle(
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ],
         ),
       );
     }
@@ -118,13 +150,13 @@ class AIRecommendationSection extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: recommendation!.isFromAI 
-            ? Colors.blue[50] 
+        color: displayedRecommendation.isFromAI
+            ? Colors.blue[50]
             : Colors.orange[50],
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: recommendation!.isFromAI 
-              ? Colors.blue[200]! 
+          color: displayedRecommendation.isFromAI
+              ? Colors.blue[200]!
               : Colors.orange[200]!,
         ),
       ),
@@ -134,30 +166,30 @@ class AIRecommendationSection extends StatelessWidget {
           Row(
             children: [
               Icon(
-                recommendation!.isFromAI 
-                    ? Icons.auto_awesome 
+                displayedRecommendation.isFromAI
+                    ? Icons.auto_awesome
                     : Icons.lightbulb_outline,
                 size: 16,
-                color: recommendation!.isFromAI 
-                    ? Colors.blue[600] 
+                color: displayedRecommendation.isFromAI
+                  ? Colors.blue[600]
                     : Colors.orange[600],
               ),
               const SizedBox(width: 4),
               Text(
-                recommendation!.isFromAI 
-                    ? 'Recomendación de IA' 
+                displayedRecommendation.isFromAI
+                    ? 'Recomendación de IA'
                     : 'Consejo general',
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w500,
-                  color: recommendation!.isFromAI 
-                      ? Colors.blue[600] 
+                  color: displayedRecommendation.isFromAI
+                      ? Colors.blue[600]
                       : Colors.orange[600],
                 ),
               ),
               const Spacer(),
               Text(
-                _formatTime(recommendation!.timestamp),
+                _formatTime(displayedRecommendation.timestamp),
                 style: TextStyle(
                   fontSize: 10,
                   color: Colors.grey[600],
@@ -167,7 +199,7 @@ class AIRecommendationSection extends StatelessWidget {
           ),
           const SizedBox(height: 8),
           Text(
-            recommendation!.content,
+            displayedRecommendation.content,
             style: const TextStyle(
               fontSize: 13,
               height: 1.4,
@@ -181,7 +213,6 @@ class AIRecommendationSection extends StatelessWidget {
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
     if (difference.inMinutes < 1) {
       return 'Ahora';
     } else if (difference.inHours < 1) {

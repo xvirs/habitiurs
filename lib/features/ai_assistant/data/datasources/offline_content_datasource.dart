@@ -1,19 +1,15 @@
 // lib/features/ai_assistant/data/datasources/offline_content_datasource.dart
-// 🔄 REFACTORIZADO - Eliminar AIRecommendationModel y fallbacks
-
 import '../models/app_guide_model.dart';
 import '../models/educational_content_model.dart';
 
 abstract class OfflineContentDatasource {
   Future<List<EducationalContentModel>> getEducationalContent();
   Future<List<AppGuideModel>> getAppGuides();
-  // 🗑️ ELIMINAR: getFallbackRecommendations() - Ahora está en core/ai/
 }
 
 class OfflineContentDatasourceImpl implements OfflineContentDatasource {
   @override
   Future<List<EducationalContentModel>> getEducationalContent() async {
-    // Contenido hardcodeado basado en "Hábitos Atómicos"
     return [
       EducationalContentModel(
         id: 1,
@@ -35,15 +31,11 @@ Una vez que dominas el arte de aparecer, puedes mejorar y refinar el hábito. Es
       EducationalContentModel(
         id: 2,
         title: "El Poder del Apilamiento de Hábitos",
-        content: """El apilamiento de hábitos es una forma especial de intención de implementación. En lugar de emparejar tu nuevo hábito con un tiempo y lugar particular, lo emparejas con un hábito actual.
-
-La fórmula es: "Después de [HÁBITO ACTUAL], haré [NUEVO HÁBITO]."
-
+        content: """El apilamiento de hábitos es una forma especial de intención de implementación. En lugar de emparejar tu nuevo hábito con un tiempo y lugar particular, lo emparejas con un hábito actual. La fórmula es: "Después de [HÁBITO ACTUAL], haré [NUEVO HÁBITO]."
 Ejemplos:
 • Después de servirme mi café matutino, meditaré durante un minuto.
 • Después de quitarme los zapatos del trabajo, inmediatamente me cambiaré la ropa de ejercicio.
 • Después de cerrar mi laptop para el día, escribiré una cosa por la que estoy agradecido.
-
 El apilamiento de hábitos funciona mejor cuando el hábito de pila y el nuevo hábito tienen aproximadamente la misma frecuencia.""",
         category: "Formación de Hábitos",
         readTimeMinutes: 4,
@@ -57,13 +49,13 @@ El apilamiento de hábitos funciona mejor cuando el hábito de pila y el nuevo h
 
 Estrategias para diseñar tu entorno:
 
-**Para hábitos positivos:**
+Para hábitos positivos:
 • Coloca frutas en un lugar visible
 • Deja tu botella de agua donde la veas
 • Pon tu libro junto a tu cama
 • Deja tu ropa de ejercicio preparada
 
-**Para evitar hábitos negativos:**
+Para evitar hábitos negativos:
 • Oculta el control remoto del televisor
 • Deja tu teléfono en otra habitación
 • No tengas comida chatarra visible
@@ -77,16 +69,12 @@ Recuerda: es más fácil cambiar tu entorno que cambiar tu fuerza de voluntad.""
       EducationalContentModel(
         id: 4,
         title: "La Importancia de la Identidad",
-        content: """El cambio de comportamiento más profundo es el cambio de identidad. Cada acción es un voto por el tipo de persona que deseas convertirte.
-
-En lugar de enfocarte en lo que quieres lograr, enfócate en quién quieres convertirte:
+        content: """El cambio de comportamiento más profundo es el cambio de identidad. Cada acción es un voto por el tipo de persona que deseas convertirte. En lugar de enfocarte en lo que quieres lograr, enfócate en quién quieres convertirte:
 • "Quiero leer más" → "Soy una persona que lee"
 • "Quiero ejercitarme" → "Soy una persona atlética"
 • "Quiero escribir" → "Soy un escritor"
 
-Cada vez que realizas tu hábito, reafirmas tu identidad. Cuando corres, eres un corredor. Cuando escribes, eres un escritor. Cuando ayudas a otros, eres una persona útil.
-
-Tu identidad emerge de tus hábitos. Cada repetición es evidencia de que eres el tipo de persona que quieres ser.""",
+Cada vez que realizas tu hábito, reafirmas tu identidad. Cuando corres, eres un corredor. Cuando escribes, eres un escritor. Cuando ayudas a otros, eres una persona útil. Tu identidad emerge de tus hábitos. Cada repetición es evidencia de que eres el tipo de persona que quiere ser.""",
         category: "Mindset",
         readTimeMinutes: 4,
         createdAt: DateTime.now(),
@@ -103,10 +91,10 @@ Tu identidad emerge de tus hábitos. Cada repetición es evidencia de que eres e
         title: "Bienvenido a Habitiurs",
         content: """Habitiurs es tu compañero para construir hábitos duraderos de manera simple y efectiva.
 
-**¿Por qué Habitiurs?**
+¿Por qué Habitiurs?
 Esta aplicación está diseñada con principios científicos de formación de hábitos. No encontrarás gamificación complicada ni recordatorios molestos, solo las herramientas esenciales para el seguimiento consistente.
 
-**Filosofía de la app:**
+Filosofía de la app:
 • Simplicidad sobre complejidad
 • Constancia sobre perfección
 • Progreso sobre resultados inmediatos
@@ -119,21 +107,19 @@ Habitiurs te ayuda a enfocarte en lo que realmente importa: aparecer cada día y
       AppGuideModel(
         id: 2,
         title: "Entendiendo la Cuadrícula Semanal",
-        content: """La cuadrícula semanal es el corazón de Habitiurs. Aquí es donde visualizas tu progreso de manera clara y motivadora.
-
-**Cómo funciona:**
+        content: """La cuadrícula semanal es el corazón de Habitiurs. Aquí es donde visualizas tu progreso de manera clara y motivadora. Cómo funciona:
 • Cada fila representa un hábito
 • Cada columna representa un día de la semana
 • Los números del lado izquierdo identifican cada hábito
 
-**Estados posibles:**
+Estados posibles:
 🟢 Verde con ✓ = Completado
 🔴 Rojo con ✗ = No realizado conscientemente
 ⚪ Gris con + = Pendiente (aún no decidido)
 
-**Solo el día actual es editable.** Los días pasados se muestran para referencia visual de tu progreso.
+Solo el día actual es editable. Los días pasados se muestran para referencia visual de tu progreso.
 
-**Tip:** Usa la cuadrícula para identificar patrones. ¿Hay días específicos donde te cuesta más? ¿Ciertos hábitos son más difíciles que otros?""",
+Tip: Usa la cuadrícula para identificar patrones. ¿Hay días específicos donde te cuesta más? ¿Ciertos hábitos son más difíciles que otros?""",
         section: "weekly_grid",
         order: 2,
       ),
@@ -142,18 +128,18 @@ Habitiurs te ayuda a enfocarte en lo que realmente importa: aparecer cada día y
         title: "Interpretando tus Estadísticas",
         content: """Las estadísticas te dan una perspectiva objetiva de tu progreso a lo largo del tiempo.
 
-**Sección 1 - Resumen del Mes:**
+Sección 1 - Resumen del Mes:
 Muestra las semanas completas del mes actual con hábitos cumplidos y no cumplidos por semana.
 
-**Sección 2 - Vista Anual:**
+Sección 2 - Vista Anual:
 Lista todos los meses del año con:
 • Porcentaje de constancia mensual
 • Contador de hábitos completados/no completados/pendientes
 
-**Sección 3 - Gráfico Histórico:**
+Sección 3 - Gráfico Histórico:
 Visualiza tu tendencia de constancia a lo largo del tiempo.
 
-**Interpretación:**
+Interpretación:
 • Un 70%+ de constancia es excelente
 • 40-70% es bueno, hay espacio para mejorar
 • <40% sugiere revisar tus hábitos o estrategia
@@ -165,22 +151,18 @@ Recuerda: las estadísticas son una herramienta, no un juicio. Úsalas para iden
       AppGuideModel(
         id: 4,
         title: "Mejores Prácticas",
-        content: """**1. Comienza pequeño**
+        content: """1. Comienza pequeño
 Es mejor ser consistente con hábitos pequeños que fallar con hábitos grandes. Aplica la regla de los 2 minutos.
-
-**2. Sé honesto contigo mismo**
+2. Sé honesto contigo mismo
 Marca "No realizado" cuando corresponda. La honestidad en el seguimiento es crucial para el progreso real.
-
-**3. Enfócate en la constancia, no en la perfección**
+3. Enfócate en la constancia, no en la perfección
 El objetivo no es nunca fallar, sino aparecer consistentemente. Una semana con 6/7 días es mejor que una semana perfecta seguida de dos semanas sin registro.
-
-**4. Revisa tus estadísticas regularmente**
+4. Revisa tus estadísticas regularmente
 Usa las estadísticas semanalmente para identificar patrones y ajustar tu estrategia.
-
-**5. Mantén tus hábitos actualizados**
+5. Mantén tus hábitos actualizados
 Elimina hábitos que ya no te sirven y agrega nuevos gradualmente. 3-5 hábitos activos es un buen número para empezar.
 
-**6. Usa el contexto de días**
+6. Usa el contexto de días
 La cuadrícula te muestra el día de la semana. Usa esta información para identificar si ciertos días son más desafiantes.""",
         section: "best_practices",
         order: 4,

@@ -34,6 +34,7 @@ import '../../features/ai_assistant/data/datasources/offline_content_datasource.
 import '../../features/ai_assistant/data/repositories/ai_assistant_repository_impl.dart';
 import '../../features/ai_assistant/domain/repositories/ai_assistant_repository.dart';
 import '../../features/ai_assistant/domain/usecases/get_educational_content.dart';
+import '../../features/ai_assistant/domain/usecases/get_atomic_habits_concepts.dart';
 import '../../features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 
 class InjectionContainer {
@@ -74,7 +75,6 @@ class InjectionContainer {
 
   // Use Cases - Statistics
   late final GetCurrentMonthStatistics _getCurrentMonthStatistics;
-  // Añadir estas dos líneas para declarar las variables
   late final GetCurrentYearStatistics _getCurrentYearStatistics;
   late final GetHistoricalData _getHistoricalData;
 
@@ -82,6 +82,7 @@ class InjectionContainer {
   late final GetEducationalContent _getEducationalContent;
   late final GetAppGuides _getAppGuides;
   late final GetAIRecommendation _getAIRecommendation;
+  late final GetAtomicHabitsConcepts _getAtomicHabitsConcepts;
 
   bool _isInitialized = false;
 
@@ -96,7 +97,7 @@ class InjectionContainer {
       _isInitialized = true;
     } catch (e) {
       _isInitialized = false;
-      rethrow; // Propagate the error for app-level handling
+      rethrow;
     }
   }
 
@@ -143,43 +144,48 @@ class InjectionContainer {
   }
 
   void _initializeRepositories() {
-    _habitRepository = HabitRepositoryImpl(_habitLocalDataSource, _syncRepository);
+    _habitRepository = HabitRepositoryImpl(_habitLocalDataSource, _syncRepository,);
     _statisticsRepository = StatisticsRepositoryImpl(localDatasource: _statisticsLocalDatasource);
 
     _aiAssistantRepository = AIAssistantRepositoryImpl(
       offlineContentDatasource: _offlineContentDatasource,
       aiRepository: _aiRepository,
       habitRepository: _habitRepository,
+      statisticsRepository: _statisticsRepository,
     );
   }
 
   void _initializeUseCases() {
-    // Auth Use Cases
+    // Use Cases de Autenticación
     _checkAuthStatus = CheckAuthStatus(_authService);
     _createGuestSession = CreateGuestSession(_authService);
     _loginWithGoogle = LoginWithGoogle(_authService);
     _logoutUser = LogoutUser(_authService);
 
-    // Habits Use Cases
+    // Use Cases de Hábitos
     _getAllHabits = GetAllHabits(_habitRepository);
     _createHabit = CreateHabit(_habitRepository);
     _getWeekEntries = GetWeekEntries(_habitRepository);
     _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
     _deleteHabit = DeleteHabit(_habitRepository, _authService);
 
-    // Statistics Use Cases
+    // Use Cases de Estadísticas
     _getCurrentMonthStatistics = GetCurrentMonthStatistics(_statisticsRepository);
-    // Inicializar las variables que faltaban aquí
     _getCurrentYearStatistics = GetCurrentYearStatistics(_statisticsRepository);
     _getHistoricalData = GetHistoricalData(_statisticsRepository);
 
-    // AI Assistant Use Cases
+    // Use Cases del Asistente IA
     _getEducationalContent = GetEducationalContent(_aiAssistantRepository);
     _getAppGuides = GetAppGuides(_aiAssistantRepository);
     _getAIRecommendation = GetAIRecommendation(_aiAssistantRepository);
+    _getAtomicHabitsConcepts = GetAtomicHabitsConcepts(
+      aiAssistantRepository: _aiAssistantRepository,
+      habitRepository: _habitRepository,
+      statisticsRepository: _statisticsRepository,
+    );
   }
 
-  // Getters for Blocs
+  // Getters para Blocs
   AuthBloc get authBloc => AuthBloc(
         checkAuthStatus: _checkAuthStatus,
         createGuestSession: _createGuestSession,
@@ -197,7 +203,6 @@ class InjectionContainer {
 
   StatisticsBloc get statisticsBloc => StatisticsBloc(
         getCurrentMonthStatistics: _getCurrentMonthStatistics,
-        // Pasar las nuevas instancias a StatisticsBloc
         getCurrentYearStatistics: _getCurrentYearStatistics,
         getHistoricalData: _getHistoricalData,
       );
@@ -205,14 +210,15 @@ class InjectionContainer {
   AIAssistantBloc get aiAssistantBloc => AIAssistantBloc(
         getEducationalContent: _getEducationalContent,
         getAppGuides: _getAppGuides,
-        getAIRecommendation: _getAIRecommendation,
+        getAIRecommendation: _getAIRecommendation, // Coma extra eliminada aquí
+        getAtomicHabitsConcepts: _getAtomicHabitsConcepts,
       );
 
   HabitEvaluationCubit get habitEvaluationCubit => HabitEvaluationCubit(
         aiRepository: _aiRepository,
       );
 
-  // Getters for Core Services
+  // Getters para Servicios Core
   AIRepository get aiRepository => _aiRepository;
   IAuthService get authService => _authService;
   SyncRepository get syncRepository => _syncRepository;
@@ -220,12 +226,12 @@ class InjectionContainer {
   FirebaseService get firebaseService => _firebaseService;
   DatabaseHelper get databaseHelper => _databaseHelper;
 
-  // Getters for Repositories
+  // Getters para Repositorios
   HabitRepository get habitRepository => _habitRepository;
   StatisticsRepository get statisticsRepository => _statisticsRepository;
   AIAssistantRepository get aiAssistantRepository => _aiAssistantRepository;
 
-  // Cleanup
+  // Limpieza
   Future<void> dispose() async {
     try {
       _aiRepository.dispose();

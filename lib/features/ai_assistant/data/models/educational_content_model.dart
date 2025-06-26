@@ -1,6 +1,3 @@
-// lib/features/ai_assistant/data/models/educational_content_model.dart
-// ✅ MANTENER - Solo modelos específicos de la feature
-
 import '../../domain/entities/educational_content.dart';
 
 class EducationalContentModel extends EducationalContent {

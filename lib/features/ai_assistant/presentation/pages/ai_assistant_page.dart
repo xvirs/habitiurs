@@ -1,5 +1,4 @@
 // lib/features/ai_assistant/presentation/pages/ai_assistant_page.dart
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection_container.dart';
@@ -43,6 +42,7 @@ class AIAssistantContent extends StatelessWidget {
                 Text(
                   'Error al cargar el asistente',
                   style: Theme.of(context).textTheme.headlineSmall,
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
@@ -67,8 +67,7 @@ class AIAssistantContent extends StatelessWidget {
             onRefresh: () async {
               context.read<AIAssistantBloc>().add(LoadAIAssistantData());
             },
-            // ✅ MODIFICADO: REMOVED SafeArea(top: true)
-            child: SingleChildScrollView( // Directly return SingleChildScrollView
+            child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
               child: Column(
                 children: [
@@ -80,7 +79,15 @@ class AIAssistantContent extends StatelessWidget {
                       context.read<AIAssistantBloc>().add(RefreshAIRecommendation());
                     },
                   ),
-                  EducationalContentSection(content: state.educationalContent),
+                  EducationalContentSection(
+                    content: state.educationalContent,
+                    // ✅ ELIMINADO: Ya no se pasan propiedades relacionadas con atomicHabitsConcepts
+                    // atomicHabitsConcepts: state.atomicHabitsConcepts,
+                    // isAtomicConceptsLoading: state.isAtomicConceptsLoading,
+                    // onRefreshAtomicConcepts: () {
+                    //   context.read<AIAssistantBloc>().add(const LoadAtomicHabitsConcepts());
+                    // },
+                  ),
                   AppGuideSection(guides: state.appGuides),
                   const SizedBox(height: 16),
                 ],
@@ -106,4 +113,3 @@ class AIAssistantContent extends StatelessWidget {
     );
   }
 }
-

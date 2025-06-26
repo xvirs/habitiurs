@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/features/auth/presentation/pages/login_page.dart';
 import '../../../habits/presentation/pages/main_page.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_state.dart';
@@ -20,7 +21,7 @@ class AuthWrapper extends StatelessWidget {
         } else if (state is AuthAuthenticated) {
           return const MainPage();
         } else if (state is AuthUnauthenticated) {
-          return const Text("LoginPagePlaceholder");
+          return const LoginPage();
         } else if (state is AuthError) {
           return const Text("AuthErrorPagePlaceholder");
         }
