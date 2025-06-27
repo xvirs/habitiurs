@@ -1,17 +1,23 @@
-// lib/core/auth/models/auth_result.dart
-import 'package:habitiurs/core/auth/exceptions/auth_exceptions.dart';
+import '../exceptions/auth_exceptions.dart';
+import '../../common/models/result.dart';
 
-/// Result types para operaciones de autenticación
-abstract class AuthResult<T> {
-  const AuthResult();
-}
+/// Type alias for authentication results
+typedef AuthResult<T> = Result<T>;
 
-class AuthSuccess<T> extends AuthResult<T> {
-  final T data;
-  const AuthSuccess(this.data);
-}
-
-class AuthFailure<T> extends AuthResult<T> {
-  final AuthException exception;
-  const AuthFailure(this.exception);
+/// Extensions for AuthResult
+extension AuthResultExtensions<T> on AuthResult<T> {
+  /// Create success result
+  static AuthResult<T> success<T>(T data) => Success(data);
+  
+  /// Create failure result
+  static AuthResult<T> failure<T>(AuthException exception) => Failure(exception);
+  
+  /// Get the auth exception if this is a failure
+  AuthException? get authException => switch (this) {
+    Success() => null,
+    Failure(exception: final exception) when exception is AuthException => 
+        exception,
+    Failure(exception: final exception) => 
+        UnknownAuthException(exception.toString()),
+  };
 }

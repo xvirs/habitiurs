@@ -1,4 +1,3 @@
-// lib/core/di/injection_container.dart
 import 'package:firebase_core/firebase_core.dart';
 
 // Core
@@ -52,51 +51,15 @@ class InjectionContainer {
   factory InjectionContainer() => _instance;
   InjectionContainer._internal();
 
-  // Core Services
-  late final DatabaseHelper _databaseHelper;
-  late final AIRepository _aiRepository;
-  late final IAuthService _authService;
-  late final FirebaseService _firebaseService;
-  late final SyncManager _syncManager;
-  late final SyncRepository _syncRepository;
-
-  // DataSources
-  late final HabitLocalDataSource _habitLocalDataSource;
-  late final StatisticsLocalDatasource _statisticsLocalDatasource;
-  late final OfflineContentDatasource _offlineContentDatasource;
-
-  // Repositories
-  late final HabitRepository _habitRepository;
-  late final StatisticsRepository _statisticsRepository;
-  late final AIAssistantRepository _aiAssistantRepository;
-
-  // Auth Use Cases
-  late final CheckAuthStatus _checkAuthStatus;
-  late final CreateGuestSession _createGuestSession;
-  late final LoginWithGoogle _loginWithGoogle;
-  late final LogoutUser _logoutUser;
-
-  // Habits Use Cases
-  late final GetAllHabits _getAllHabits;
-  late final CreateHabit _createHabit;
-  late final GetWeekEntries _getWeekEntries;
-  late final ToggleHabitEntry _toggleHabitEntry;
-  late final DeleteHabit _deleteHabit;
-
-  // Statistics Use Cases
-  late final GetCurrentMonthStatistics _getCurrentMonthStatistics;
-  late final GetCurrentYearStatistics _getCurrentYearStatistics;
-  late final GetHistoricalData _getHistoricalData;
-
-  // AI Assistant Use Cases
-  late final GetEducationalContent _getEducationalContent;
-  late final GetAppGuides _getAppGuides;
-  late final GetAIRecommendation _getAIRecommendation;
-
+  final Map<Type, dynamic> _services = {};
+  final Map<Type, dynamic> _singletons = {};
   bool _isInitialized = false;
+
+  bool get isInitialized => _isInitialized;
 
   Future<void> init() async {
     if (_isInitialized) return;
+    print('🚀 [DI] Initializing services...');
     
     try {
       await _initializeFirebase();
@@ -104,10 +67,38 @@ class InjectionContainer {
       _initializeRepositories();
       _initializeUseCases();
       _isInitialized = true;
+      print('✅ [DI] Services initialized successfully');
     } catch (e) {
+      print('❌ [DI] Initialization failed: $e');
       _isInitialized = false;
       rethrow;
     }
+  }
+
+  T get<T>() {
+    if (!_isInitialized) {
+      throw StateError('InjectionContainer must be initialized before use');
+    }
+
+    if (_singletons.containsKey(T)) {
+      return _singletons[T] as T;
+    }
+
+    if (_services.containsKey(T)) {
+      return _services[T] as T;
+    }
+
+    throw Exception('Service of type $T not registered');
+  }
+
+  bool isRegistered<T>() => _services.containsKey(T) || _singletons.containsKey(T);
+
+  void _registerSingleton<T>(T instance) {
+    _singletons[T] = instance;
+  }
+
+  void _registerFactory<T>(T Function() factory) {
+    _services[T] = factory;
   }
 
   Future<void> _initializeFirebase() async {
@@ -115,56 +106,85 @@ class InjectionContainer {
       if (Firebase.apps.isEmpty) {
         await Firebase.initializeApp();
       }
+      print('✅ [Firebase] Initialized');
     } catch (e) {
+      print('⚠️ [Firebase] Failed to initialize: $e');
       rethrow;
     }
   }
 
   Future<void> _initializeCoreServices() async {
-    _databaseHelper = SqliteDatabaseHelper();
-    await _databaseHelper.database;
+    // Database
+    final databaseHelper = SqliteDatabaseHelper();
+    await databaseHelper.database;
+    _registerSingleton<DatabaseHelper>(databaseHelper);
+    print('✅ [Database] SQLite initialized');
 
-    _initializeDataSources();
+    // DataSources
+    final habitLocalDataSource = HabitLocalDataSourceImpl(databaseHelper);
+    final statisticsLocalDatasource = StatisticsLocalDatasourceImpl(databaseHelper: databaseHelper);
+    final offlineContentDatasource = OfflineContentDatasourceImpl();
+    
+    _registerSingleton<HabitLocalDataSource>(habitLocalDataSource);
+    _registerSingleton<StatisticsLocalDatasource>(statisticsLocalDatasource);
+    _registerSingleton<OfflineContentDatasource>(offlineContentDatasource);
+    print('✅ [DataSources] Initialized');
 
-    _aiRepository = AIRepository();
-    _authService = AuthService();
-    _firebaseService = FirebaseService();
+    // AI Repository
+    final aiRepository = AIRepository();
+    _registerSingleton<AIRepository>(aiRepository);
+    print('✅ [AI] Repository initialized');
 
-    _syncManager = SyncManager(
-      firebaseService: _firebaseService,
-      authService: _authService,
-      habitDataSource: _habitLocalDataSource,
-      statisticsDataSource: _statisticsLocalDatasource,
+    // Auth Service
+    final authService = AuthService();
+    _registerSingleton<IAuthService>(authService);
+    _registerSingleton<AuthService>(authService);
+    print('✅ [Auth] Service initialized');
+
+    // Firebase Service
+    final firebaseService = FirebaseService();
+    _registerSingleton<FirebaseService>(firebaseService);
+    print('✅ [Firebase] Service initialized');
+
+    // Sync Manager
+    final syncManager = SyncManager(
+      firebaseService: firebaseService,
+      authService: authService,
+      habitDataSource: habitLocalDataSource,
+      statisticsDataSource: statisticsLocalDatasource,
     );
+    _registerSingleton<SyncManager>(syncManager);
+    print('✅ [Sync] Manager initialized');
 
-    _syncRepository = SyncRepositoryImpl(
-      syncManager: _syncManager,
-      firebaseService: _firebaseService,
-      authService: _authService,
+    // Sync Repository
+    final syncRepository = SyncRepositoryImpl(
+      syncManager: syncManager,
+      firebaseService: firebaseService,
+      authService: authService,
     );
-  }
-
-  void _initializeDataSources() {
-    _habitLocalDataSource = HabitLocalDataSourceImpl(_databaseHelper);
-    _statisticsLocalDatasource = StatisticsLocalDatasourceImpl(databaseHelper: _databaseHelper);
-    _offlineContentDatasource = OfflineContentDatasourceImpl();
+    _registerSingleton<SyncRepository>(syncRepository);
+    print('✅ [Sync] Repository initialized');
   }
 
   void _initializeRepositories() {
-    _habitRepository = HabitRepositoryImpl(
-      _habitLocalDataSource, 
-      _syncRepository,
+    final habitRepository = HabitRepositoryImpl(
+      get<HabitLocalDataSource>(),
+      get<SyncRepository>(),
     );
-    
-    _statisticsRepository = StatisticsRepositoryImpl(
-      localDatasource: _statisticsLocalDatasource,
-    );
+    _registerSingleton<HabitRepository>(habitRepository);
 
-    _aiAssistantRepository = AIAssistantRepositoryImpl(
-      offlineContentDatasource: _offlineContentDatasource,
-      aiRepository: _aiRepository,
-      habitRepository: _habitRepository,
+    final statisticsRepository = StatisticsRepositoryImpl(
+      localDatasource: get<StatisticsLocalDatasource>(),
     );
+    _registerSingleton<StatisticsRepository>(statisticsRepository);
+
+    final aiAssistantRepository = AIAssistantRepositoryImpl(
+      offlineContentDatasource: get<OfflineContentDatasource>(),
+      aiRepository: get<AIRepository>(),
+      habitRepository: habitRepository,
+    );
+    _registerSingleton<AIAssistantRepository>(aiAssistantRepository);
+    print('✅ [Repositories] Initialized');
   }
 
   void _initializeUseCases() {
@@ -172,86 +192,94 @@ class InjectionContainer {
     _initializeHabitsUseCases();
     _initializeStatisticsUseCases();
     _initializeAIAssistantUseCases();
+    print('✅ [UseCases] Initialized');
   }
 
   void _initializeAuthUseCases() {
-    _checkAuthStatus = CheckAuthStatus(_authService);
-    _createGuestSession = CreateGuestSession(_authService);
-    _loginWithGoogle = LoginWithGoogle(_authService);
-    _logoutUser = LogoutUser(_authService);
+    final authService = get<IAuthService>();
+    
+    _registerSingleton<CheckAuthStatus>(CheckAuthStatus(authService));
+    _registerSingleton<CreateGuestSession>(CreateGuestSession(authService));
+    _registerSingleton<LoginWithGoogle>(LoginWithGoogle(authService));
+    _registerSingleton<LogoutUser>(LogoutUser(authService));
   }
 
   void _initializeHabitsUseCases() {
-    _getAllHabits = GetAllHabits(_habitRepository);
-    _createHabit = CreateHabit(_habitRepository);
-    _getWeekEntries = GetWeekEntries(_habitRepository);
-    _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
-    _deleteHabit = DeleteHabit(_habitRepository, _authService);
+    final habitRepository = get<HabitRepository>();
+    final authService = get<IAuthService>();
+    
+    _registerSingleton<GetAllHabits>(GetAllHabits(habitRepository));
+    _registerSingleton<CreateHabit>(CreateHabit(habitRepository));
+    _registerSingleton<GetWeekEntries>(GetWeekEntries(habitRepository));
+    _registerSingleton<ToggleHabitEntry>(ToggleHabitEntry(habitRepository));
+    _registerSingleton<DeleteHabit>(DeleteHabit(habitRepository, authService));
   }
 
   void _initializeStatisticsUseCases() {
-    _getCurrentMonthStatistics = GetCurrentMonthStatistics(_statisticsRepository);
-    _getCurrentYearStatistics = GetCurrentYearStatistics(_statisticsRepository);
-    _getHistoricalData = GetHistoricalData(_statisticsRepository);
+    final statisticsRepository = get<StatisticsRepository>();
+    
+    _registerSingleton<GetCurrentMonthStatistics>(GetCurrentMonthStatistics(statisticsRepository));
+    _registerSingleton<GetCurrentYearStatistics>(GetCurrentYearStatistics(statisticsRepository));
+    _registerSingleton<GetHistoricalData>(GetHistoricalData(statisticsRepository));
   }
 
   void _initializeAIAssistantUseCases() {
-    _getEducationalContent = GetEducationalContent(_aiAssistantRepository);
-    _getAppGuides = GetAppGuides(_aiAssistantRepository);
-    _getAIRecommendation = GetAIRecommendation(_aiAssistantRepository);
+    final aiAssistantRepository = get<AIAssistantRepository>();
+    
+    _registerSingleton<GetEducationalContent>(GetEducationalContent(aiAssistantRepository));
+    _registerSingleton<GetAppGuides>(GetAppGuides(aiAssistantRepository));
+    _registerSingleton<GetAIRecommendation>(GetAIRecommendation(aiAssistantRepository));
   }
 
-  // BLoC Getters
+  // BLoC Factories
   AuthBloc get authBloc => AuthBloc(
-    checkAuthStatus: _checkAuthStatus,
-    createGuestSession: _createGuestSession,
-    loginWithGoogle: _loginWithGoogle,
-    logoutUser: _logoutUser,
+    checkAuthStatus: get<CheckAuthStatus>(),
+    createGuestSession: get<CreateGuestSession>(),
+    loginWithGoogle: get<LoginWithGoogle>(),
+    logoutUser: get<LogoutUser>(),
   );
 
   HabitBloc get habitBloc => HabitBloc(
-    getAllHabits: _getAllHabits,
-    createHabit: _createHabit,
-    getWeekEntries: _getWeekEntries,
-    toggleHabitEntry: _toggleHabitEntry,
-    deleteHabit: _deleteHabit,
+    getAllHabits: get<GetAllHabits>(),
+    createHabit: get<CreateHabit>(),
+    getWeekEntries: get<GetWeekEntries>(),
+    toggleHabitEntry: get<ToggleHabitEntry>(),
+    deleteHabit: get<DeleteHabit>(),
   );
 
   StatisticsBloc get statisticsBloc => StatisticsBloc(
-    getCurrentMonthStatistics: _getCurrentMonthStatistics,
-    getCurrentYearStatistics: _getCurrentYearStatistics,
-    getHistoricalData: _getHistoricalData,
+    getCurrentMonthStatistics: get<GetCurrentMonthStatistics>(),
+    getCurrentYearStatistics: get<GetCurrentYearStatistics>(),
+    getHistoricalData: get<GetHistoricalData>(),
   );
 
   AIAssistantBloc get aiAssistantBloc => AIAssistantBloc(
-    getEducationalContent: _getEducationalContent,
-    getAppGuides: _getAppGuides,
-    getAIRecommendation: _getAIRecommendation,
+    getEducationalContent: get<GetEducationalContent>(),
+    getAppGuides: get<GetAppGuides>(),
+    getAIRecommendation: get<GetAIRecommendation>(),
   );
 
   HabitEvaluationCubit get habitEvaluationCubit => HabitEvaluationCubit(
-    aiRepository: _aiRepository,
+    aiRepository: get<AIRepository>(),
   );
 
-  // Core Service Getters
-  AIRepository get aiRepository => _aiRepository;
-  IAuthService get authService => _authService;
-  SyncRepository get syncRepository => _syncRepository;
-  SyncManager get syncManager => _syncManager;
-  FirebaseService get firebaseService => _firebaseService;
-  DatabaseHelper get databaseHelper => _databaseHelper;
-
-  // Repository Getters
-  HabitRepository get habitRepository => _habitRepository;
-  StatisticsRepository get statisticsRepository => _statisticsRepository;
-  AIAssistantRepository get aiAssistantRepository => _aiAssistantRepository;
-
   Future<void> dispose() async {
+    print('🧹 [DI] Cleaning up resources...');
     try {
-      _aiRepository.dispose();
-      await _syncManager.dispose();
-      await _databaseHelper.close();
+      final aiRepository = get<AIRepository>();
+      final syncManager = get<SyncManager>();
+      final databaseHelper = get<DatabaseHelper>();
+      
+      await aiRepository.dispose();
+      await syncManager.dispose();
+      await databaseHelper.close();
+      
+      _services.clear();
+      _singletons.clear();
+      _isInitialized = false;
+      print('✅ [DI] Resources cleaned up');
     } catch (e) {
+      print('⚠️ [DI] Error during cleanup: $e');
       rethrow;
     }
   }

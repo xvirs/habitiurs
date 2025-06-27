@@ -1,11 +1,32 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:habitiurs/core/ai/models/ai_request_model.dart';
 import 'package:habitiurs/core/ai/models/ai_response_model.dart';
 import 'package:http/http.dart' as http;
-import '../models/ai_request_model.dart';
 
-class GeminiService {
-  static const String _baseUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+import '../prompts/habit_prompts.dart';
+import '../../common/interfaces/disposable.dart';
+
+class AIException implements Exception {
+  final String message;
+  AIException(this.message);
+  
+  @override
+  String toString() => 'AIException: $message';
+}
+
+class AINetworkException extends AIException {
+  AINetworkException(super.message);
+}
+
+class AIRateLimitException extends AIException {
+  AIRateLimitException(super.message);
+}
+
+/// Service for Gemini AI integration
+class GeminiService with DisposableMixin {
+  static const String _baseUrl = 
+      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
   static const String _apiKey = 'AIzaSyAbmPxRX-lx59wEIrgiul6jy4osediN5Ow';
   
   final http.Client _client;
@@ -14,17 +35,18 @@ class GeminiService {
   factory GeminiService() => _instance;
   GeminiService._internal() : _client = http.Client();
 
+  /// Generate content from AI request
   Future<AIResponse> generateContent(AIRequest request) async {
+    ensureNotDisposed();
+    
     if (_apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
-      throw AIException('API Key no configurada');
+      throw AIException('API Key not configured');
     }
     
     try {
       final requestBody = {
         'contents': [{
-          'parts': [{
-            'text': request.prompt
-          }]
+          'parts': [{'text': request.prompt}]
         }]
       };
       
@@ -50,24 +72,26 @@ class GeminiService {
         throw _handleHttpError(response.statusCode, response.body);
       }
     } on SocketException {
-      throw AINetworkException('Sin conexión a internet');
+      throw AINetworkException('No internet connection');
     } on HttpException {
-      throw AINetworkException('Error de conexión');
+      throw AINetworkException('Connection error');
     } catch (e) {
       if (e is AIException) rethrow;
-      throw AIException('Error inesperado: $e');
+      throw AIException('Unexpected error: $e');
     }
   }
 
-  Future<AIResponse> evaluateHabit(String prompt) async {
+  /// Evaluate a habit description
+  Future<AIResponse> evaluateHabit(String habitDescription) async {
     final request = AIRequest(
       type: AIRequestType.habitEvaluation,
-      prompt: prompt,
-      metadata: {},
+      prompt: HabitPrompts.buildEvaluationPrompt(habitDescription),
+      metadata: {'habit': habitDescription},
     );
     return await generateContent(request);
   }
 
+  /// Check connectivity to Google services
   Future<bool> checkConnectivity() async {
     try {
       final response = await _client.get(
@@ -82,34 +106,20 @@ class GeminiService {
   AIException _handleHttpError(int statusCode, String body) {
     switch (statusCode) {
       case 400:
-        return AIException('Request inválido: $body');
+        return AIException('Invalid request: $body');
       case 403:
-        return AIException('API Key inválida o sin permisos');
+        return AIException('Invalid API Key or no permissions');
       case 404:
-        return AIException('Modelo no disponible');
+        return AIException('Model not available');
       case 429:
-        return AIRateLimitException('Límite de API alcanzado');
+        return AIRateLimitException('API rate limit reached');
       default:
-        return AIException('Error de API: $statusCode');
+        return AIException('API error: $statusCode');
     }
   }
 
-  void dispose() {
+  @override
+  Future<void> onDispose() async {
     _client.close();
   }
-}
-
-class AIException implements Exception {
-  final String message;
-  AIException(this.message);
-  @override
-  String toString() => 'AIException: $message';
-}
-
-class AINetworkException extends AIException {
-  AINetworkException(super.message);
-}
-
-class AIRateLimitException extends AIException {
-  AIRateLimitException(super.message);
 }

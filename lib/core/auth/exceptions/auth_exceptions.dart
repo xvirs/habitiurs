@@ -1,4 +1,3 @@
-// lib/core/auth/exceptions/auth_exceptions.dart
 abstract class AuthException implements Exception {
   final String message;
   final String? code;
@@ -10,15 +9,27 @@ abstract class AuthException implements Exception {
 }
 
 class LoginCancelledException extends AuthException {
-  const LoginCancelledException() : super('Login cancelado por el usuario');
+  const LoginCancelledException() : super('Login cancelled by user');
 }
 
 class InvalidCredentialsException extends AuthException {
-  const InvalidCredentialsException() : super('Credenciales inválidas');
+  const InvalidCredentialsException() : super('Invalid credentials');
 }
 
 class NetworkAuthException extends AuthException {
-  const NetworkAuthException() : super('Error de conexión durante autenticación');
+  const NetworkAuthException() : super('Network error during authentication');
+}
+
+class UserDisabledException extends AuthException {
+  const UserDisabledException() : super('This account has been disabled');
+}
+
+class TooManyRequestsException extends AuthException {
+  const TooManyRequestsException() : super('Too many attempts. Please wait a moment.');
+}
+
+class ServiceUnavailableException extends AuthException {
+  const ServiceUnavailableException(String service) : super('$service service not available');
 }
 
 class UnknownAuthException extends AuthException {

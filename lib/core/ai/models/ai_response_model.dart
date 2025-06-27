@@ -1,5 +1,30 @@
-// lib/core/ai/models/ai_response_model.dart
+
 import 'package:habitiurs/core/ai/models/ai_request_model.dart';
+
+class AIResponseConfidence {
+  final double score;
+  final String level;
+  final List<String> factors;
+
+  const AIResponseConfidence({
+    required this.score,
+    required this.level,
+    this.factors = const [],
+  });
+
+  Map<String, dynamic> toJson() => {
+    'score': score,
+    'level': level,
+    'factors': factors,
+  };
+
+  factory AIResponseConfidence.fromJson(Map<String, dynamic> json) =>
+      AIResponseConfidence(
+        score: (json['score'] as num?)?.toDouble() ?? 0.0,
+        level: json['level'] as String? ?? 'medium',
+        factors: List<String>.from(json['factors'] as List? ?? []),
+      );
+}
 
 class AIResponse {
   final String id;
@@ -20,79 +45,43 @@ class AIResponse {
     this.confidence,
   });
 
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'content': content,
-      'type': type.toString(),
-      'metadata': metadata,
-      'timestamp': timestamp.toIso8601String(),
-      'is_from_ai': isFromAI,
-      'confidence': confidence?.toJson(),
-    };
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'content': content,
+    'type': type.name,
+    'metadata': metadata,
+    'timestamp': timestamp.toIso8601String(),
+    'is_from_ai': isFromAI,
+    'confidence': confidence?.toJson(),
+  };
 
-  factory AIResponse.fromJson(Map<String, dynamic> json) {
-    return AIResponse(
-      id: json['id'],
-      content: json['content'],
-      type: AIRequestType.values.firstWhere(
-        (e) => e.toString() == json['type'],
-        orElse: () => AIRequestType.generalAdvice,
-      ),
-      metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
-      timestamp: DateTime.parse(json['timestamp']),
-      isFromAI: json['is_from_ai'] ?? true,
-      confidence: json['confidence'] != null 
-          ? AIResponseConfidence.fromJson(json['confidence'])
-          : null,
-    );
-  }
+  factory AIResponse.fromJson(Map<String, dynamic> json) => AIResponse(
+    id: json['id'] as String,
+    content: json['content'] as String,
+    type: AIRequestType.values.byName(json['type'] as String),
+    metadata: Map<String, dynamic>.from(json['metadata'] as Map? ?? {}),
+    timestamp: DateTime.parse(json['timestamp'] as String),
+    isFromAI: json['is_from_ai'] as bool? ?? true,
+    confidence: json['confidence'] != null
+        ? AIResponseConfidence.fromJson(json['confidence'])
+        : null,
+  );
 
-  // Compatibilidad con el sistema anterior
-  factory AIResponse.fromLegacyRecommendation({
-    required String id,
+  factory AIResponse.fallback({
     required String content,
-    required DateTime timestamp,
-    required bool isFromAI,
-    Map<String, dynamic>? context,
-  }) {
-    return AIResponse(
-      id: id,
-      content: content,
-      type: AIRequestType.personalRecommendation,
-      metadata: context ?? {},
-      timestamp: timestamp,
-      isFromAI: isFromAI,
-    );
-  }
+    required AIRequestType type,
+    Map<String, dynamic>? metadata,
+  }) => AIResponse(
+    id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
+    content: content,
+    type: type,
+    metadata: metadata ?? {},
+    timestamp: DateTime.now(),
+    isFromAI: false,
+    confidence: const AIResponseConfidence(
+      score: 0.6,
+      level: 'medium',
+      factors: ['offline_mode', 'template_based'],
+    ),
+  );
 }
-
-class AIResponseConfidence {
-  final double score; // 0.0 - 1.0
-  final String level; // 'high', 'medium', 'low'
-  final List<String> factors;
-
-  const AIResponseConfidence({
-    required this.score,
-    required this.level,
-    this.factors = const [],
-  });
-
-  Map<String, dynamic> toJson() {
-    return {
-      'score': score,
-      'level': level,
-      'factors': factors,
-    };
-  }
-
-  factory AIResponseConfidence.fromJson(Map<String, dynamic> json) {
-    return AIResponseConfidence(
-      score: json['score']?.toDouble() ?? 0.0,
-      level: json['level'] ?? 'medium',
-      factors: List<String>.from(json['factors'] ?? []),
-    );
-  }
-}
-

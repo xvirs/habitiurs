@@ -1,4 +1,15 @@
-// lib/core/ai/models/ai_request_model.dart
+enum AIRequestType {
+  habitEvaluation,
+  habitAnalysis,
+  habitSuggestion,
+  statisticsAnalysis,
+  successPrediction,
+  trendAnalysis,
+  personalRecommendation,
+  generalAdvice,
+  motivationalMessage,
+}
+
 class AIRequest {
   final AIRequestType type;
   final String prompt;
@@ -12,30 +23,22 @@ class AIRequest {
     DateTime? timestamp,
   }) : timestamp = timestamp ?? DateTime.now();
 
-  Map<String, dynamic> toJson() {
-    return {
-      'type': type.toString(),
-      'prompt': prompt,
-      'metadata': metadata,
-      'timestamp': timestamp.toIso8601String(),
-    };
-  }
-}
+  Map<String, dynamic> toJson() => {
+    'type': type.name,
+    'prompt': prompt,
+    'metadata': metadata,
+    'timestamp': timestamp.toIso8601String(),
+  };
 
-enum AIRequestType {
-  // HABITS
-  habitEvaluation,
-  habitAnalysis,
-  habitSuggestion,
-  
-  // STATISTICS  
-  statisticsAnalysis,
-  successPrediction,
-  trendAnalysis,
-  
-  // AI ASSISTANT
-  personalRecommendation,
-  generalAdvice,
-  motivationalMessage,
-}
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is AIRequest &&
+          runtimeType == other.runtimeType &&
+          type == other.type &&
+          prompt == other.prompt &&
+          timestamp == other.timestamp;
 
+  @override
+  int get hashCode => Object.hash(type, prompt, timestamp);
+}
