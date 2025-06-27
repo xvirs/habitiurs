@@ -1,18 +1,23 @@
+// lib/core/di/injection_container.dart
 import 'package:firebase_core/firebase_core.dart';
-import 'package:habitiurs/features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
-import 'package:habitiurs/features/ai_assistant/domain/usecases/get_app_guides.dart';
+
+// Core
 import '../database/database_helper.dart';
 import '../ai/repositories/ai_repository.dart';
 import '../auth/services/auth_service.dart';
 import '../auth/interfaces/i_auth_service.dart';
+import '../sync/services/firebase_service.dart';
+import '../sync/services/sync_manager.dart';
+import '../sync/repositories/sync_repository.dart';
+
+// Auth
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/domain/usecases/check_auth_status.dart';
 import '../../features/auth/domain/usecases/create_guest_session.dart';
 import '../../features/auth/domain/usecases/login_with_google.dart';
 import '../../features/auth/domain/usecases/logout_user.dart';
-import '../sync/services/firebase_service.dart';
-import '../sync/services/sync_manager.dart';
-import '../sync/repositories/sync_repository.dart';
+
+// Habits
 import '../../features/habits/data/datasources/habit_local_datasource.dart';
 import '../../features/habits/data/repositories/habit_repository_impl.dart';
 import '../../features/habits/domain/repositories/habit_repository.dart';
@@ -23,6 +28,8 @@ import '../../features/habits/domain/usecases/get_week_entries.dart';
 import '../../features/habits/domain/usecases/toggle_habit_entry.dart';
 import '../../features/habits/presentation/bloc/habit_bloc.dart';
 import '../../features/habits/presentation/bloc/habit_evaluation_cubit.dart';
+
+// Statistics
 import '../../features/statistics/data/datasources/statistics_local_datasource.dart';
 import '../../features/statistics/data/repositories/statistics_repository_impl.dart';
 import '../../features/statistics/domain/repositories/statistics_repository.dart';
@@ -30,10 +37,14 @@ import '../../features/statistics/domain/usecases/get_current_month_statistics.d
 import '../../features/statistics/domain/usecases/get_current_year_statistics.dart';
 import '../../features/statistics/domain/usecases/get_historical_data.dart';
 import '../../features/statistics/presentation/bloc/statistics_bloc.dart';
+
+// AI Assistant
 import '../../features/ai_assistant/data/datasources/offline_content_datasource.dart';
 import '../../features/ai_assistant/data/repositories/ai_assistant_repository_impl.dart';
 import '../../features/ai_assistant/domain/repositories/ai_assistant_repository.dart';
 import '../../features/ai_assistant/domain/usecases/get_educational_content.dart';
+import '../../features/ai_assistant/domain/usecases/get_app_guides.dart';
+import '../../features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
 import '../../features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 
 class InjectionContainer {
@@ -59,26 +70,25 @@ class InjectionContainer {
   late final StatisticsRepository _statisticsRepository;
   late final AIAssistantRepository _aiAssistantRepository;
 
-  // Use Cases - Auth
+  // Auth Use Cases
   late final CheckAuthStatus _checkAuthStatus;
   late final CreateGuestSession _createGuestSession;
   late final LoginWithGoogle _loginWithGoogle;
   late final LogoutUser _logoutUser;
 
-  // Use Cases - Habits
+  // Habits Use Cases
   late final GetAllHabits _getAllHabits;
   late final CreateHabit _createHabit;
   late final GetWeekEntries _getWeekEntries;
   late final ToggleHabitEntry _toggleHabitEntry;
   late final DeleteHabit _deleteHabit;
 
-  // Use Cases - Statistics
+  // Statistics Use Cases
   late final GetCurrentMonthStatistics _getCurrentMonthStatistics;
-  // Añadir estas dos líneas para declarar las variables
   late final GetCurrentYearStatistics _getCurrentYearStatistics;
   late final GetHistoricalData _getHistoricalData;
 
-  // Use Cases - AI Assistant
+  // AI Assistant Use Cases
   late final GetEducationalContent _getEducationalContent;
   late final GetAppGuides _getAppGuides;
   late final GetAIRecommendation _getAIRecommendation;
@@ -87,16 +97,16 @@ class InjectionContainer {
 
   Future<void> init() async {
     if (_isInitialized) return;
+    
     try {
       await _initializeFirebase();
       await _initializeCoreServices();
       _initializeRepositories();
       _initializeUseCases();
-
       _isInitialized = true;
     } catch (e) {
       _isInitialized = false;
-      rethrow; // Propagate the error for app-level handling
+      rethrow;
     }
   }
 
@@ -117,9 +127,7 @@ class InjectionContainer {
     _initializeDataSources();
 
     _aiRepository = AIRepository();
-
     _authService = AuthService();
-
     _firebaseService = FirebaseService();
 
     _syncManager = SyncManager(
@@ -143,8 +151,14 @@ class InjectionContainer {
   }
 
   void _initializeRepositories() {
-    _habitRepository = HabitRepositoryImpl(_habitLocalDataSource, _syncRepository);
-    _statisticsRepository = StatisticsRepositoryImpl(localDatasource: _statisticsLocalDatasource);
+    _habitRepository = HabitRepositoryImpl(
+      _habitLocalDataSource, 
+      _syncRepository,
+    );
+    
+    _statisticsRepository = StatisticsRepositoryImpl(
+      localDatasource: _statisticsLocalDatasource,
+    );
 
     _aiAssistantRepository = AIAssistantRepositoryImpl(
       offlineContentDatasource: _offlineContentDatasource,
@@ -154,65 +168,72 @@ class InjectionContainer {
   }
 
   void _initializeUseCases() {
-    // Auth Use Cases
+    _initializeAuthUseCases();
+    _initializeHabitsUseCases();
+    _initializeStatisticsUseCases();
+    _initializeAIAssistantUseCases();
+  }
+
+  void _initializeAuthUseCases() {
     _checkAuthStatus = CheckAuthStatus(_authService);
     _createGuestSession = CreateGuestSession(_authService);
     _loginWithGoogle = LoginWithGoogle(_authService);
     _logoutUser = LogoutUser(_authService);
+  }
 
-    // Habits Use Cases
+  void _initializeHabitsUseCases() {
     _getAllHabits = GetAllHabits(_habitRepository);
     _createHabit = CreateHabit(_habitRepository);
     _getWeekEntries = GetWeekEntries(_habitRepository);
     _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
     _deleteHabit = DeleteHabit(_habitRepository, _authService);
+  }
 
-    // Statistics Use Cases
+  void _initializeStatisticsUseCases() {
     _getCurrentMonthStatistics = GetCurrentMonthStatistics(_statisticsRepository);
-    // Inicializar las variables que faltaban aquí
     _getCurrentYearStatistics = GetCurrentYearStatistics(_statisticsRepository);
     _getHistoricalData = GetHistoricalData(_statisticsRepository);
+  }
 
-    // AI Assistant Use Cases
+  void _initializeAIAssistantUseCases() {
     _getEducationalContent = GetEducationalContent(_aiAssistantRepository);
     _getAppGuides = GetAppGuides(_aiAssistantRepository);
     _getAIRecommendation = GetAIRecommendation(_aiAssistantRepository);
   }
 
-  // Getters for Blocs
+  // BLoC Getters
   AuthBloc get authBloc => AuthBloc(
-        checkAuthStatus: _checkAuthStatus,
-        createGuestSession: _createGuestSession,
-        loginWithGoogle: _loginWithGoogle,
-        logoutUser: _logoutUser,
-      );
+    checkAuthStatus: _checkAuthStatus,
+    createGuestSession: _createGuestSession,
+    loginWithGoogle: _loginWithGoogle,
+    logoutUser: _logoutUser,
+  );
 
   HabitBloc get habitBloc => HabitBloc(
-        getAllHabits: _getAllHabits,
-        createHabit: _createHabit,
-        getWeekEntries: _getWeekEntries,
-        toggleHabitEntry: _toggleHabitEntry,
-        deleteHabit: _deleteHabit,
-      );
+    getAllHabits: _getAllHabits,
+    createHabit: _createHabit,
+    getWeekEntries: _getWeekEntries,
+    toggleHabitEntry: _toggleHabitEntry,
+    deleteHabit: _deleteHabit,
+  );
 
   StatisticsBloc get statisticsBloc => StatisticsBloc(
-        getCurrentMonthStatistics: _getCurrentMonthStatistics,
-        // Pasar las nuevas instancias a StatisticsBloc
-        getCurrentYearStatistics: _getCurrentYearStatistics,
-        getHistoricalData: _getHistoricalData,
-      );
+    getCurrentMonthStatistics: _getCurrentMonthStatistics,
+    getCurrentYearStatistics: _getCurrentYearStatistics,
+    getHistoricalData: _getHistoricalData,
+  );
 
   AIAssistantBloc get aiAssistantBloc => AIAssistantBloc(
-        getEducationalContent: _getEducationalContent,
-        getAppGuides: _getAppGuides,
-        getAIRecommendation: _getAIRecommendation,
-      );
+    getEducationalContent: _getEducationalContent,
+    getAppGuides: _getAppGuides,
+    getAIRecommendation: _getAIRecommendation,
+  );
 
   HabitEvaluationCubit get habitEvaluationCubit => HabitEvaluationCubit(
-        aiRepository: _aiRepository,
-      );
+    aiRepository: _aiRepository,
+  );
 
-  // Getters for Core Services
+  // Core Service Getters
   AIRepository get aiRepository => _aiRepository;
   IAuthService get authService => _authService;
   SyncRepository get syncRepository => _syncRepository;
@@ -220,12 +241,11 @@ class InjectionContainer {
   FirebaseService get firebaseService => _firebaseService;
   DatabaseHelper get databaseHelper => _databaseHelper;
 
-  // Getters for Repositories
+  // Repository Getters
   HabitRepository get habitRepository => _habitRepository;
   StatisticsRepository get statisticsRepository => _statisticsRepository;
   AIAssistantRepository get aiAssistantRepository => _aiAssistantRepository;
 
-  // Cleanup
   Future<void> dispose() async {
     try {
       _aiRepository.dispose();

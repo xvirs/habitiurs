@@ -1,7 +1,5 @@
 // lib/features/ai_assistant/data/models/app_guide_model.dart
-// ✅ MANTENER - Solo modelos específicos de la feature
-
-import 'package:habitiurs/features/ai_assistant/domain/entities/app_guide.dart';
+import '../../domain/entities/app_guide.dart';
 
 class AppGuideModel extends AppGuide {
   const AppGuideModel({

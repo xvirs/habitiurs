@@ -1,11 +1,9 @@
 // lib/features/ai_assistant/presentation/widgets/ai_recommendation_section.dart
-// 🔄 REFACTORIZADO - Usar AIResponse del core en lugar de AIRecommendation
-
 import 'package:flutter/material.dart';
 import '../../../../core/ai/models/ai_response_model.dart';
 
 class AIRecommendationSection extends StatelessWidget {
-  final AIResponse? recommendation; // ✅ Cambiado de AIRecommendation a AIResponse
+  final AIResponse? recommendation;
   final bool isLoading;
   final bool hasInternetConnection;
   final VoidCallback onRefresh;
@@ -27,38 +25,66 @@ class AIRecommendationSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              children: [
-                Icon(
-                  Icons.psychology_outlined,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    'Asistente IA Personalizado',
-                    style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.refresh),
-                  onPressed: isLoading ? null : onRefresh,
-                ),
-              ],
+            _Header(
+              isLoading: isLoading,
+              onRefresh: onRefresh,
             ),
             const SizedBox(height: 8),
-            _buildConnectionStatus(context),
+            _ConnectionStatus(hasInternetConnection: hasInternetConnection),
             const SizedBox(height: 16),
-            _buildRecommendationContent(context),
+            _RecommendationContent(
+              recommendation: recommendation,
+              isLoading: isLoading,
+            ),
           ],
         ),
       ),
     );
   }
+}
 
-  Widget _buildConnectionStatus(BuildContext context) {
+class _Header extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback onRefresh;
+
+  const _Header({
+    required this.isLoading,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          Icons.psychology_outlined,
+          color: Theme.of(context).colorScheme.primary,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            'Asistente IA Personalizado',
+            style: Theme.of(context).textTheme.titleLarge?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ),
+        IconButton(
+          icon: const Icon(Icons.refresh),
+          onPressed: isLoading ? null : onRefresh,
+        ),
+      ],
+    );
+  }
+}
+
+class _ConnectionStatus extends StatelessWidget {
+  final bool hasInternetConnection;
+
+  const _ConnectionStatus({required this.hasInternetConnection});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Icon(
@@ -79,95 +105,103 @@ class AIRecommendationSection extends StatelessWidget {
       ],
     );
   }
+}
 
-  Widget _buildRecommendationContent(BuildContext context) {
+class _RecommendationContent extends StatelessWidget {
+  final AIResponse? recommendation;
+  final bool isLoading;
+
+  const _RecommendationContent({
+    required this.recommendation,
+    required this.isLoading,
+  });
+
+  @override
+  Widget build(BuildContext context) {
     if (isLoading) {
-      return Container(
-        height: 120,
-        child: const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 8),
-              Text(
-                'Generando recomendación personalizada...',
-                style: TextStyle(fontSize: 12),
-              ),
-            ],
-          ),
-        ),
-      );
+      return const _LoadingContent();
     }
 
     if (recommendation == null) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey[100],
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Text(
-          'No se pudo obtener una recomendación en este momento. Intenta refrescar.',
-          style: TextStyle(fontSize: 13),
-          textAlign: TextAlign.center,
-        ),
-      );
+      return const _EmptyContent();
     }
 
+    return _RecommendationCard(recommendation: recommendation!);
+  }
+}
+
+class _LoadingContent extends StatelessWidget {
+  const _LoadingContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 120,
+      child: const Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircularProgressIndicator(),
+            SizedBox(height: 8),
+            Text(
+              'Generando recomendación personalizada...',
+              style: TextStyle(fontSize: 12),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _EmptyContent extends StatelessWidget {
+  const _EmptyContent();
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: recommendation!.isFromAI 
-            ? Colors.blue[50] 
-            : Colors.orange[50],
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: const Text(
+        'No se pudo obtener una recomendación en este momento. Intenta refrescar.',
+        style: TextStyle(fontSize: 13),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+}
+
+class _RecommendationCard extends StatelessWidget {
+  final AIResponse recommendation;
+
+  const _RecommendationCard({required this.recommendation});
+
+  @override
+  Widget build(BuildContext context) {
+    final isFromAI = recommendation.isFromAI;
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: isFromAI ? Colors.blue[50] : Colors.orange[50],
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: recommendation!.isFromAI 
-              ? Colors.blue[200]! 
-              : Colors.orange[200]!,
+          color: isFromAI ? Colors.blue[200]! : Colors.orange[200]!,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                recommendation!.isFromAI 
-                    ? Icons.auto_awesome 
-                    : Icons.lightbulb_outline,
-                size: 16,
-                color: recommendation!.isFromAI 
-                    ? Colors.blue[600] 
-                    : Colors.orange[600],
-              ),
-              const SizedBox(width: 4),
-              Text(
-                recommendation!.isFromAI 
-                    ? 'Recomendación de IA' 
-                    : 'Consejo general',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: recommendation!.isFromAI 
-                      ? Colors.blue[600] 
-                      : Colors.orange[600],
-                ),
-              ),
-              const Spacer(),
-              Text(
-                _formatTime(recommendation!.timestamp),
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.grey[600],
-                ),
-              ),
-            ],
+          _RecommendationHeader(
+            isFromAI: isFromAI,
+            timestamp: recommendation.timestamp,
           ),
           const SizedBox(height: 8),
           Text(
-            recommendation!.content,
+            recommendation.content,
             style: const TextStyle(
               fontSize: 13,
               height: 1.4,
@@ -175,6 +209,46 @@ class AIRecommendationSection extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _RecommendationHeader extends StatelessWidget {
+  final bool isFromAI;
+  final DateTime timestamp;
+
+  const _RecommendationHeader({
+    required this.isFromAI,
+    required this.timestamp,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Icon(
+          isFromAI ? Icons.auto_awesome : Icons.lightbulb_outline,
+          size: 16,
+          color: isFromAI ? Colors.blue[600] : Colors.orange[600],
+        ),
+        const SizedBox(width: 4),
+        Text(
+          isFromAI ? 'Recomendación de IA' : 'Consejo general',
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+            color: isFromAI ? Colors.blue[600] : Colors.orange[600],
+          ),
+        ),
+        const Spacer(),
+        Text(
+          _formatTime(timestamp),
+          style: TextStyle(
+            fontSize: 10,
+            color: Colors.grey[600],
+          ),
+        ),
+      ],
     );
   }
 

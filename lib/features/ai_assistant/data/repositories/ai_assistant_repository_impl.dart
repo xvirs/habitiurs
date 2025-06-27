@@ -1,52 +1,48 @@
 // lib/features/ai_assistant/data/repositories/ai_assistant_repository_impl.dart
-// 🔄 REFACTORIZADO - Imports corregidos para evitar ambiguedad
-
 import '../../../../core/ai/models/ai_request_model.dart';
 import '../../../../core/ai/models/ai_response_model.dart';
-import '../../../../core/ai/models/ai_context_builder.dart'; // ✅ Solo este import
+import '../../../../core/ai/models/ai_context_builder.dart';
 import '../../../../core/ai/repositories/ai_repository.dart';
 import '../../../habits/domain/repositories/habit_repository.dart';
 import '../../domain/entities/educational_content.dart';
 import '../../domain/entities/app_guide.dart';
 import '../../domain/repositories/ai_assistant_repository.dart';
+import '../../domain/services/ai_prompt_service.dart';
 import '../datasources/offline_content_datasource.dart';
 
 class AIAssistantRepositoryImpl implements AIAssistantRepository {
-  final OfflineContentDatasource offlineContentDatasource;
-  final AIRepository aiRepository; // ✅ Usar AI Repository centralizado
-  final HabitRepository habitRepository;
+  final OfflineContentDatasource _offlineContentDatasource;
+  final AIRepository _aiRepository;
+  final HabitRepository _habitRepository;
 
   AIAssistantRepositoryImpl({
-    required this.offlineContentDatasource,
-    required this.aiRepository,
-    required this.habitRepository,
-  });
+    required OfflineContentDatasource offlineContentDatasource,
+    required AIRepository aiRepository,
+    required HabitRepository habitRepository,
+  })  : _offlineContentDatasource = offlineContentDatasource,
+        _aiRepository = aiRepository,
+        _habitRepository = habitRepository;
 
-  // 📚 EDUCATIONAL CONTENT - Solo lógica específica de la feature
   @override
   Future<List<EducationalContent>> getEducationalContent() async {
-    return await offlineContentDatasource.getEducationalContent();
+    return await _offlineContentDatasource.getEducationalContent();
   }
 
   @override
   Future<List<EducationalContent>> getOfflineEducationalContent() async {
-    return await offlineContentDatasource.getEducationalContent();
+    return await _offlineContentDatasource.getEducationalContent();
   }
 
-  // 📖 APP GUIDES - Solo lógica específica de la feature
   @override
   Future<List<AppGuide>> getAppGuides() async {
-    return await offlineContentDatasource.getAppGuides();
+    return await _offlineContentDatasource.getAppGuides();
   }
 
-  // 🤖 AI RECOMMENDATIONS - Delegar completamente al core/ai/
   @override
   Future<AIResponse> getAIRecommendation() async {
     try {
-      // 1. Generar contexto usando datos de hábitos
       final userContext = await _generateUserContext();
       
-      // 2. Crear contexto con AIContextBuilder del core
       final aiContext = AIContextBuilder.buildPersonalRecommendationContext(
         habitNames: userContext['habit_names'] ?? [],
         completionRates: Map<String, double>.from(userContext['completion_rates'] ?? {}),
@@ -57,52 +53,41 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
         lastActiveDate: DateTime.parse(userContext['last_active_date'] ?? DateTime.now().toIso8601String()),
       );
 
-      // 3. Crear request usando tipos del core
       final request = AIRequest(
         type: AIRequestType.personalRecommendation,
-        prompt: _buildPersonalRecommendationPrompt(userContext),
+        prompt: AIPromptService.buildPersonalRecommendationPrompt(
+          habitNames: userContext['habit_names'] ?? [],
+          completionRates: Map<String, double>.from(userContext['completion_rates'] ?? {}),
+          currentStreak: userContext['current_streak'] ?? 0,
+          strugglingHabits: List<String>.from(userContext['struggling_habits'] ?? []),
+        ),
         metadata: aiContext,
       );
 
-      // 4. Delegar completamente al AIRepository centralizado
-      return await aiRepository.generateResponse(request);
+      return await _aiRepository.generateResponse(request);
     } catch (e) {
-      // Si falla, el aiRepository manejará el fallback automáticamente
       rethrow;
     }
   }
 
-  // 🌐 CONNECTIVITY - Delegar al core/ai/
   @override
   Future<bool> hasInternetConnection() async {
-    return await aiRepository.hasInternetConnection();
+    return await _aiRepository.hasInternetConnection();
   }
-
-  // 🔧 HELPERS PRIVADOS - Solo generar contexto, no lógica de IA
 
   Future<Map<String, dynamic>> _generateUserContext() async {
     try {
-      final habits = await habitRepository.getAllHabits();
+      final habits = await _habitRepository.getAllHabits();
       final habitNames = habits.map((h) => h.name).toList();
 
       if (habits.isEmpty) {
-        return {
-          'habit_names': <String>[],
-          'completion_rates': <String, double>{},
-          'current_streak': 0,
-          'longest_streak': 0,
-          'struggling_habits': <String>[],
-          'total_days_tracked': 0,
-          'last_active_date': DateTime.now().toIso8601String(),
-        };
+        return _getEmptyContext();
       }
 
-      // Obtener entradas de los últimos 30 días
       final now = DateTime.now();
       final startDate = now.subtract(const Duration(days: 30));
-      final entries = await habitRepository.getHabitEntriesForDateRange(startDate, now);
+      final entries = await _habitRepository.getHabitEntriesForDateRange(startDate, now);
 
-      // Calcular métricas básicas
       final completionRates = <String, double>{};
       final strugglingHabits = <String>[];
 
@@ -135,48 +120,22 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
         'last_active_date': lastActiveDate.toIso8601String(),
       };
     } catch (e) {
-      return {
-        'habit_names': <String>[],
-        'completion_rates': <String, double>{},
-        'current_streak': 0,
-        'longest_streak': 0,
-        'struggling_habits': <String>[],
-        'total_days_tracked': 0,
-        'last_active_date': DateTime.now().toIso8601String(),
-      };
+      return _getEmptyContext();
     }
   }
 
-  String _buildPersonalRecommendationPrompt(Map<String, dynamic> context) {
-    final habitNames = List<String>.from(context['habit_names'] ?? []);
-    final completionRates = Map<String, double>.from(context['completion_rates'] ?? {});
-    final currentStreak = context['current_streak'] ?? 0;
-    final strugglingHabits = List<String>.from(context['struggling_habits'] ?? []);
-    
-    final avgCompletionRate = completionRates.values.isNotEmpty 
-        ? completionRates.values.reduce((a, b) => a + b) / completionRates.values.length
-        : 0.0;
-
-    return '''
-Eres un experto coach de hábitos que ayuda a usuarios de una app llamada Habitiurs.
-
-DATOS DEL USUARIO:
-${habitNames.isNotEmpty ? 'Hábitos actuales: ${habitNames.join(', ')}' : 'No tiene hábitos registrados aún'}
-Tasa de cumplimiento: ${(avgCompletionRate * 100).toStringAsFixed(1)}%
-Racha actual: $currentStreak días
-${strugglingHabits.isNotEmpty ? 'Hábitos con dificultades: ${strugglingHabits.join(', ')}' : ''}
-
-INSTRUCCIONES:
-- Analiza sus datos y da un consejo personalizado y motivador
-- Máximo 2 párrafos cortos
-- Enfócate en mejoras pequeñas e incrementales
-- Mantén un tono positivo pero realista
-
-Genera tu recomendación:
-''';
+  Map<String, dynamic> _getEmptyContext() {
+    return {
+      'habit_names': <String>[],
+      'completion_rates': <String, double>{},
+      'current_streak': 0,
+      'longest_streak': 0,
+      'struggling_habits': <String>[],
+      'total_days_tracked': 0,
+      'last_active_date': DateTime.now().toIso8601String(),
+    };
   }
 
-  // Métodos de cálculo existentes (mantener sin cambios)
   int _calculateCurrentStreak(List entries) {
     if (entries.isEmpty) return 0;
     

@@ -1,26 +1,26 @@
 // lib/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart
-// 🔄 REFACTORIZADO - Usar AIResponse del core en lugar de AIRecommendation
-
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:habitiurs/features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
-import 'package:habitiurs/features/ai_assistant/domain/usecases/get_app_guides.dart';
+import '../../domain/usecases/get_ai_recommendation.dart';
+import '../../domain/usecases/get_app_guides.dart';
 import '../../domain/usecases/get_educational_content.dart';
 import 'ai_assistant_event.dart';
 import 'ai_assistant_state.dart';
 
 class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
-  final GetEducationalContent getEducationalContent;
-  final GetAppGuides getAppGuides;
-  final GetAIRecommendation getAIRecommendation;
+  final GetEducationalContent _getEducationalContent;
+  final GetAppGuides _getAppGuides;
+  final GetAIRecommendation _getAIRecommendation;
 
   AIAssistantBloc({
-    required this.getEducationalContent,
-    required this.getAppGuides,
-    required this.getAIRecommendation,
-  }) : super(AIAssistantInitial()) {
+    required GetEducationalContent getEducationalContent,
+    required GetAppGuides getAppGuides,
+    required GetAIRecommendation getAIRecommendation,
+  })  : _getEducationalContent = getEducationalContent,
+        _getAppGuides = getAppGuides,
+        _getAIRecommendation = getAIRecommendation,
+        super(AIAssistantInitial()) {
     on<LoadAIAssistantData>(_onLoadAIAssistantData);
     on<RefreshAIRecommendation>(_onRefreshAIRecommendation);
-    on<RefreshEducationalContent>(_onRefreshEducationalContent);
   }
 
   Future<void> _onLoadAIAssistantData(
@@ -30,30 +30,26 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
     emit(AIAssistantLoading());
     
     try {
-      // Cargar contenido offline primero (rápido)
-      final educationalContent = await getEducationalContent();
-      final appGuides = await getAppGuides();
+      final educationalContent = await _getEducationalContent();
+      final appGuides = await _getAppGuides();
       
-      // Emitir estado inicial con contenido offline
       emit(AIAssistantLoaded(
         educationalContent: educationalContent,
         appGuides: appGuides,
         isRecommendationLoading: true,
       ));
 
-      // Luego intentar cargar recomendación de IA (puede tomar tiempo)
       try {
-        final aiResponse = await getAIRecommendation(); // ✅ Ahora retorna AIResponse
+        final aiResponse = await _getAIRecommendation();
         
         emit(AIAssistantLoaded(
           educationalContent: educationalContent,
           appGuides: appGuides,
-          currentRecommendation: aiResponse, // ✅ AIResponse del core
+          currentRecommendation: aiResponse,
           isRecommendationLoading: false,
           hasInternetConnection: aiResponse.isFromAI,
         ));
       } catch (e) {
-        // Si falla la IA, mantener el estado pero sin recomendación
         emit(AIAssistantLoaded(
           educationalContent: educationalContent,
           appGuides: appGuides,
@@ -73,11 +69,10 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
     if (state is AIAssistantLoaded) {
       final currentState = state as AIAssistantLoaded;
       
-      // Mostrar loading para la recomendación
       emit(currentState.copyWith(isRecommendationLoading: true));
       
       try {
-        final aiResponse = await getAIRecommendation(); // ✅ AIResponse del core
+        final aiResponse = await _getAIRecommendation();
         
         emit(currentState.copyWith(
           currentRecommendation: aiResponse,
@@ -85,30 +80,10 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
           hasInternetConnection: aiResponse.isFromAI,
         ));
       } catch (e) {
-        // Si falla, mantener estado anterior pero sin loading
         emit(currentState.copyWith(
           isRecommendationLoading: false,
           hasInternetConnection: false,
         ));
-      }
-    }
-  }
-
-  Future<void> _onRefreshEducationalContent(
-    RefreshEducationalContent event,
-    Emitter<AIAssistantState> emit,
-  ) async {
-    if (state is AIAssistantLoaded) {
-      final currentState = state as AIAssistantLoaded;
-      
-      try {
-        final educationalContent = await getEducationalContent();
-        
-        emit(currentState.copyWith(
-          educationalContent: educationalContent,
-        ));
-      } catch (e) {
-        // Mantener contenido anterior si falla
       }
     }
   }

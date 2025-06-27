@@ -1,19 +1,15 @@
 // lib/features/ai_assistant/data/datasources/offline_content_datasource.dart
-// 🔄 REFACTORIZADO - Eliminar AIRecommendationModel y fallbacks
-
 import '../models/app_guide_model.dart';
 import '../models/educational_content_model.dart';
 
 abstract class OfflineContentDatasource {
   Future<List<EducationalContentModel>> getEducationalContent();
   Future<List<AppGuideModel>> getAppGuides();
-  // 🗑️ ELIMINAR: getFallbackRecommendations() - Ahora está en core/ai/
 }
 
 class OfflineContentDatasourceImpl implements OfflineContentDatasource {
   @override
   Future<List<EducationalContentModel>> getEducationalContent() async {
-    // Contenido hardcodeado basado en "Hábitos Atómicos"
     return [
       EducationalContentModel(
         id: 1,

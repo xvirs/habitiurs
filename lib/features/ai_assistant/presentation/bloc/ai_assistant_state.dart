@@ -1,6 +1,4 @@
 // lib/features/ai_assistant/presentation/bloc/ai_assistant_state.dart
-// 🔄 REFACTORIZADO - Usar AIResponse del core en lugar de AIRecommendation
-
 import '../../../../core/ai/models/ai_response_model.dart';
 import '../../domain/entities/educational_content.dart';
 import '../../domain/entities/app_guide.dart';
@@ -14,7 +12,7 @@ class AIAssistantLoading extends AIAssistantState {}
 class AIAssistantLoaded extends AIAssistantState {
   final List<EducationalContent> educationalContent;
   final List<AppGuide> appGuides;
-  final AIResponse? currentRecommendation; // ✅ Cambiado de AIRecommendation a AIResponse
+  final AIResponse? currentRecommendation;
   final bool isRecommendationLoading;
   final bool hasInternetConnection;
 
@@ -29,7 +27,7 @@ class AIAssistantLoaded extends AIAssistantState {
   AIAssistantLoaded copyWith({
     List<EducationalContent>? educationalContent,
     List<AppGuide>? appGuides,
-    AIResponse? currentRecommendation, // ✅ Cambiado de AIRecommendation a AIResponse
+    AIResponse? currentRecommendation,
     bool? isRecommendationLoading,
     bool? hasInternetConnection,
   }) {
