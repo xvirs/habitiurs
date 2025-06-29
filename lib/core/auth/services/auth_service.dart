@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:habitiurs/core/auth/models/user_preferences.dart';
@@ -11,7 +12,6 @@ class AuthService implements IAuthService {
   firebase.FirebaseAuth? _firebaseAuth;
   GoogleSignIn? _googleSignIn;
   bool _initialized = false;
-  
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   

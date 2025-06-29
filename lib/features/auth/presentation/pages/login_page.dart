@@ -5,6 +5,7 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
+
 class LoginPage extends StatelessWidget {
   const LoginPage({Key? key}) : super(key: key);
 
@@ -170,7 +171,7 @@ class LoginPage extends StatelessWidget {
               height: 50,
               child: OutlinedButton(
                 onPressed: isLoading ? null : () {
-                  context.read<AuthBloc>().add(AuthGuestModeRequested());
+                  context.read<AuthBloc>().add(AuthGuestSessionRequested()); // FIXED: Changed to AuthGuestSessionRequested()
                 },
                 child: const Text('Continuar sin cuenta'),
               ),

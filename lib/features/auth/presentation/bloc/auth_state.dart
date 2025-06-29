@@ -27,15 +27,10 @@ class AuthUnauthenticated extends AuthState {}
 
 class AuthError extends AuthState {
   final String message;
-  AuthError(this.message);
-  
-  @override
-  bool operator ==(Object other) =>
-      identical(this, other) ||
-      other is AuthError && 
-      runtimeType == other.runtimeType &&
-      message == other.message;
+  final String? technicalDetails; // Make it nullable
+
+  AuthError(this.message, {this.technicalDetails}); // Add the named parameter
 
   @override
-  int get hashCode => message.hashCode;
+  List<Object?> get props => [message, technicalDetails];
 }

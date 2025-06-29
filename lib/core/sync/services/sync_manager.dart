@@ -1,18 +1,17 @@
-// lib/core/sync/services/sync_manager.dart - MODIFICADO (CONSOLIDACIÓN DE SKIPPED)
-
+// lib/core/sync/services/sync_manager.dart
 import 'dart:async';
-import '../services/firebase_service.dart';
+import 'package:habitiurs/core/sync/services/firebase_service.dart';
 import '../../auth/interfaces/i_auth_service.dart';
 import '../../auth/models/user.dart';
 import '../models/sync_models.dart';
 
-// Imports para acceso a datasources
+// Imports para acceso a datasources (asegúrate de que estén correctos)
 import '../../../features/habits/data/datasources/habit_local_datasource.dart';
 import '../../../features/statistics/data/datasources/statistics_local_datasource.dart';
 import '../../../features/habits/data/models/habit_model.dart';
 import '../../../features/habits/data/models/habit_entry_model.dart';
 import '../../../shared/enums/habit_status.dart';
-import '../../../shared/utils/date_utils.dart'; // Importar DateUtils
+import '../../../shared/utils/date_utils.dart';
 
 class SyncManager {
   final FirebaseService _firebaseService;
@@ -20,7 +19,8 @@ class SyncManager {
   final HabitLocalDataSource _habitDataSource;
   final StatisticsLocalDatasource _statisticsDataSource;
   
-  Timer? _autoSyncTimer;
+  // Aquí es donde se declara y gestiona el temporizador
+  Timer? _autoSyncTimer; 
   bool _isSyncing = false;
   DateTime? _lastSyncTime;
 
@@ -38,7 +38,7 @@ class SyncManager {
        _authService = authService,
        _habitDataSource = habitDataSource,
        _statisticsDataSource = statisticsDataSource {
-    _initializeAutoSync();
+    _initializeAutoSync(); // Se llama aquí para iniciar el temporizador
   }
 
   // Streams públicos
@@ -51,37 +51,40 @@ class SyncManager {
   bool get isSyncing => _isSyncing;
   DateTime? get lastSync => _lastSyncTime;
 
+  // Método para inicializar el temporizador de auto-sincronización
   void _initializeAutoSync() {
+    _autoSyncTimer?.cancel(); // Se cancela cualquier temporizador existente primero
     _autoSyncTimer = Timer.periodic(const Duration(minutes: 30), (timer) {
       final user = _authService.currentUser;
       if (user != null && !user.isGuest && !_isSyncing) {
-        syncAll();
+        // Solo sincroniza si hay un usuario logueado (no invitado) y no hay otra sincronización en progreso
+        syncAll(); 
       }
     });
+    print('▶️ [SyncManager] Auto-sync inicializado o reanudado.');
   }
 
   Future<bool> syncAll() async {
     final user = _authService.currentUser;
     if (user == null) {
-      print('⚠️ [Sync] No hay usuario logueado');
+      print('⚠️ [SyncManager] No hay usuario logueado');
       return false;
     }
 
     if (user.isGuest) {
-      print('⚠️ [Sync] Usuario invitado - sync no disponible');
+      print('⚠️ [SyncManager] Usuario invitado - sync no disponible');
       return false;
     }
 
     if (_isSyncing) {
-      print('⚠️ [Sync] Ya hay sincronización en progreso');
+      print('⚠️ [SyncManager] Ya hay sincronización en progreso');
       return false;
     }
 
     try {
       _setIsSyncing(true);
       _syncStatusController.add(SyncStatus.syncing);
-      
-      print('🔄 [Sync] Iniciando sincronización completa para usuario: ${user.email}');
+      print('🔄 [SyncManager] Iniciando sincronización completa para usuario: ${user.email}');
 
       final hasConnection = await _firebaseService.hasInternetConnection();
       if (!hasConnection) {
@@ -95,13 +98,13 @@ class SyncManager {
       _setLastSyncTime(DateTime.now());
       _syncStatusController.add(SyncStatus.completed);
 
-      print('✅ [Sync] Sincronización completada exitosamente');
+      print('✅ [SyncManager] Sincronización completada exitosamente');
       return true;
 
     } catch (e) {
-      print('❌ [Sync] Error: $e');
+      print('❌ [SyncManager] Error: $e');
       _syncStatusController.add(SyncStatus.failed);
-      rethrow;
+      rethrow; // Se relanza la excepción para que el repositorio la capture
     } finally {
       _setIsSyncing(false);
     }
@@ -111,7 +114,7 @@ class SyncManager {
     try {
       final updatedUser = user.copyWith(lastLogin: DateTime.now());
       await _firebaseService.createOrUpdateUser(updatedUser);
-      print('✅ [Sync] Usuario sincronizado: ${user.email}');
+      print('✅ [SyncManager] Usuario sincronizado: ${user.email}');
     } catch (e) {
       throw Exception('Error sincronizando usuario: $e');
     }
@@ -119,11 +122,9 @@ class SyncManager {
 
   Future<void> _syncHabitsWithBidirectionalMerge(String userId) async {
     try {
-      print('🔄 [Sync] === SINCRONIZACIÓN BIDIRECCIONAL DE HÁBITOS ===');
-      
+      print('🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE HÁBITOS ===');
       final localHabits = await _habitDataSource.getAllHabits(includeInactive: true); 
-      print('📱 [Sync] Hábitos locales encontrados: ${localHabits.length}');
-      
+      print('📱 [SyncManager] Hábitos locales encontrados: ${localHabits.length}');
       if (localHabits.isNotEmpty) {
         final habitsData = localHabits.map((habit) => {
           'id': habit.id,
@@ -131,32 +132,27 @@ class SyncManager {
           'created_at': habit.createdAt.toIso8601String(),
           'is_active': habit.isActive ? 1 : 0,
         }).toList();
-        
         await _firebaseService.syncHabits(userId, habitsData);
-        print('⬆️ [Sync] ${habitsData.length} hábitos subidos a Firebase');
+        print('⬆️ [SyncManager] ${habitsData.length} hábitos subidos a Firebase');
       }
       
-      final remoteHabits = await _firebaseService.getHabits(userId); 
-      print('☁️ [Sync] Hábitos remotos encontrados: ${remoteHabits.length}');
+      final remoteHabits = await _firebaseService.getHabits(userId);
+      print('☁️ [SyncManager] Hábitos remotos encontrados: ${remoteHabits.length}');
       
       int newHabitsAdded = 0;
       int conflictsResolved = 0;
-      
       final Map<int, HabitModel> localHabitsMap = { for (var h in localHabits) h.id!: h };
-      
       for (final remoteHabit in remoteHabits) {
         final remoteId = remoteHabit['id'] as int?;
         final remoteName = remoteHabit['name'] as String? ?? '';
         final remoteCreatedAt = remoteHabit['created_at'] as String? ?? DateTime.now().toIso8601String();
         final remoteIsActive = (remoteHabit['is_active'] as int? ?? 1) == 1;
-        
         if (remoteId == null || remoteName.isEmpty) {
-          print('⚠️ [Sync] Hábito remoto inválido, saltando...');
+          print('⚠️ [SyncManager] Hábito remoto inválido, saltando...');
           continue;
         }
         
         final localHabit = localHabitsMap[remoteId];
-        
         if (localHabit == null) {
           if (remoteIsActive) { 
             try {
@@ -166,28 +162,27 @@ class SyncManager {
                 createdAt: DateTime.parse(remoteCreatedAt),
                 isActive: remoteIsActive,
               );
-              
               await _habitDataSource.insertHabitWithId(newHabit);
               newHabitsAdded++;
-              print('➕ [Sync] Nuevo hábito agregado desde remoto: "$remoteName" (ID: $remoteId)');
+              print('➕ [SyncManager] Nuevo hábito agregado desde remoto: "$remoteName" (ID: $remoteId)');
             } catch (e) {
-              print('❌ [Sync] Error agregando hábito remoto "$remoteName": $e');
+              print('❌ [SyncManager] Error agregando hábito remoto "$remoteName": $e');
             }
           } else {
-            print('ℹ️ [Sync] Hábito remoto $remoteId está inactivo, no se agrega localmente.'); 
+            print('ℹ️ [SyncManager] Hábito remoto $remoteId está inactivo, no se agrega localmente.');
           }
         } else {
           bool needsUpdate = false;
           HabitModel updatedHabit = localHabit;
           
           if (localHabit.name != remoteName) {
-            print('🔀 [Sync] Conflicto de nombre en hábito ID $remoteId: Local="${localHabit.name}" vs Remoto="$remoteName"');
+            print('🔀 [SyncManager] Conflicto de nombre en hábito ID $remoteId: Local="${localHabit.name}" vs Remoto="$remoteName"');
             updatedHabit = updatedHabit.copyWith(name: remoteName);
             needsUpdate = true;
           }
           
           if (localHabit.isActive != remoteIsActive) {
-            print('🔀 [Sync] Conflicto de estado (activo/inactivo) en hábito ID $remoteId: Local=${localHabit.isActive} vs Remoto=$remoteIsActive');
+            print('🔀 [SyncManager] Conflicto de estado (activo/inactivo) en hábito ID $remoteId: Local=${localHabit.isActive} vs Remoto=$remoteIsActive');
             updatedHabit = updatedHabit.copyWith(isActive: remoteIsActive);
             needsUpdate = true;
           }
@@ -196,34 +191,31 @@ class SyncManager {
             try {
               await _habitDataSource.updateHabit(updatedHabit);
               conflictsResolved++;
-              print('🔄 [Sync] Conflicto resuelto para hábito "$remoteName" (ID: $remoteId)');
+              print('🔄 [SyncManager] Conflicto resuelto para hábito "$remoteName" (ID: $remoteId)');
             } catch (e) {
-              print('❌ [Sync] Error resolviendo conflicto para hábito ID $remoteId: $e');
+              print('❌ [SyncManager] Error resolviendo conflicto para hábito ID $remoteId: $e');
             }
           }
         }
       }
       
-      print('✅ [Sync] Hábitos sincronizados exitosamente:');
+      print('✅ [SyncManager] Hábitos sincronizados exitosamente:');
       print('   📱 Local: ${localHabits.length}');
       print('   ☁️ Remoto: ${remoteHabits.length}');
       print('   ➕ Nuevos agregados: $newHabitsAdded');
       print('   🔄 Conflicto de hábitos resueltos: $conflictsResolved');
-      print('   ℹ️ Hábitos remotos inactivos ignorados o actualizados localmente.'); 
-
+      print('   ℹ️ Hábitos remotos inactivos ignorados o actualizados localmente.');
     } catch (e) {
       throw Exception('Error en sincronización bidireccional de hábitos: $e');
     }
   }
 
-  // ✅ Sincronización bidireccional completa de entradas - MODIFICADO para usar last_modified y CONSOLIDAR SKIPPED
   Future<void> _syncHabitEntriesWithBidirectionalMerge(String userId) async {
     try {
-      print('🔄 [Sync] === SINCRONIZACIÓN BIDIRECCIONAL DE ENTRADAS ===');
-      
+      print('🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE ENTRADAS ===');
       // PASO 1: Consolidar entradas 'skipped' para días pasados sin acción
-      print('🔄 [Sync] Consolidando entradas "skipped" para días pasados...');
-      final allHabits = await _habitDataSource.getAllHabits(includeInactive: false); // Solo hábitos activos
+      print('🔄 [SyncManager] Consolidando entradas "skipped" para días pasados...');
+      final allHabits = await _habitDataSource.getAllHabits(includeInactive: false); 
       final today = AppDateUtils.getStartOfDay(DateTime.now());
       int skippedEntriesConsolidated = 0;
 
@@ -248,24 +240,22 @@ class SyncManager {
             );
             await _habitDataSource.insertHabitEntry(newSkippedEntry);
             skippedEntriesConsolidated++;
-            print('➕ [Sync] Consolidada entrada "skipped" para Hábito ${habit.id} en ${currentDate.toIso8601String().split('T')[0]}');
+            print('➕ [SyncManager] Consolidada entrada "skipped" para Hábito ${habit.id} en ${currentDate.toIso8601String().split('T')[0]}');
           }
           currentDate = currentDate.add(const Duration(days: 1));
         }
       }
-      print('✅ [Sync] Consolidación de "skipped" completada. ${skippedEntriesConsolidated} entradas añadidas.');
-
+      print('✅ [SyncManager] Consolidación de "skipped" completada. ${skippedEntriesConsolidated} entradas añadidas.');
       // PASO 2: Obtener todas las entradas locales (incluidas las nuevas 'skipped')
       final latestLocalEntries = await _habitDataSource.getHabitEntriesForDateRange(
-        AppDateUtils.getStartOfDay(DateTime.now().subtract(const Duration(days: 365))), // Puedes ajustar el rango si es necesario
+        AppDateUtils.getStartOfDay(DateTime.now().subtract(const Duration(days: 365))), 
         AppDateUtils.getEndOfDay(DateTime.now()),
       );
-      
       final Map<String, HabitEntryModel> localEntriesMap = {
         for (var entry in latestLocalEntries.where((e) => e.id != null))
           '${entry.habitId}_${entry.date.toIso8601String().split('T')[0]}': entry
       };
-      print('📱 [Sync] Entradas locales reales encontradas: ${localEntriesMap.length}');
+      print('📱 [SyncManager] Entradas locales reales encontradas: ${localEntriesMap.length}');
       
       // PASO 3: Subir entradas locales a Firebase
       if (localEntriesMap.isNotEmpty) {
@@ -274,20 +264,19 @@ class SyncManager {
           'date': entry.date.toIso8601String().split('T')[0],
           'status': entry.status.index,
           'id': entry.id,
-          'last_modified': entry.lastModified?.toIso8601String(), // Enviar el last_modified local
+          'last_modified': entry.lastModified?.toIso8601String(), 
         }).toList();
         
         await _firebaseService.syncHabitEntries(userId, entriesData);
-        print('⬆️ [Sync] ${entriesData.length} entradas subidas a Firebase');
+        print('⬆️ [SyncManager] ${entriesData.length} entradas subidas a Firebase');
       }
       
-      // PASO 4: Descargar entradas remotas de Firebase (rango amplio para cubrir inactivos también)
-      // Descargamos entradas de un rango más amplio para asegurar que se capturen todas las actualizaciones
+      // PASO 4: Descargar entradas remotas de Firebase 
       final remoteEntries = await _firebaseService.getHabitEntries(
         userId, 
-        since: AppDateUtils.getStartOfDay(DateTime.now().subtract(const Duration(days: 365))), // Puedes ajustar el rango
+        since: AppDateUtils.getStartOfDay(DateTime.now().subtract(const Duration(days: 365))), 
       );
-      print('☁️ [Sync] Entradas remotas encontradas: ${remoteEntries.length}');
+      print('☁️ [SyncManager] Entradas remotas encontradas: ${remoteEntries.length}');
       
       // PASO 5: MERGE BIDIRECCIONAL: Aplicar entradas remotas
       int newEntriesAdded = 0;
@@ -297,10 +286,9 @@ class SyncManager {
         final remoteHabitId = remoteEntry['habit_id'] as int?;
         final remoteDateStr = remoteEntry['date'] as String?;
         final remoteStatusInt = remoteEntry['status'] as int?;
-        final remoteLastModifiedStr = remoteEntry['last_modified'] as String?; 
-        
+        final remoteLastModifiedStr = remoteEntry['last_modified'] as String?;
         if (remoteHabitId == null || remoteDateStr == null || remoteStatusInt == null) {
-          print('⚠️ [Sync] Entrada remota inválida, saltando...');
+          print('⚠️ [SyncManager] Entrada remota inválida, saltando...');
           continue;
         }
         
@@ -313,49 +301,39 @@ class SyncManager {
           final existingLocalEntry = localEntriesMap[entryKey];
           
           if (existingLocalEntry == null || existingLocalEntry.id == null) {
-            // NUEVA ENTRADA: No existe localmente, agregarla
-            // Solo insertamos si la entrada remota tiene un timestamp válido y no es estado 'pending' por defecto
             if (remoteLastModified != null && remoteStatus != HabitStatus.pending) { 
               try {
                 final newEntry = HabitEntryModel(
                   habitId: remoteHabitId,
                   date: remoteDate,
                   status: remoteStatus,
-                  id: remoteEntry['entry_id'], // ID de Firebase, se puede usar si quieres mantener el mismo ID entre BDs
+                  id: remoteEntry['entry_id'], 
                   lastModified: remoteLastModified,
                 );
-                
                 await _habitDataSource.insertHabitEntry(newEntry);
                 newEntriesAdded++;
-                print('➕ [Sync] Nueva entrada agregada desde remoto: Hábito $remoteHabitId - ${remoteDateStr} - ${remoteStatus.name}');
+                print('➕ [SyncManager] Nueva entrada agregada desde remoto: Hábito $remoteHabitId - ${remoteDateStr} - ${remoteStatus.name}');
               } catch (e) {
-                print('❌ [Sync] Error agregando entrada remota: $e');
+                print('❌ [SyncManager] Error agregando entrada remota: $e');
               }
             } else {
-              print('ℹ️ [Sync] Entrada remota $entryKey con estado ${remoteStatus.name} o sin timestamp, no se agrega localmente.');
+              print('ℹ️ [SyncManager] Entrada remota $entryKey con estado ${remoteStatus.name} o sin timestamp, no se agrega localmente.');
             }
           } else {
-            // RESOLUCIÓN DE CONFLICTOS: Entrada existe localmente, verificar diferencias
             final localLastModified = existingLocalEntry.lastModified;
-
-            // Si los estados son diferentes
             if (existingLocalEntry.status != remoteStatus) {
-                // Comparamos los timestamps para ver cuál es más reciente
                 if (localLastModified == null || (remoteLastModified != null && remoteLastModified.isAfter(localLastModified))) {
-                    // Remoto es más reciente o local no tiene timestamp: Remoto gana
-                    print('🔀 [Sync] Conflicto de estado resuelto por timestamp más reciente (remoto gana): Hábito $remoteHabitId - $remoteDateStr. Local:${existingLocalEntry.status.name} (${localLastModified?.toIso8601String() ?? 'null'}) vs Remoto:${remoteStatus.name} (${remoteLastModified?.toIso8601String() ?? 'null'})');
+                    print('🔀 [SyncManager] Conflicto de estado resuelto por timestamp más reciente (remoto gana): Hábito $remoteHabitId - $remoteDateStr. Local:${existingLocalEntry.status.name} (${localLastModified?.toIso8601String() ?? 'null'}) vs Remoto:${remoteStatus.name} (${remoteLastModified?.toIso8601String() ?? 'null'})');
                     final updatedEntry = existingLocalEntry.copyWith(
-                      status: remoteStatus, // El estado remoto (más reciente) gana
+                      status: remoteStatus, 
                       lastModified: remoteLastModified,
                     );
                     await _habitDataSource.updateHabitEntry(updatedEntry);
                     conflictsResolved++;
                 } else {
-                    // Local es más reciente: Local gana (no hace falta actualizar porque ya lo tiene)
-                    print('🔀 [Sync] Conflicto de estado resuelto por timestamp más reciente (local gana): Hábito $remoteHabitId - $remoteDateStr. Local:${existingLocalEntry.status.name} (${localLastModified?.toIso8601String() ?? 'null'}) vs Remoto:${remoteStatus.name} (${remoteLastModified?.toIso8601String() ?? 'null'})');
+                    print('🔀 [SyncManager] Conflicto de estado resuelto por timestamp más reciente (local gana): Hábito $remoteHabitId - $remoteDateStr. Local:${existingLocalEntry.status.name} (${localLastModified?.toIso8601String() ?? 'null'}) vs Remoto:${remoteStatus.name} (${remoteLastModified?.toIso8601String() ?? 'null'})');
                 }
             } else {
-              // Los estados son iguales, pero actualizamos el timestamp local si el remoto es más reciente
               if (localLastModified == null || (remoteLastModified != null && remoteLastModified.isAfter(localLastModified))) {
                  final updatedEntry = existingLocalEntry.copyWith(lastModified: remoteLastModified);
                  if (updatedEntry != existingLocalEntry) { 
@@ -365,11 +343,11 @@ class SyncManager {
             }
           }
         } catch (e) {
-          print('❌ [Sync] Error procesando entrada remota: $e');
+          print('❌ [SyncManager] Error procesando entrada remota: $e');
         }
       }
       
-      print('✅ [Sync] Entradas sincronizadas exitosamente:');
+      print('✅ [SyncManager] Entradas sincronizadas exitosamente:');
       print('   📱 Local: ${localEntriesMap.length}');
       print('   ☁️ Remoto: ${remoteEntries.length}');
       print('   ➕ Nuevas agregadas: $newEntriesAdded');
@@ -380,14 +358,13 @@ class SyncManager {
     }
   }
 
-  // Estrategia de resolución de conflictos para estados de hábitos
+  // Strategy to resolve status conflicts for habit entries (keeping this for context, though `lastModified` approach is better for entries)
   HabitStatus _resolveStatusConflict(HabitStatus local, HabitStatus remote) {
     const priority = {
       HabitStatus.completed: 3,
       HabitStatus.skipped: 2,
       HabitStatus.pending: 1,
     };
-    
     final localPriority = priority[local] ?? 0;
     final remotePriority = priority[remote] ?? 0;
     
@@ -405,10 +382,10 @@ class SyncManager {
       await _syncHabitsWithBidirectionalMerge(user.id);
       
       _syncStatusController.add(SyncStatus.completed);
-      print('✅ [Sync] Solo hábitos sincronizados');
+      print('✅ [SyncManager] Solo hábitos sincronizados');
       return true;
     } catch (e) {
-      print('❌ [Sync] Error en sync de hábitos: $e');
+      print('❌ [SyncManager] Error en sync de hábitos: $e');
       _syncStatusController.add(SyncStatus.failed);
       return false;
     } finally {
@@ -427,10 +404,10 @@ class SyncManager {
       await _syncHabitEntriesWithBidirectionalMerge(user.id);
       
       _syncStatusController.add(SyncStatus.completed);
-      print('✅ [Sync] Solo entradas sincronizadas');
+      print('✅ [SyncManager] Solo entradas sincronizadas');
       return true;
     } catch (e) {
-      print('❌ [Sync] Error en sync de entradas: $e');
+      print('❌ [SyncManager] Error en sync de entradas: $e');
       _syncStatusController.add(SyncStatus.failed);
       return false;
     } finally {
@@ -439,18 +416,19 @@ class SyncManager {
   }
 
   Future<void> requestSync() async {
-    print('🔄 [Sync] Sincronización solicitada manualmente');
+    print('🔄 [SyncManager] Sincronización solicitada manualmente');
     await syncAll();
   }
 
+  // Métodos para pausar y reanudar el auto-sync, controlados por el temporizador aquí
   void pauseAutoSync() {
     _autoSyncTimer?.cancel();
-    print('⏸️ [Sync] Auto-sync pausado');
+    print('⏸️ [SyncManager] Auto-sync pausado');
   }
 
   void resumeAutoSync() {
-    _initializeAutoSync();
-    print('▶️ [Sync] Auto-sync reanudado');
+    _initializeAutoSync(); // Re-inicializa el temporizador
+    print('▶️ [SyncManager] Auto-sync reanudado');
   }
 
   void _setIsSyncing(bool value) {
@@ -468,6 +446,6 @@ class SyncManager {
     await _syncStatusController.close();
     await _lastSyncController.close();
     await _isSyncingController.close();
-    print('🧹 [Sync] Sync Manager limpiado');
+    print('🧹 [SyncManager] Sync Manager limpiado');
   }
 }

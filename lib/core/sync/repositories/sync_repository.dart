@@ -1,10 +1,11 @@
-// lib/core/sync/repositories/sync_repository.dart - CORREGIDO (Error de método en FirebaseService)
+// lib/core/sync/repositories/sync_repository.dart (Clase SyncRepositoryImpl)
 
 import '../models/sync_models.dart';
 import '../services/firebase_service.dart';
 import '../services/sync_manager.dart';
 import '../../auth/interfaces/i_auth_service.dart';
 
+// La interfaz abstracta SyncRepository (sin cambios en esta sección específica)
 abstract class SyncRepository {
   Stream<SyncStatus> get syncStatus;
   Stream<bool> get isSyncing;
@@ -19,15 +20,15 @@ abstract class SyncRepository {
   Future<DateTime?> getLastRemoteSync(String collectionType);
   Future<bool> hasConflicts(String collectionType, DateTime localLastSync);
   
-  // ✅ NUEVO: Método para marcar hábito como inactivo en la nube
-  Future<void> markHabitAsInactive(String userId, int habitId); 
+  Future<void> deleteHabitRemotely(String userId, int habitId); 
 
   void pauseAutoSync();
   void resumeAutoSync();
 }
 
+// Implementación de SyncRepositoryImpl (sin lógica de temporizador)
 class SyncRepositoryImpl implements SyncRepository {
-  final SyncManager _syncManager;
+  final SyncManager _syncManager; // Inyección de SyncManager
   final FirebaseService _firebaseService;
   final IAuthService _authService;
 
@@ -71,8 +72,6 @@ class SyncRepositoryImpl implements SyncRepository {
     } catch (e) {
       print('❌ [SyncRepo] Error en syncHabitsOnly: $e');
       return false;
-    } finally {
-      // Asegurar que la UI se actualice después de un sync de hábitos, si es necesario
     }
   }
 
@@ -86,8 +85,6 @@ class SyncRepositoryImpl implements SyncRepository {
     } catch (e) {
       print('❌ [SyncRepo] Error en syncEntriesOnly: $e');
       return false;
-    } finally {
-      // Asegurar que la UI se actualice después de un sync de entradas, si es necesario
     }
   }
 
@@ -95,7 +92,7 @@ class SyncRepositoryImpl implements SyncRepository {
   Future<void> requestSync() async {
     try {
       print('🔄 [SyncRepo] Sync solicitado manualmente...');
-      await _syncManager.requestSync();
+      await _syncManager.requestSync(); // Delega la solicitud a SyncManager
       print('✅ [SyncRepo] Sync manual completado');
     } catch (e) {
       print('❌ [SyncRepo] Error en requestSync: $e');
@@ -139,26 +136,26 @@ class SyncRepositoryImpl implements SyncRepository {
   }
 
   @override
-  Future<void> markHabitAsInactive(String userId, int habitId) async {
+  Future<void> deleteHabitRemotely(String userId, int habitId) async {
     try {
-      // ✅ CORRECCIÓN: Usar el nombre de método correcto en FirebaseService
-      await _firebaseService.markHabitAsInactiveInFirestore(userId, habitId); 
-      print('✅ [SyncRepo] Hábito $habitId marcado inactivo en Firebase a través de SyncRepo.');
+      // Delega la eliminación física en Firestore al FirebaseService
+      await _firebaseService.deleteHabitInFirestore(userId, habitId); 
+      print('✅ [SyncRepo] Hábito $habitId eliminado remotamente en Firebase a través de SyncRepo.');
     } catch (e) {
-      print('❌ [SyncRepo] Error marcando hábito $habitId como inactivo en SyncRepo: $e');
-      rethrow;
+      print('❌ [SyncRepo] Error eliminando hábito $habitId remotamente en SyncRepo: $e');
+      rethrow; 
     }
   }
 
   @override
   void pauseAutoSync() {
-    _syncManager.pauseAutoSync();
+    _syncManager.pauseAutoSync(); // Delega a SyncManager
     print('⏸️ [SyncRepo] Auto-sync pausado');
   }
 
   @override
   void resumeAutoSync() {
-    _syncManager.resumeAutoSync();
+    _syncManager.resumeAutoSync(); // Delega a SyncManager
     print('▶️ [SyncRepo] Auto-sync reanudado');
   }
 }

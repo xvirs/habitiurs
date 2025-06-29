@@ -29,8 +29,8 @@ class DailyHabitsList extends StatelessWidget {
           _HeaderSection(onAdd: onAdd),
           Expanded(
             child: habits.isEmpty
-                ? const _EmptyStateWidget()
-                : _HabitsListView(
+                ? const _EmptyStateWidget() // Muestra un widget de estado vacío si no hay hábitos
+                : _HabitsListView( // Muestra la lista si hay hábitos
                     habits: habits,
                     todayEntriesMap: todayEntriesMap,
                     onToggle: onToggle,
@@ -146,9 +146,14 @@ class _HabitsListView extends StatelessWidget {
         separatorBuilder: (context, index) => const SizedBox(height: 8),
         itemBuilder: (context, index) {
           final habit = habits[index];
-          final status = todayEntriesMap[habit.id!] ?? HabitStatus.pending;
+          // Se accede a habit.id! solo si habit no es nulo, lo cual está garantizado por el itemCount
+          final status = todayEntriesMap[habit.id!] ?? HabitStatus.pending; 
 
           return HabitTile(
+            // AÑADIDO: Se añade una Key explícita usando ValueKey con el ID del hábito.
+            // Esto es crucial para ayudar a Flutter a reconciliar eficientemente los widgets
+            // cuando los elementos se eliminan o se reordenan en una lista dinámica.
+            key: ValueKey(habit.id), 
             habit: habit,
             index: index,
             status: status,
@@ -201,3 +206,4 @@ class _EmptyStateWidget extends StatelessWidget {
     );
   }
 }
+

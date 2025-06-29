@@ -12,6 +12,7 @@ import 'package:habitiurs/features/statistics/presentation/pages/statistics_page
 import '../../../../shared/widgets/user_drawer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
+import 'dart:async';
 
 class MainPage extends StatefulWidget {
   const MainPage({Key? key}) : super(key: key);
@@ -22,7 +23,8 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 1;
-
+  StreamSubscription? _authBlocSyncSubscription; 
+  
   final List<String> _pageTitles = [
     'Asistente IA',
     'Mis Hábitos',
@@ -32,18 +34,38 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadInitialDataForCurrentTab(_currentIndex);
-    });
   }
 
-  void _loadInitialDataForCurrentTab(int index) {
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    
+    if (_authBlocSyncSubscription == null && mounted) { 
+      _authBlocSyncSubscription = context.read<AuthBloc>().initialSyncCompletedStream.listen((_) {
+        print('🔄 [MainPage] Recibido evento de sync inicial completado desde AuthBloc. Recargando datos de las pestañas.');
+        _loadLocalDataForTab(0); 
+        // Eliminado _loadLocalDataForTab(1) ya que HabitsPage ahora se carga a sí mismo.
+        _loadLocalDataForTab(2); 
+      });
+      
+      // La carga inicial de la pestaña activa se gestionará por cada HabitsPage/StatisticsPage
+      // en su propio initState. No necesitamos disparar LoadHabits/LoadStatistics aquí.
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+         // No hacer nada aquí para la pestaña actual si se espera que los hijos carguen.
+         // _loadLocalDataForTab(_currentIndex); // Removido
+      });
+    }
+  }
+
+  void _loadLocalDataForTab(int index) {
     switch (index) {
       case 0:
         context.read<AIAssistantBloc>().add(LoadAIAssistantData());
         break;
       case 1:
-        context.read<HabitBloc>().add(LoadHabits());
+        // HabitsPage ahora maneja su propia carga inicial en su initState.
+        // Solo recargamos si no está ya cargado o si necesitamos un refresh.
+        // Para este escenario, la propia HabitsPage se encarga.
         break;
       case 2:
         context.read<StatisticsBloc>().add(LoadStatistics());
@@ -53,6 +75,7 @@ class _MainPageState extends State<MainPage> {
 
   @override
   void dispose() {
+    _authBlocSyncSubscription?.cancel(); 
     super.dispose();
   }
 
@@ -94,7 +117,7 @@ class _MainPageState extends State<MainPage> {
           setState(() {
             if (_currentIndex != index) {
               _currentIndex = index;
-              _refreshDataForTab(index);
+              _loadLocalDataForTab(index); 
             }
           });
         },
@@ -125,10 +148,10 @@ class _MainPageState extends State<MainPage> {
         context.read<AIAssistantBloc>().add(RefreshAIRecommendation());
         break;
       case 1:
-        context.read<HabitBloc>().add(PullToRefresh());
+        context.read<HabitBloc>().add(PullToRefresh()); 
         break;
       case 2:
-        context.read<StatisticsBloc>().add(RefreshStatistics());
+        context.read<StatisticsBloc>().add(RefreshStatistics()); 
         break;
     }
   }

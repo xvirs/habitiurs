@@ -10,6 +10,8 @@ abstract class HabitEvent extends Equatable {
 
 class LoadHabits extends HabitEvent {}
 
+// REMOVIDO: class LoadHabitsWithSync extends HabitEvent {}
+
 class CreateHabitEvent extends HabitEvent {
   final String name;
 

@@ -1,5 +1,4 @@
-// lib/core/sync/services/firebase_service.dart - MODIFICADO (TIMESTAMP DE SERVIDOR para last_modified en ENTRADAS)
-
+// lib/core/sync/services/firebase_service.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:habitiurs/core/auth/models/user_preferences.dart';
 import '../../auth/models/user.dart';
@@ -44,7 +43,7 @@ class FirebaseService {
     }
   }
 
-  // HABITS SYNC - CORREGIDO PARA MULTI-DISPOSITIVO
+  // HABITS SYNC 
   Future<void> syncHabits(String userId, List<Map<String, dynamic>> habits) async {
     try {
       final batch = _firestore.batch();
@@ -117,7 +116,45 @@ class FirebaseService {
     }
   }
 
-  // ✅ HABIT ENTRIES SYNC - MODIFICADO (last_modified con FieldValue.serverTimestamp())
+  // NUEVO: Método para eliminar físicamente un hábito y sus entradas relacionadas en Firestore
+  Future<void> deleteHabitInFirestore(String userId, int habitId) async {
+    try {
+      final userHabitsRef = _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection(_habitsCollection);
+      
+      final userEntriesRef = _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection(_habitEntriesCollection);
+
+      final batch = _firestore.batch();
+
+      // 1. Eliminar todas las entradas de hábito relacionadas
+      final entriesToDeleteSnapshot = await userEntriesRef
+          .where('habit_id', isEqualTo: habitId)
+          .get();
+      
+      for (final doc in entriesToDeleteSnapshot.docs) {
+        batch.delete(doc.reference);
+      }
+      print('DEBUG: Preparadas ${entriesToDeleteSnapshot.docs.length} entradas para eliminación en Firebase.');
+
+      // 2. Eliminar el documento del hábito principal
+      final habitDocRef = userHabitsRef.doc(habitId.toString());
+      batch.delete(habitDocRef);
+      print('DEBUG: Hábito $habitId preparado para eliminación en Firebase.');
+
+      // 3. Ejecutar el batch
+      await batch.commit();
+      print('✅ [Firebase] Hábito $habitId y sus entradas relacionadas eliminados físicamente de Firestore.');
+    } catch (e) {
+      throw FirebaseException('Error eliminando hábito $habitId y sus entradas en Firestore: $e');
+    }
+  }
+
+  // HABIT ENTRIES SYNC 
   Future<void> syncHabitEntries(String userId, List<Map<String, dynamic>> entries) async {
     try {
       final batch = _firestore.batch();
@@ -143,7 +180,7 @@ class FirebaseService {
             'user_id': userId,
             'last_sync': FieldValue.serverTimestamp(),
             'device_sync_time': DateTime.now().toIso8601String(),
-            'last_modified': FieldValue.serverTimestamp(), // ✅ CAMBIO CLAVE: Usar timestamp del servidor
+            'last_modified': FieldValue.serverTimestamp(), // Se usa timestamp del servidor
           }, SetOptions(merge: true));
         }
         
@@ -155,7 +192,6 @@ class FirebaseService {
     }
   }
 
-  // ✅ MEJORADO: Descarga de entradas con lectura de last_modified (que ahora será un Timestamp)
   Future<List<Map<String, dynamic>>> getHabitEntries(String userId, {DateTime? since}) async {
     try {
       Query query = _firestore
@@ -179,7 +215,7 @@ class FirebaseService {
           'entry_id': data['entry_id'],
           'last_sync': data['last_sync'],
           'firestore_id': doc.id,
-          'last_modified': (data['last_modified'] as Timestamp?)?.toDate().toIso8601String(), // ✅ Leer como Timestamp y convertir a String ISO
+          'last_modified': (data['last_modified'] as Timestamp?)?.toDate().toIso8601String(), 
         };
       }).toList();
 
@@ -257,9 +293,12 @@ class FirebaseService {
 
   Future<bool> hasInternetConnection() async {
     try {
+      // Intenta habilitar la red de Firestore para verificar la conectividad.
+      // Si no hay red, esto lanzará una excepción.
       await _firestore.enableNetwork();
       return true;
     } catch (e) {
+      print('❌ [FirebaseService] No hay conexión a internet o error de red: $e');
       return false;
     }
   }

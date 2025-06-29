@@ -9,7 +9,6 @@ import '../bloc/habit_state.dart';
 import '../widgets/weekly_grid.dart';
 import '../widgets/daily_habits_list.dart';
 import '../widgets/add_habit_bottom_sheet.dart';
-import '../../../../core/di/injection_container.dart';
 import '../../../../shared/enums/habit_status.dart';
 
 class HabitsPage extends StatefulWidget {
@@ -21,8 +20,7 @@ class HabitsPage extends StatefulWidget {
 
 class HabitsPageState extends State<HabitsPage>
     with AutomaticKeepAliveClientMixin {
-  late final HabitBloc _habitBloc;
-  late final DateTime _today;
+  late DateTime _today;
 
   @override
   bool get wantKeepAlive => true;
@@ -31,26 +29,29 @@ class HabitsPageState extends State<HabitsPage>
   void initState() {
     super.initState();
     _today = DateTime.now();
-    _habitBloc = InjectionContainer().habitBloc..add(LoadHabits());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        context.read<HabitBloc>().add(LoadHabits());
+      }
+    });
   }
 
   @override
   void dispose() {
-    _habitBloc.close();
     super.dispose();
   }
 
   void refreshData() {
-    _habitBloc.add(PullToRefresh());
+    context.read<HabitBloc>().add(PullToRefresh());
   }
 
   Future<void> _onRefresh() async {
-    _habitBloc.add(PullToRefresh());
+    context.read<HabitBloc>().add(PullToRefresh());
     await _waitForRefreshComplete();
   }
 
   Future<void> _waitForRefreshComplete() async {
-    await for (final state in _habitBloc.stream) {
+    await for (final state in context.read<HabitBloc>().stream) {
       if (state is HabitLoaded && !state.isRefreshing) break;
       if (state is HabitError) break;
     }
@@ -60,12 +61,9 @@ class HabitsPageState extends State<HabitsPage>
   Widget build(BuildContext context) {
     super.build(context);
 
-    return BlocProvider.value(
-      value: _habitBloc,
-      child: BlocConsumer<HabitBloc, HabitState>(
-        listener: _handleStateChanges,
-        builder: (context, state) => _buildBody(context, state),
-      ),
+    return BlocConsumer<HabitBloc, HabitState>(
+      listener: _handleStateChanges,
+      builder: (context, state) => _buildBody(context, state),
     );
   }
 
@@ -76,7 +74,7 @@ class HabitsPageState extends State<HabitsPage>
           content: Text(state.message),
           action: SnackBarAction(
             label: 'Reintentar',
-            onPressed: () => _habitBloc.add(LoadHabits()),
+            onPressed: () => context.read<HabitBloc>().add(LoadHabits()),
           ),
         ),
       );
@@ -106,7 +104,16 @@ class HabitsPageState extends State<HabitsPage>
   }
 
   Widget _buildInitialView() {
-    return const Center(child: Text('Inicializando...'));
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Preparando hábitos...'),
+        ],
+      ),
+    );
   }
 
   Widget _buildErrorView(BuildContext context, HabitError state) {
@@ -119,7 +126,7 @@ class HabitsPageState extends State<HabitsPage>
           child: Center(
             child: _ErrorStateWidget(
               message: state.message,
-              onRetry: () => _habitBloc.add(LoadHabits()),
+              onRetry: () => context.read<HabitBloc>().add(LoadHabits()),
               onRefresh: _onRefresh,
             ),
           ),
@@ -174,7 +181,7 @@ class HabitsPageState extends State<HabitsPage>
   }
 
   void _handleToggle(int habitId, HabitStatus currentStatus) {
-    _habitBloc.add(
+    context.read<HabitBloc>().add(
       ToggleHabitEntryEvent(
         habitId: habitId,
         date: _today,
@@ -184,10 +191,15 @@ class HabitsPageState extends State<HabitsPage>
   }
 
   void _handleDelete(int habitId) {
+    final habitsPageContext = context;
+
     showDialog(
-      context: context,
-      builder: (context) => DeleteConfirmationDialog(
-        onConfirm: () => _habitBloc.add(DeleteHabitEvent(habitId)),
+      context: habitsPageContext,
+      builder: (dialogContext) => DeleteConfirmationDialog(
+        onConfirm: () {
+          //Navigator.of(dialogContext).pop();
+          habitsPageContext.read<HabitBloc>().add(DeleteHabitEvent(habitId));
+        },
       ),
     );
   }
@@ -195,7 +207,7 @@ class HabitsPageState extends State<HabitsPage>
   void _handleAdd() {
     AddHabitBottomSheet.show(
       context,
-      onAdd: (habitName) => _habitBloc.add(CreateHabitEvent(habitName)),
+      onAdd: (habitName) => context.read<HabitBloc>().add(CreateHabitEvent(habitName)),
     );
   }
 }
@@ -238,7 +250,7 @@ class _ErrorStateWidget extends StatelessWidget {
           const SizedBox(height: 12),
           TextButton(
             onPressed: onRefresh,
-            child: const Text('Sincronizar con la nube'),
+            child: const Text('Sincronizar datos'),
           ),
         ],
       ),

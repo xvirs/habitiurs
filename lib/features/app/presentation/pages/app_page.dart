@@ -1,3 +1,4 @@
+// lib/features/app/presentation/pages/app_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/bootstrap/app_state.dart';
@@ -33,8 +34,12 @@ class AppPage extends StatelessWidget {
     if (appState.hasError) {
       return ErrorScreen(
         error: appState.error!,
-        onRetry: () {},
-        onOfflineMode: () {},
+        onRetry: () {
+          // TODO: Implementar retry mechanism
+        },
+        onOfflineMode: () {
+          // TODO: Implementar modo offline
+        },
       );
     }
 
@@ -44,12 +49,18 @@ class AppPage extends StatelessWidget {
           create: (context) => InjectionContainer().authBloc..add(AuthInitializationRequested()),
         ),
         BlocProvider<HabitBloc>(
+          // MODIFICADO: Solo inicializa el Bloc, no dispara LoadHabits aquí.
+          // LoadHabits se disparará desde AuthBloc cuando el usuario esté autenticado.
           create: (context) => InjectionContainer().habitBloc,
         ),
         BlocProvider<StatisticsBloc>(
+          // MODIFICADO: Solo inicializa el Bloc, no dispara LoadStatistics aquí.
+          // LoadStatistics se disparará desde AuthBloc.
           create: (context) => InjectionContainer().statisticsBloc,
         ),
         BlocProvider<AIAssistantBloc>(
+          // MODIFICADO: Solo inicializa el Bloc, no dispara LoadAIAssistantData aquí.
+          // LoadAIAssistantData se disparará desde AuthBloc.
           create: (context) => InjectionContainer().aiAssistantBloc,
         ),
       ],

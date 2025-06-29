@@ -1,139 +1,214 @@
+// lib/features/auth/presentation/bloc/auth_bloc.dart
 import 'dart:async';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/core/auth/exceptions/auth_exceptions.dart';
 import 'package:habitiurs/core/auth/models/auth_result.dart';
 import 'package:habitiurs/core/auth/models/user.dart';
-import '../../domain/usecases/login_with_google.dart';
-import '../../domain/usecases/logout_user.dart';
-import '../../domain/usecases/create_guest_session.dart';
-import '../../domain/usecases/check_auth_status.dart';
+import 'package:habitiurs/core/di/injection_container.dart';
+import 'package:habitiurs/features/auth/domain/usecases/check_auth_status.dart';
+import 'package:habitiurs/features/auth/domain/usecases/create_guest_session.dart';
+import 'package:habitiurs/features/auth/domain/usecases/login_with_google.dart';
+import 'package:habitiurs/features/auth/domain/usecases/logout_user.dart';
+// Importa los eventos de carga de datos de los otros Blocs
+import '../../../habits/presentation/bloc/habit_event.dart';
+import '../../../habits/presentation/bloc/habit_bloc.dart';
+import '../../../statistics/presentation/bloc/statistics_event.dart';
+import '../../../statistics/presentation/bloc/statistics_bloc.dart';
+import '../../../ai_assistant/presentation/bloc/ai_assistant_event.dart';
+import '../../../ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
+
 import 'auth_event.dart';
 import 'auth_state.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
-  final LoginWithGoogle _loginWithGoogle;
-  final LogoutUser _logoutUser;
-  final CreateGuestSession _createGuestSession;
-  final CheckAuthStatus _checkAuthStatus;
-  
-  late StreamSubscription<User?> _authStateSubscription;
+  final LoginWithGoogle loginWithGoogle;
+  final LogoutUser logoutUser;
+  final CreateGuestSession createGuestSession;
+  final CheckAuthStatus checkAuthStatus;
+
+  final _initialSyncCompletedController = StreamController<void>.broadcast();
 
   AuthBloc({
-    required LoginWithGoogle loginWithGoogle,
-    required LogoutUser logoutUser,
-    required CreateGuestSession createGuestSession,
-    required CheckAuthStatus checkAuthStatus,
-  }) : _loginWithGoogle = loginWithGoogle,
-       _logoutUser = logoutUser,
-       _createGuestSession = createGuestSession,
-       _checkAuthStatus = checkAuthStatus,
-       super(AuthInitial()) {
-    
-    on<AuthInitializationRequested>(_onInitializationRequested);
-    on<AuthLoginWithGoogleRequested>(_onLoginWithGoogleRequested);
-    on<AuthLogoutRequested>(_onLogoutRequested);
-    on<AuthGuestModeRequested>(_onGuestModeRequested);
-    on<AuthUserChanged>(_onUserChanged);
-    
-    // Escuchar cambios de estado de auth
-    _authStateSubscription = _checkAuthStatus().listen((user) {
-      print('### AuthBloc: Recibido evento de stream authStateChanges. User: ${user?.email ?? 'null'}'); // DEBUG LOG
-      add(AuthUserChanged(user as User?));
-    });
+    required this.loginWithGoogle,
+    required this.logoutUser,
+    required this.createGuestSession,
+    required this.checkAuthStatus,
+  }) : super(AuthInitial()) {
+    on<AuthInitializationRequested>(_onAuthInitializationRequested);
+    on<AuthLoginWithGoogleRequested>(_onAuthLoginWithGoogleRequested);
+    on<AuthLogoutRequested>(_onAuthLogoutRequested);
+    on<AuthGuestSessionRequested>(_onAuthGuestSessionRequested);
+  }
+
+  Stream<void> get initialSyncCompletedStream =>
+      _initialSyncCompletedController.stream;
+
+  Future<void> _onAuthInitializationRequested(
+    AuthInitializationRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    print(
+      '🔄 AuthBloc: AuthInitializationRequested - Verificando estado de autenticación inicial.',
+    );
+    emit(AuthLoading());
+    await emit.forEach<User?>(
+      checkAuthStatus.call(),
+      onData: (user) {
+        if (user != null) {
+          print('✅ AuthBloc: Usuario autenticado: ${user.email}');
+          // Dispara la carga inicial de datos para los otros Blocs
+          _loadInitialAppData(); 
+          if (!user.isGuest) {
+            _startFullSync();
+          }
+          return AuthAuthenticated(user);
+        } else {
+          print(
+            'ℹ️ AuthBloc: No hay usuario autenticado. Navegando a LoginPage.',
+          );
+          return AuthUnauthenticated();
+        }
+      },
+      onError: (error, stackTrace) {
+        print(
+          '❌ AuthBloc: Error durante la inicialización de autenticación: $error',
+        );
+        return AuthError(
+          'Error de autenticación inicial',
+          technicalDetails: error.toString(),
+        );
+      },
+    );
+  }
+
+  Future<void> _onAuthLoginWithGoogleRequested(
+    AuthLoginWithGoogleRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    print(
+      '🔄 AuthBloc: AuthLoginWithGoogleRequested - Iniciando login con Google.',
+    );
+    emit(AuthLoading());
+    final result = await loginWithGoogle.call();
+    if (result is AuthSuccess<User>) {
+      print('✅ AuthBloc: Login con Google exitoso para: ${result.data.email}');
+      _loadInitialAppData(); // Dispara la carga inicial de datos para los otros Blocs
+      _startFullSync();
+      emit(AuthAuthenticated(result.data));
+    } else if (result is AuthFailure<User>) {
+      print(
+        '❌ AuthBloc: Fallo en el login con Google: ${result.exception.message}',
+      );
+      if (result.exception is LoginCancelledException) {
+        print('ℹ️ AuthBloc: Login cancelado, volviendo a la página de login.');
+        emit(AuthUnauthenticated());
+      } else {
+        emit(
+          AuthError(
+            result.exception.message,
+            technicalDetails: result.exception.toString(),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onAuthLogoutRequested(
+    AuthLogoutRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    print('🔄 AuthBloc: AuthLogoutRequested - Iniciando cierre de sesión.');
+    emit(AuthLoading());
+    try {
+      final result = await logoutUser.call();
+      if (result is AuthSuccess<void>) {
+        print('✅ AuthBloc: Cierre de sesión exitoso.');
+        _stopFullSync();
+
+        final databaseHelper = InjectionContainer().databaseHelper;
+        await databaseHelper.clearAllData();
+        print('✅ AuthBloc: Base de datos local borrada.');
+
+        emit(AuthUnauthenticated());
+        print('✅ AuthBloc: Emitido AuthUnauthenticated para ir a LoginPage.');
+      } else if (result is AuthFailure<void>) {
+        print(
+          '❌ AuthBloc: Fallo en el cierre de sesión: ${result.exception.message}',
+        );
+        emit(
+          AuthError(
+            'Error al cerrar sesión',
+            technicalDetails: result.exception.toString(),
+          ),
+        );
+      }
+    } catch (e, stackTrace) {
+      print(
+        '❌ AuthBloc: Excepción inesperada durante el cierre de sesión: $e\n$stackTrace',
+      );
+      emit(
+        AuthError(
+          'Error inesperado al cerrar sesión',
+          technicalDetails: e.toString(),
+        ),
+      );
+    }
+  }
+
+  Future<void> _onAuthGuestSessionRequested(
+    AuthGuestSessionRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    print(
+      '🔄 AuthBloc: AuthGuestSessionRequested - Creando sesión de invitado.',
+    );
+    emit(AuthLoading());
+    final guestUser = createGuestSession.call();
+    _loadInitialAppData(); // Dispara la carga inicial de datos para los otros Blocs (solo datos locales)
+    emit(AuthAuthenticated(guestUser));
+    print('✅ AuthBloc: Sesión de invitado creada.');
+  }
+
+  // NUEVO MÉTODO: Para disparar la carga de datos inicial de los otros Blocs
+  void _loadInitialAppData() {
+    print('🔄 AuthBloc: Disparando eventos de carga inicial para HabitBloc, StatisticsBloc, AIAssistantBloc.');
+    final container = InjectionContainer();
+    container.habitBloc.add(LoadHabits());
+    container.statisticsBloc.add(LoadStatistics());
+    container.aiAssistantBloc.add(LoadAIAssistantData());
+  }
+
+  void _startFullSync() {
+    final syncManager = InjectionContainer().syncManager;
+    print(
+      '🔄 AuthBloc: Iniciando sincronización completa a través de SyncManager.',
+    );
+    syncManager.resumeAutoSync();
+    syncManager
+        .syncAll()
+        .then((success) {
+          print(
+            '✅ AuthBloc: Sincronización completa (inicio de sesión): $success',
+          );
+          _initialSyncCompletedController.add(null);
+        })
+        .catchError((e) {
+          print('❌ AuthBloc: Error en sincronización inicial: $e');
+        });
+  }
+
+  void _stopFullSync() {
+    final syncManager = InjectionContainer().syncManager;
+    print(
+      '🔄 AuthBloc: Pausando sincronización automática a través de SyncManager.',
+    );
+    syncManager.pauseAutoSync();
   }
 
   @override
   Future<void> close() {
-    _authStateSubscription.cancel();
-    print('### AuthBloc: StreamSubscription de authStateChanges cancelado.'); // DEBUG LOG
+    print('🧹 AuthBloc: Cerrando y limpiando recursos.');
+    //_initialSyncCompletedController.close();
     return super.close();
-  }
-
-  Future<void> _onInitializationRequested(
-    AuthInitializationRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-    print('### AuthBloc: Recibido AuthInitializationRequested. Emitiendo AuthLoading.'); // DEBUG LOG
-    
-    // Simular splash screen
-    await Future.delayed(const Duration(milliseconds: 1500));
-    
-    final currentUser = _checkAuthStatus.getCurrentUser();
-    if (currentUser != null) {
-      print('### AuthBloc: Usuario actual encontrado al inicializar: ${currentUser.email}. Emitiendo AuthAuthenticated.'); // DEBUG LOG
-      emit(AuthAuthenticated(currentUser));
-    } else {
-      print('### AuthBloc: Ningún usuario encontrado al inicializar. Emitiendo AuthUnauthenticated.'); // DEBUG LOG
-      emit(AuthUnauthenticated());
-    }
-  }
-
-  Future<void> _onLoginWithGoogleRequested(
-    AuthLoginWithGoogleRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-    print('### AuthBloc: Recibido AuthLoginWithGoogleRequested. Emitiendo AuthLoading.'); // DEBUG LOG
-    
-    final result = await _loginWithGoogle();
-    
-    switch (result) {
-      case AuthSuccess<User>():
-        print('### AuthBloc: Login con Google exitoso. El usuario se emitirá automáticamente via AuthUserChanged.'); // DEBUG LOG
-        // El usuario se emitirá automáticamente via AuthUserChanged
-        break;
-      case AuthFailure<User>():
-        print('### AuthBloc: Fallo en Login con Google: ${result.exception.message}'); // DEBUG LOG
-        emit(AuthError(result.exception.message));
-        break;
-    }
-  }
-
-  Future<void> _onLogoutRequested(
-    AuthLogoutRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-    print('### AuthBloc: Recibido AuthLogoutRequested. Emitiendo AuthLoading.'); // DEBUG LOG
-    
-    final result = await _logoutUser();
-    
-    switch (result) {
-      case AuthSuccess():
-        print('### AuthBloc: Logout exitoso. El estado se actualizará automáticamente via AuthUserChanged.'); // DEBUG LOG
-        // El estado se actualizará automáticamente via AuthUserChanged
-        break;
-      case AuthFailure<User>():
-        print('### AuthBloc: Fallo en Logout: ${result.exception.message}'); // DEBUG LOG
-        emit(AuthError(result.exception.message));
-        break;
-    }
-  }
-
-  Future<void> _onGuestModeRequested(
-    AuthGuestModeRequested event,
-    Emitter<AuthState> emit,
-  ) async {
-    emit(AuthLoading());
-    print('### AuthBloc: Recibido AuthGuestModeRequested. Emitiendo AuthLoading.'); // DEBUG LOG
-    
-    await Future.delayed(const Duration(milliseconds: 500));
-    
-    final guestUser = _createGuestSession();
-    print('### AuthBloc: Modo invitado activado. Emitiendo AuthAuthenticated (guest).'); // DEBUG LOG
-    emit(AuthAuthenticated(guestUser));
-  }
-
-  void _onUserChanged(
-    AuthUserChanged event,
-    Emitter<AuthState> emit,
-  ) {
-    if (event.user != null) {
-      print('### AuthBloc: AuthUserChanged: Usuario NO es null. Emitiendo AuthAuthenticated.'); // DEBUG LOG
-      emit(AuthAuthenticated(event.user!));
-    } else {
-      print('### AuthBloc: AuthUserChanged: Usuario ES null. Emitiendo AuthUnauthenticated.'); // DEBUG LOG
-      emit(AuthUnauthenticated());
-    }
   }
 }

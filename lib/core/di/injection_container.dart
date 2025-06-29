@@ -4,11 +4,11 @@ import 'package:firebase_core/firebase_core.dart';
 // Core
 import '../database/database_helper.dart';
 import '../ai/repositories/ai_repository.dart';
-import '../auth/services/auth_service.dart';
+import '../auth/services/auth_service.dart' hide SyncManager; 
 import '../auth/interfaces/i_auth_service.dart';
 import '../sync/services/firebase_service.dart';
 import '../sync/services/sync_manager.dart';
-import '../sync/repositories/sync_repository.dart';
+import '../sync/repositories/sync_repository.dart'; // Importa la interfaz
 
 // Auth
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -55,10 +55,10 @@ class InjectionContainer {
   // Core Services
   late final DatabaseHelper _databaseHelper;
   late final AIRepository _aiRepository;
-  late final IAuthService _authService;
+  late final IAuthService _authService; 
   late final FirebaseService _firebaseService;
   late final SyncManager _syncManager;
-  late final SyncRepository _syncRepository;
+  late final SyncRepository _syncRepository; // Se declara la interfaz del repositorio de sincronización
 
   // DataSources
   late final HabitLocalDataSource _habitLocalDataSource;
@@ -81,11 +81,11 @@ class InjectionContainer {
   late final CreateHabit _createHabit;
   late final GetWeekEntries _getWeekEntries;
   late final ToggleHabitEntry _toggleHabitEntry;
-  late final DeleteHabit _deleteHabit;
+  late final DeleteHabit _deleteHabit; // Se declara el use case de eliminación
 
   // Statistics Use Cases
   late final GetCurrentMonthStatistics _getCurrentMonthStatistics;
-  late final GetCurrentYearStatistics _getCurrentYearStatistics;
+  late final GetCurrentYearStatistics  _getCurrentYearStatistics;
   late final GetHistoricalData _getHistoricalData;
 
   // AI Assistant Use Cases
@@ -100,9 +100,9 @@ class InjectionContainer {
     
     try {
       await _initializeFirebase();
-      await _initializeCoreServices();
+      await _initializeCoreServices(); 
       _initializeRepositories();
-      _initializeUseCases();
+      _initializeUseCases(); 
       _isInitialized = true;
     } catch (e) {
       _isInitialized = false;
@@ -127,20 +127,29 @@ class InjectionContainer {
     _initializeDataSources();
 
     _aiRepository = AIRepository();
-    _authService = AuthService();
+    
+    _authService = AuthService(); 
+
     _firebaseService = FirebaseService();
 
-    _syncManager = SyncManager(
+    // Se instancia SyncRepositoryImpl y se asigna a _syncRepository
+    _syncRepository = SyncRepositoryImpl( 
+      syncManager: SyncManager( // SyncManager también necesita las dependencias
+        firebaseService: _firebaseService,
+        authService: _authService, 
+        habitDataSource: _habitLocalDataSource,
+        statisticsDataSource: _statisticsLocalDatasource,
+      ),
       firebaseService: _firebaseService,
-      authService: _authService,
-      habitDataSource: _habitLocalDataSource,
-      statisticsDataSource: _statisticsLocalDatasource,
+      authService: _authService, 
     );
 
-    _syncRepository = SyncRepositoryImpl(
-      syncManager: _syncManager,
+    // Se instancia SyncManager con el SyncRepository ya disponible
+    _syncManager = SyncManager(
       firebaseService: _firebaseService,
-      authService: _authService,
+      authService: _authService, 
+      habitDataSource: _habitLocalDataSource,
+      statisticsDataSource: _statisticsLocalDatasource,
     );
   }
 
@@ -153,7 +162,7 @@ class InjectionContainer {
   void _initializeRepositories() {
     _habitRepository = HabitRepositoryImpl(
       _habitLocalDataSource, 
-      _syncRepository,
+      _syncRepository, // Se inyecta la instancia del repositorio de sincronización
     );
     
     _statisticsRepository = StatisticsRepositoryImpl(
@@ -186,7 +195,7 @@ class InjectionContainer {
     _createHabit = CreateHabit(_habitRepository);
     _getWeekEntries = GetWeekEntries(_habitRepository);
     _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
-    _deleteHabit = DeleteHabit(_habitRepository, _authService);
+    _deleteHabit = DeleteHabit(_habitRepository, _authService); // Se inyecta el servicio de autenticación
   }
 
   void _initializeStatisticsUseCases() {
@@ -214,7 +223,7 @@ class InjectionContainer {
     createHabit: _createHabit,
     getWeekEntries: _getWeekEntries,
     toggleHabitEntry: _toggleHabitEntry,
-    deleteHabit: _deleteHabit,
+    deleteHabit: _deleteHabit, // Se expone el use case de eliminación
   );
 
   StatisticsBloc get statisticsBloc => StatisticsBloc(
@@ -237,7 +246,7 @@ class InjectionContainer {
   AIRepository get aiRepository => _aiRepository;
   IAuthService get authService => _authService;
   SyncRepository get syncRepository => _syncRepository;
-  SyncManager get syncManager => _syncManager;
+  SyncManager get syncManager => _syncManager; // Se asegura que SyncManager esté disponible
   FirebaseService get firebaseService => _firebaseService;
   DatabaseHelper get databaseHelper => _databaseHelper;
 

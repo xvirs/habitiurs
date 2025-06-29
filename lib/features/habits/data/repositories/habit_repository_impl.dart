@@ -1,11 +1,12 @@
+// lib/features/habits/data/repositories/habit_repository_impl.dart
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../domain/repositories/habit_repository.dart';
-import '../datasources/habit_local_datasource.dart'; // Correctly import HabitLocalDataSource
+import '../datasources/habit_local_datasource.dart';
 import '../models/habit_model.dart';
 import '../models/habit_entry_model.dart';
 import '../../../../shared/enums/habit_status.dart';
-import '../../../../core/sync/repositories/sync_repository.dart';
+import '../../../../core/sync/repositories/sync_repository.dart'; // Asegúrate de importar SyncRepository
 
 class HabitRepositoryImpl implements HabitRepository {
   final HabitLocalDataSource localDataSource;
@@ -32,11 +33,19 @@ class HabitRepositoryImpl implements HabitRepository {
 
   @override
   Future<void> deleteHabit(int id, String userId) async {
-    await localDataSource.deleteHabit(id);
     try {
-      await _syncRepository.markHabitAsInactive(userId, id);
-    } catch (e) {
-      rethrow;
+      // 1. Eliminar localmente el hábito y sus entradas relacionadas
+      await localDataSource.deleteHabit(id); 
+      print('✅ [HabitRepository] Hábito $id eliminado localmente.');
+
+      // 2. Solicitar la eliminación remota del hábito.
+      // Se utiliza `deleteHabitRemotely` para una eliminación completa en la nube.
+      await _syncRepository.deleteHabitRemotely(userId, id);
+      print('✅ [HabitRepository] Solicitada eliminación remota para hábito $id.');
+    } catch (e, stackTrace) {
+      // Captura cualquier error que provenga de la eliminación local o remota
+      print('❌ [HabitRepository] Error CRÍTICO al eliminar hábito $id: $e\n$stackTrace');
+      rethrow; // Propaga la excepción para que sea manejada por el BLoC
     }
   }
 
