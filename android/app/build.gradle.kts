@@ -9,7 +9,12 @@ plugins {
 android {
     namespace = "com.example.habitiurs"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // MODIFICA ESTA LÍNEA:
+    ndkVersion = "27.0.12077973" // <-- Cambia de flutter.ndkVersion a la versión directa
+    // Opcional: Si tienes problemas para que Android Studio te muestre la versión actual,
+    // puedes intentar esto si la línea de arriba no funciona:
+    // ndkVersion = "27.0.12077973" as String // Esto fuerza que sea un String si hay algún problema de tipo
+    // Mantenemos esta línea, pero ahora el valor será el que pusimos directamente arriba.
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
@@ -21,10 +26,8 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // ... (el resto de tu defaultConfig)
         applicationId = "com.example.habitiurs"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -33,10 +36,11 @@ android {
 
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
             signingConfig = signingConfigs.getByName("debug")
         }
+    }
+    buildFeatures {
+        viewBinding = true
     }
 }
 

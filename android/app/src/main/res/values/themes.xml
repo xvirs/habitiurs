@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Habitiurs.AppWidgetContainerParent" parent="@android:style/Theme.DeviceDefault.Light">
+        <item name="appWidgetRadius">16dp</item>
+        <item name="appWidgetInnerRadius">8dp</item>
+    </style>
+    <style name="Theme.Habitiurs.AppWidgetContainer" parent="Theme.Habitiurs.AppWidgetContainerParent">
+        <item name="appWidgetPadding">16dp</item>
+    </style>
+</resources>
