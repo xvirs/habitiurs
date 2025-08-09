@@ -23,6 +23,14 @@
           }
         },
         {
+          "client_id": "819697521102-fb26notd3980bd4n1kvf092af64aimsc.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.habitiurs",
+            "certificate_hash": "adcf6628751312865bcdd812ef0ae0506d0521d8"
+          }
+        },
+        {
           "client_id": "819697521102-is1cej847nom4b4c19ah0o36gr75frev.apps.googleusercontent.com",
           "client_type": 3
         }
