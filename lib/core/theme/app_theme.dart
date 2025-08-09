@@ -18,7 +18,7 @@ class AppTheme {
         systemOverlayStyle: SystemUiOverlayStyle.dark,
       ),
       
-      cardTheme: CardTheme(
+      cardTheme: CardThemeData(
         elevation: 2,
         shadowColor: Colors.black12,
         shape: RoundedRectangleBorder(
