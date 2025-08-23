@@ -249,8 +249,8 @@ class _SwipeableHabitTileState extends State<_SwipeableHabitTile>
   }
 
   void _confirmDelete() {
-    widget.onDelete(widget.habit.id!);
     Navigator.of(context).pop();
+    widget.onDelete(widget.habit.id!);
   }
 
   void _cancelDelete() {
