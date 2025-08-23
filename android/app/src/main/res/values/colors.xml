@@ -38,10 +38,16 @@
     <color name="grey_900">#FF212121</color> <color name="widget_background_light">@color/white</color>
     <color name="widget_background_dark">@color/grey_900</color>
     <color name="widget_header_background">@color/blue_500</color> <color name="widget_item_background_light">@color/grey_50</color>
+    <!-- Colores para estados de hábitos en el widget semanal -->
+    <color name="habit_completed">#4CAF50</color> <!-- Verde -->
+    <color name="habit_skipped">#F44336</color>   <!-- Rojo -->
+    <color name="habit_pending">#E0E0E0</color>   <!-- Gris -->
+    <color name="primary">#1976D2</color>         <!-- Azul -->
     <color name="widget_item_background_dark">@color/grey_800</color>
     <color name="widget_text_primary_light">@color/grey_900</color>
     <color name="widget_text_primary_dark">@color/white</color>
     <color name="widget_text_secondary_light">@color/grey_600</color>
     <color name="widget_text_secondary_dark">@color/grey_400</color>
 
+	<color name="ic_launcher_background">#FFFFFF</color>
 </resources>

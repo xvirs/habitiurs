@@ -15,29 +15,7 @@
         android:icon="@mipmap/ic_launcher"
         android:label="habitiurs">
 
-        <!-- Widget receiver -->
-        <receiver
-            android:name=".HabitiursWidget"
-            android:exported="true"
-            android:enabled="true">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
-            </intent-filter>
-            <intent-filter>
-                <action android:name="com.example.habitiurs.TOGGLE_HABIT_STATUS" />
-                <action android:name="com.example.habitiurs.ACTION_REFRESH_WIDGET" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/habitiurs_widget_info" />
-        </receiver>
 
-        <!-- Widget service -->
-        <service
-            android:name=".WidgetListViewService"
-            android:permission="android.permission.BIND_REMOTEVIEWS"
-            android:exported="false" />
 
         <!-- Main activity -->
         <activity

@@ -1,3 +1,4 @@
+import 'package:habitiurs/core/utils/widget_updater.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/habits/domain/entities/habit_entry.dart';
@@ -43,11 +44,13 @@ class HabitsPageState extends State<HabitsPage>
 
   void refreshData() {
     context.read<HabitBloc>().add(PullToRefresh());
+    WidgetUpdater.refreshWeeklyHabitsWidget();
   }
 
   Future<void> _onRefresh() async {
     context.read<HabitBloc>().add(PullToRefresh());
     await _waitForRefreshComplete();
+    await WidgetUpdater.refreshWeeklyHabitsWidget();
   }
 
   Future<void> _waitForRefreshComplete() async {
@@ -176,7 +179,8 @@ class HabitsPageState extends State<HabitsPage>
   Map<int, HabitStatus> _getTodayEntriesMap(List<HabitEntry> weekEntries) {
     return {
       for (final entry in weekEntries)
-        if (AppDateUtils.isSameDay(entry.date, _today)) entry.habitId: entry.status
+        if (AppDateUtils.isSameDay(entry.date, _today))
+          entry.habitId: entry.status,
     };
   }
 
@@ -188,6 +192,7 @@ class HabitsPageState extends State<HabitsPage>
         currentStatus: currentStatus,
       ),
     );
+    WidgetUpdater.refreshWeeklyHabitsWidget();
   }
 
   void _handleDelete(int habitId) {
@@ -195,19 +200,25 @@ class HabitsPageState extends State<HabitsPage>
 
     showDialog(
       context: habitsPageContext,
-      builder: (dialogContext) => DeleteConfirmationDialog(
-        onConfirm: () {
-          //Navigator.of(dialogContext).pop();
-          habitsPageContext.read<HabitBloc>().add(DeleteHabitEvent(habitId));
-        },
-      ),
+      builder:
+          (dialogContext) => DeleteConfirmationDialog(
+            onConfirm: () {
+              habitsPageContext.read<HabitBloc>().add(
+                DeleteHabitEvent(habitId),
+              );
+              WidgetUpdater.refreshWeeklyHabitsWidget();
+            },
+          ),
     );
   }
 
   void _handleAdd() {
     AddHabitBottomSheet.show(
       context,
-      onAdd: (habitName) => context.read<HabitBloc>().add(CreateHabitEvent(habitName)),
+      onAdd: (habitName) {
+        context.read<HabitBloc>().add(CreateHabitEvent(habitName));
+        WidgetUpdater.refreshWeeklyHabitsWidget();
+      },
     );
   }
 }

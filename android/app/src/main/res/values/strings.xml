@@ -3,4 +3,5 @@
     <string name="app_name">Habitiurs</string>
     <string name="appwidget_text">¡Tu hábito del día!</string>
     <string name="app_widget_description">Widget de hábitos diarios para Habitiurs</string>
+    <string name="weekly_habits_widget_label">Hábitos Semanales</string>
 </resources>
