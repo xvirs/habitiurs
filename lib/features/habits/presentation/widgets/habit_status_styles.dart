@@ -5,7 +5,8 @@ import '../../../../shared/enums/habit_status.dart';
 /// Clase utilitaria para manejo de estilos de estado de hábitos
 /// Centraliza colores, iconos y estilos para mejor mantenimiento
 class HabitStatusStyles {
-  
+  HabitStatusStyles._(); // Constructor privado para clase estática
+
   // Colores de fondo
   static const Map<HabitStatus, Color> _backgroundColors = {
     HabitStatus.completed: Color(0xFF4CAF50), // Colors.green[500]

@@ -1,4 +1,4 @@
-
+// lib/features/habits/presentation/widgets/weekly_grid.dart
 import 'package:flutter/material.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/entities/habit.dart';
@@ -9,12 +9,14 @@ class WeeklyGrid extends StatelessWidget {
   final List<Habit> habits;
   final List<HabitEntry> weekEntries;
   final DateTime weekStart;
+  final bool isLoading;
 
   const WeeklyGrid({
     super.key,
     required this.habits,
     required this.weekEntries,
     required this.weekStart,
+    this.isLoading = false,
   });
 
   @override
@@ -26,28 +28,27 @@ class WeeklyGrid extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-            child: _HeaderSection(weekDates: weekDates),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-            child: _DaysHeader(weekDates: weekDates),
-          ),
-          Expanded(
-            child: Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: habits.isEmpty
-                  ? const _EmptyGridState()
-                  : _StackedHabitsGrid(
-                      habits: habits,
-                      weekDates: weekDates,
-                      weekEntries: weekEntries,
-                    ),
-            ),
-          ),
+          _HeaderSection(weekDates: weekDates),
+          _DaysHeader(weekDates: weekDates),
+          Expanded(child: _buildBody(weekDates)),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(List<DateTime> weekDates) {
+    if (isLoading) {
+      return const _LoadingState();
+    }
+    
+    if (habits.isEmpty) {
+      return const _EmptyState();
+    }
+    
+    return _HabitsGrid(
+      habits: habits,
+      weekDates: weekDates,
+      weekEntries: weekEntries,
     );
   }
 }
@@ -59,36 +60,52 @@ class _HeaderSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 3,
-          height: 20,
-          decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.primary,
-            borderRadius: BorderRadius.circular(2),
+    final theme = Theme.of(context);
+    
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      child: Row(
+        children: [
+          _VerticalAccent(color: theme.colorScheme.primary),
+          const SizedBox(width: 12),
+          Icon(
+            Icons.view_week,
+            color: theme.colorScheme.primary,
+            size: 20,
           ),
-        ),
-        const SizedBox(width: 12),
-        Icon(
-          Icons.view_week,
-          color: Theme.of(context).colorScheme.primary,
-          size: 20,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            'Vista semanal',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Vista semanal',
+              style: theme.textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
-        ),
-        _DateRange(
-          startDay: weekDates.first.day,
-          endDay: weekDates.last.day,
-        ),
-      ],
+          _DateRange(
+            startDay: weekDates.first.day,
+            endDay: weekDates.last.day,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _VerticalAccent extends StatelessWidget {
+  final Color color;
+
+  const _VerticalAccent({required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 3,
+      height: 20,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: BorderRadius.circular(2),
+      ),
     );
   }
 }
@@ -122,24 +139,27 @@ class _DaysHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      children: [
-        const SizedBox(width: 28),
-        ...AppDateUtils.weekDayNames.asMap().entries.map((entry) {
-          final index = entry.key;
-          final dayName = entry.value;
-          final date = weekDates[index];
-          final isToday = AppDateUtils.isToday(date);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
+      child: Row(
+        children: [
+          const SizedBox(width: 28), // Space for habit numbers
+          ...weekDates.asMap().entries.map((entry) {
+            final index = entry.key;
+            final date = entry.value;
+            final dayName = AppDateUtils.weekDayNames[index];
+            final isToday = AppDateUtils.isToday(date);
 
-          return Expanded(
-            child: _DayColumn(
-              dayName: dayName,
-              dayNumber: date.day,
-              isToday: isToday,
-            ),
-          );
-        }),
-      ],
+            return Expanded(
+              child: _DayColumn(
+                dayName: dayName,
+                dayNumber: date.day,
+                isToday: isToday,
+              ),
+            );
+          }),
+        ],
+      ),
     );
   }
 }
@@ -157,7 +177,8 @@ class _DayColumn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final primaryColor = Theme.of(context).colorScheme.primary;
+    final theme = Theme.of(context);
+    final primaryColor = theme.colorScheme.primary;
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -179,7 +200,7 @@ class _DayColumn extends StatelessWidget {
             style: TextStyle(
               fontSize: 10,
               fontWeight: isToday ? FontWeight.w600 : FontWeight.w400,
-              color: isToday ? primaryColor : Colors.grey[600],
+              color: isToday ? primaryColor : theme.colorScheme.outline,
             ),
           ),
           const SizedBox(height: 2),
@@ -188,7 +209,7 @@ class _DayColumn extends StatelessWidget {
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 9,
-              color: isToday ? primaryColor : Colors.grey[500],
+              color: isToday ? primaryColor : theme.colorScheme.outline,
             ),
           ),
         ],
@@ -197,12 +218,12 @@ class _DayColumn extends StatelessWidget {
   }
 }
 
-class _StackedHabitsGrid extends StatelessWidget {
+class _HabitsGrid extends StatelessWidget {
   final List<Habit> habits;
   final List<DateTime> weekDates;
   final List<HabitEntry> weekEntries;
 
-  const _StackedHabitsGrid({
+  const _HabitsGrid({
     required this.habits,
     required this.weekDates,
     required this.weekEntries,
@@ -210,25 +231,27 @@ class _StackedHabitsGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: habits.asMap().entries.map((entry) {
-        final index = entry.key;
-        final habit = entry.value;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+      child: Column(
+        children: habits.asMap().entries.map((entry) {
+          final index = entry.key;
+          final habit = entry.value;
+          final isLast = index == habits.length - 1;
 
-        return Expanded(
-          child: Padding(
-            padding: EdgeInsets.only(
-              bottom: index == habits.length - 1 ? 0 : 4,
+          return Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
+              child: _HabitRow(
+                habit: habit,
+                index: index,
+                weekDates: weekDates,
+                weekEntries: weekEntries,
+              ),
             ),
-            child: _HabitRow(
-              habit: habit,
-              index: index,
-              weekDates: weekDates,
-              weekEntries: weekEntries,
-            ),
-          ),
-        );
-      }).toList(),
+          );
+        }).toList(),
+      ),
     );
   }
 }
@@ -256,12 +279,12 @@ class _HabitRow extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         ...weekDates.map((date) => Expanded(
-              child: _StatusCell(
-                habitId: habit.id!,
-                date: date,
-                weekEntries: weekEntries,
-              ),
-            )),
+          child: _StatusCell(
+            habitId: habit.id!,
+            date: date,
+            weekEntries: weekEntries,
+          ),
+        )),
       ],
     );
   }
@@ -312,19 +335,14 @@ class _StatusCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final entry = _findEntryForDate();
-    final status = entry?.status ?? HabitStatus.pending;
+    final entry = _findEntry();
+    final status = _getDisplayStatus(entry);
     final isToday = AppDateUtils.isToday(date);
-    final isPastDate = AppDateUtils.isPastDate(date);
-
-    final displayStatus = (isPastDate && entry == null)
-        ? HabitStatus.skipped
-        : status;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
-        color: _getCellColor(displayStatus),
+        color: _getStatusColor(status),
         border: isToday
             ? Border.all(
                 color: Theme.of(context).colorScheme.primary,
@@ -336,16 +354,23 @@ class _StatusCell extends StatelessWidget {
     );
   }
 
-  HabitEntry? _findEntryForDate() {
+  HabitEntry? _findEntry() {
     for (final entry in weekEntries) {
-      if (entry.habitId == habitId && AppDateUtils.isSameDay(entry.date, date)) {
+      if (entry.habitId == habitId && 
+          AppDateUtils.isSameDay(entry.date, date)) {
         return entry;
       }
     }
     return null;
   }
 
-  Color _getCellColor(HabitStatus status) {
+  HabitStatus _getDisplayStatus(HabitEntry? entry) {
+    if (entry != null) return entry.status;
+    if (AppDateUtils.isPastDate(date)) return HabitStatus.skipped;
+    return HabitStatus.pending;
+  }
+
+  Color _getStatusColor(HabitStatus status) {
     return switch (status) {
       HabitStatus.completed => Colors.green[500]!,
       HabitStatus.skipped => Colors.red[400]!,
@@ -354,11 +379,27 @@ class _StatusCell extends StatelessWidget {
   }
 }
 
-class _EmptyGridState extends StatelessWidget {
-  const _EmptyGridState();
+class _LoadingState extends StatelessWidget {
+  const _LoadingState();
 
   @override
   Widget build(BuildContext context) {
+    return const Center(
+      child: Padding(
+        padding: EdgeInsets.all(24),
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
@@ -368,22 +409,20 @@ class _EmptyGridState extends StatelessWidget {
             Icon(
               Icons.view_week,
               size: 40,
-              color: Colors.grey[300],
+              color: theme.colorScheme.outline.withOpacity(0.7),
             ),
             const SizedBox(height: 12),
             Text(
               'No tienes hábitos',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.grey[500],
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
               ),
             ),
             const SizedBox(height: 8),
             Text(
               'Agrega tu primer hábito para ver el progreso semanal aquí.',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[400],
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
               ),
               textAlign: TextAlign.center,
             ),

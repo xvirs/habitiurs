@@ -5,7 +5,7 @@ import '../../domain/usecases/get_all_habits.dart';
 import '../../domain/usecases/create_habit.dart';
 import '../../domain/usecases/get_week_entries.dart';
 import '../../domain/usecases/toggle_habit_entry.dart';
-import '../../domain/usecases/delete_habit.dart'; // Asegúrate de importar el use case de eliminación
+import '../../domain/usecases/delete_habit.dart';
 import '../../../../core/di/injection_container.dart';
 import 'habit_event.dart';
 import 'habit_state.dart';
@@ -15,19 +15,19 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   final CreateHabit _createHabit;
   final GetWeekEntries _getWeekEntries;
   final ToggleHabitEntry _toggleHabitEntry;
-  final DeleteHabit _deleteHabit; // Se inyecta el use case de eliminación
+  final DeleteHabit _deleteHabit;
 
   HabitBloc({
     required GetAllHabits getAllHabits,
     required CreateHabit createHabit,
     required GetWeekEntries getWeekEntries,
     required ToggleHabitEntry toggleHabitEntry,
-    required DeleteHabit deleteHabit, // Se requiere en el constructor
+    required DeleteHabit deleteHabit,
   })  : _getAllHabits = getAllHabits,
         _createHabit = createHabit,
         _getWeekEntries = getWeekEntries,
         _toggleHabitEntry = toggleHabitEntry,
-        _deleteHabit = deleteHabit, // Se asigna la instancia
+        _deleteHabit = deleteHabit,
         super(HabitInitial()) {
     on<LoadHabits>(_onLoadHabits);
     on<CreateHabitEvent>(_onCreateHabit);
@@ -41,67 +41,40 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     emit(HabitLoading());
     try {
       await _loadAndEmitData(emit);
-    } catch (e, stackTrace) {
-      print('❌ [HabitBloc] Error al cargar hábitos: $e\n$stackTrace');
+    } catch (e) {
       emit(HabitError('Error cargando hábitos: ${e.toString()}'));
     }
   }
 
   Future<void> _onCreateHabit(CreateHabitEvent event, Emitter<HabitState> emit) async {
     try {
-      print('🔄 [HabitBloc] Creando hábito: "${event.name}"');
-      
       await _createHabit(event.name);
-      print('✅ [HabitBloc] Hábito creado localmente');
-      
       await _loadAndEmitData(emit);
-      
       _syncInBackground('create_habit');
-      
-    } catch (e, stackTrace) {
-      print('❌ [HabitBloc] Error creando hábito: $e\n$stackTrace');
+    } catch (e) {
       emit(HabitError('Error creando hábito: ${e.toString()}'));
     }
   }
 
   Future<void> _onToggleHabitEntry(ToggleHabitEntryEvent event, Emitter<HabitState> emit) async {
     try {
-      print('🔄 [HabitBloc] Toggle hábito ${event.habitId}: ${event.currentStatus.name}');
-      
       await _toggleHabitEntry(event.habitId, event.date, event.currentStatus);
-      print('✅ [HabitBloc] Toggle realizado localmente');
-      
       await _loadAndEmitData(emit);
-      
       _syncInBackground('toggle_entry');
-      
-    } catch (e, stackTrace) {
-      print('❌ [HabitBloc] Error en toggle: $e\n$stackTrace');
+    } catch (e) {
       emit(HabitError('Error actualizando hábito: ${e.toString()}'));
     }
   }
 
   Future<void> _onDeleteHabit(DeleteHabitEvent event, Emitter<HabitState> emit) async {
-    print('🔄 [HabitBloc] Iniciando eliminación de hábito: ${event.habitId}');
     try {
-      await _deleteHabit(event.habitId); 
-
-      print('✅ [HabitBloc] Hábito eliminado localmente y sync remoto solicitado.');
-      
+      await _deleteHabit(event.habitId);
       await _loadAndEmitData(emit);
-      print('✅ [HabitBloc] UI de hábitos recargada después de eliminación local.');
-      
       _syncInBackground('delete_habit');
-      print('✅ [HabitBloc] Solicitado sync en background para eliminación remota (desde BLoC).');
-      
-    } catch (e, stackTrace) { 
-      // CAPTURA TODAS LAS EXCEPCIONES DURANTE LA ELIMINACIÓN (locales o remotas)
-      print('❌ [HabitBloc] CRITICAL ERROR al eliminar hábito ${event.habitId}: $e\n$stackTrace');
-      // Emitir un estado de error para que la UI pueda reaccionar (ej. mostrar un SnackBar)
+    } catch (e) {
       if (state is HabitLoaded) {
-        // Si estaba cargado, se asegura de que el estado de refresco se desactive
         final currentState = state as HabitLoaded;
-        emit(currentState.copyWith(isRefreshing: false)); 
+        emit(currentState.copyWith(isRefreshing: false));
       }
       emit(HabitError('Error eliminando hábito: ${e.toString()}'));
     }
@@ -110,11 +83,8 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   Future<void> _onRefreshData(RefreshData event, Emitter<HabitState> emit) async {
     if (state is HabitLoaded) {
       try {
-        print('🔄 [HabitBloc] Refrescando datos locales...');
         await _loadAndEmitData(emit);
-        print('✅ [HabitBloc] Datos refrescados.');
-      } catch (e, stackTrace) {
-        print('❌ [HabitBloc] Error refrescando: $e\n$stackTrace');
+      } catch (e) {
         emit(HabitError('Error actualizando datos: ${e.toString()}'));
       }
     }
@@ -122,24 +92,16 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
 
   Future<void> _onPullToRefresh(PullToRefresh event, Emitter<HabitState> emit) async {
     try {
-      print('🔄 [HabitBloc] Pull-to-refresh iniciado...');
-      
       if (state is HabitLoaded) {
         final currentState = state as HabitLoaded;
         emit(currentState.copyWith(isRefreshing: true));
       } else {
-        emit(HabitLoading()); 
+        emit(HabitLoading());
       }
-      
-      final syncSuccess = await _performFullSync();
-      
+
+      await _performFullSync();
       await _loadAndEmitData(emit, isRefreshing: false);
-      
-      print('✅ [HabitBloc] Pull-to-refresh completado. Sync: ${syncSuccess ? "exitoso" : "falló"}');
-      
-    } catch (e, stackTrace) {
-      print('❌ [HabitBloc] Error en pull-to-refresh: $e\n$stackTrace');
-      
+    } catch (e) {
       if (state is HabitLoaded) {
         final currentState = state as HabitLoaded;
         emit(currentState.copyWith(isRefreshing: false));
@@ -151,70 +113,50 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
 
   Future<bool> _performFullSync() async {
     try {
-      print('🔄 [HabitBloc] Realizando sincronización completa...');
-      
       final syncRepo = InjectionContainer().syncRepository;
-      final success = await syncRepo.syncAll();
-      
-      print('${success ? "✅" : "❌"} [HabitBloc] Sincronización completa: ${success ? "exitosa" : "falló"}');
-      return success;
-    } catch (e, stackTrace) {
-      print('❌ [HabitBloc] Error en sincronización completa: $e\n$stackTrace');
+      return await syncRepo.syncAll();
+    } catch (e) {
       return false;
     }
   }
 
   void _syncInBackground(String action) {
-    print('🔄 [HabitBloc] Iniciando sync en background por: $action');
-    
-    _performBackgroundSync(action).then((success) {
-      print('${success ? "✅" : "⚠️"} [HabitBloc] Background sync por $action: ${success ? "exitoso" : "falló"}');
-    }).catchError((error, stackTrace) { 
-      print('❌ [HabitBloc] Error en background sync por $action: $error\n$stackTrace');
+    _performBackgroundSync(action).catchError((_) {
+      // Silent fail for background sync
     });
   }
 
   Future<bool> _performBackgroundSync(String action) async {
     try {
       final syncRepo = InjectionContainer().syncRepository;
-      
+
       final hasConnection = await syncRepo.hasInternetConnection();
-      if (!hasConnection) {
-        print('⚠️ [HabitBloc] Sin conexión, sync pospuesto');
-        return false;
-      }
-      
-      switch (action) {
-        case 'create_habit':
-        case 'delete_habit':
-          return await syncRepo.syncHabitsOnly();
-        case 'toggle_entry':
-          return await syncRepo.syncEntriesOnly();
-        default:
-          return await syncRepo.syncAll();
-      }
-    } catch (e, stackTrace) {
-      print('❌ [HabitBloc] Error en background sync: $e\n$stackTrace');
+      if (!hasConnection) return false;
+
+      return switch (action) {
+        'create_habit' || 'delete_habit' => await syncRepo.syncHabitsOnly(),
+        'toggle_entry' => await syncRepo.syncEntriesOnly(),
+        _ => await syncRepo.syncAll(),
+      };
+    } catch (e) {
       return false;
     }
   }
 
-  Future<void> _loadAndEmitData(Emitter<HabitState> emit, {bool isRefreshing = false}) async {
-    try { 
-      final habits = await _getAllHabits();
-      final now = DateTime.now();
-      final weekEntries = await _getWeekEntries(now);
-      final currentWeekStart = AppDateUtils.getStartOfWeek(now);
+  Future<void> _loadAndEmitData(
+    Emitter<HabitState> emit, {
+    bool isRefreshing = false,
+  }) async {
+    final habits = await _getAllHabits();
+    final now = DateTime.now();
+    final weekEntries = await _getWeekEntries(now);
+    final currentWeekStart = AppDateUtils.getStartOfWeek(now);
 
-      emit(HabitLoaded(
-        habits: habits,
-        weekEntries: weekEntries,
-        currentWeekStart: currentWeekStart,
-        isRefreshing: isRefreshing,
-      ));
-    } catch (e, stackTrace) {
-      print('❌ [HabitBloc] Error en _loadAndEmitData: $e\n$stackTrace');
-      rethrow; 
-    }
+    emit(HabitLoaded(
+      habits: habits,
+      weekEntries: weekEntries,
+      currentWeekStart: currentWeekStart,
+      isRefreshing: isRefreshing,
+    ));
   }
 }

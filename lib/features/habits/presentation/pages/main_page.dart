@@ -1,3 +1,4 @@
+// lib/features/main/presentation/pages/main_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
@@ -5,6 +6,7 @@ import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_e
 import 'package:habitiurs/features/ai_assistant/presentation/pages/ai_assistant_page.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_bloc.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_event.dart';
+import 'package:habitiurs/features/habits/presentation/bloc/habit_state.dart';
 import 'package:habitiurs/features/habits/presentation/pages/habits_page.dart';
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_bloc.dart';
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_event.dart';
@@ -15,7 +17,7 @@ import '../../../auth/presentation/bloc/auth_state.dart';
 import 'dart:async';
 
 class MainPage extends StatefulWidget {
-  const MainPage({Key? key}) : super(key: key);
+  const MainPage({super.key});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -23,9 +25,9 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 1;
-  StreamSubscription? _authBlocSyncSubscription; 
-  
-  final List<String> _pageTitles = [
+  StreamSubscription? _authBlocSyncSubscription;
+
+  static const List<String> _pageTitles = [
     'Asistente IA',
     'Mis Hábitos',
     'Estadísticas',
@@ -34,38 +36,40 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    _setupAuthSyncSubscription();
   }
 
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    
-    if (_authBlocSyncSubscription == null && mounted) { 
-      _authBlocSyncSubscription = context.read<AuthBloc>().initialSyncCompletedStream.listen((_) {
-        print('🔄 [MainPage] Recibido evento de sync inicial completado desde AuthBloc. Recargando datos de las pestañas.');
-        _loadLocalDataForTab(0); 
-        // Eliminado _loadLocalDataForTab(1) ya que HabitsPage ahora se carga a sí mismo.
-        _loadLocalDataForTab(2); 
-      });
-      
-      // La carga inicial de la pestaña activa se gestionará por cada HabitsPage/StatisticsPage
-      // en su propio initState. No necesitamos disparar LoadHabits/LoadStatistics aquí.
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-         // No hacer nada aquí para la pestaña actual si se espera que los hijos carguen.
-         // _loadLocalDataForTab(_currentIndex); // Removido
-      });
-    }
+  void dispose() {
+    _authBlocSyncSubscription?.cancel();
+    super.dispose();
   }
 
-  void _loadLocalDataForTab(int index) {
+  void _setupAuthSyncSubscription() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _authBlocSyncSubscription = context
+            .read<AuthBloc>()
+            .initialSyncCompletedStream
+            .listen((_) => _onInitialSyncCompleted());
+      }
+    });
+  }
+
+  void _onInitialSyncCompleted() {
+    // Solo recargar AI Assistant y Statistics
+    // HabitsPage maneja su propia carga
+    _loadDataForTab(0);
+    _loadDataForTab(2);
+  }
+
+  void _loadDataForTab(int index) {
     switch (index) {
       case 0:
         context.read<AIAssistantBloc>().add(LoadAIAssistantData());
         break;
       case 1:
-        // HabitsPage ahora maneja su propia carga inicial en su initState.
-        // Solo recargamos si no está ya cargado o si necesitamos un refresh.
-        // Para este escenario, la propia HabitsPage se encarga.
+        // HabitsPage maneja su propia carga inicial
         break;
       case 2:
         context.read<StatisticsBloc>().add(LoadStatistics());
@@ -73,10 +77,27 @@ class _MainPageState extends State<MainPage> {
     }
   }
 
-  @override
-  void dispose() {
-    _authBlocSyncSubscription?.cancel(); 
-    super.dispose();
+  void _refreshCurrentTab() {
+    switch (_currentIndex) {
+      case 0:
+        context.read<AIAssistantBloc>().add(RefreshAIRecommendation());
+        break;
+      case 1:
+        context.read<HabitBloc>().add(PullToRefresh());
+        break;
+      case 2:
+        context.read<StatisticsBloc>().add(RefreshStatistics());
+        break;
+    }
+  }
+
+  void _onTabTapped(int index) {
+    if (_currentIndex != index) {
+      setState(() {
+        _currentIndex = index;
+      });
+      _loadDataForTab(index);
+    }
   }
 
   @override
@@ -85,23 +106,24 @@ class _MainPageState extends State<MainPage> {
       appBar: AppBar(
         title: Text(
           _pageTitles[_currentIndex],
-          style: const TextStyle(
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         centerTitle: false,
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
+          _RefreshButton(
+            currentIndex: _currentIndex,
+            onRefresh: _refreshCurrentTab,
+          ),
+          const SizedBox(width: 8),
           Padding(
             padding: const EdgeInsets.only(right: 16),
-            child: _buildUserAvatar(),
+            child: _UserAvatar(),
           ),
         ],
       ),
-      drawer: UserDrawer(
-        onDataSynced: _onDataSynced,
-      ),
+      drawer: UserDrawer(onDataSynced: _refreshCurrentTab),
       body: IndexedStack(
         index: _currentIndex,
         children: const [
@@ -110,61 +132,118 @@ class _MainPageState extends State<MainPage> {
           StatisticsPage(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
+      bottomNavigationBar: _BottomNavBar(
         currentIndex: _currentIndex,
-        onTap: (index) {
-          setState(() {
-            if (_currentIndex != index) {
-              _currentIndex = index;
-              _loadLocalDataForTab(index); 
-            }
-          });
-        },
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.psychology_outlined),
-            activeIcon: Icon(Icons.psychology),
-            label: 'Asistente IA',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.check_circle_outline),
-            activeIcon: Icon(Icons.check_circle),
-            label: 'Hábitos',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics_outlined),
-            activeIcon: Icon(Icons.analytics),
-            label: 'Estadísticas',
-          ),
-        ],
+        onTap: _onTabTapped,
       ),
     );
   }
+}
 
-  void _refreshDataForTab(int index) {
-    switch (index) {
-      case 0:
-        context.read<AIAssistantBloc>().add(RefreshAIRecommendation());
-        break;
-      case 1:
-        context.read<HabitBloc>().add(PullToRefresh()); 
-        break;
-      case 2:
-        context.read<StatisticsBloc>().add(RefreshStatistics()); 
-        break;
-    }
+class _RefreshButton extends StatelessWidget {
+  final int currentIndex;
+  final VoidCallback onRefresh;
+
+  const _RefreshButton({
+    required this.currentIndex,
+    required this.onRefresh,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return switch (currentIndex) {
+      1 => _HabitsRefreshButton(onRefresh: onRefresh), // Solo para hábitos por ahora
+      _ => _SimpleRefreshButton(onRefresh: onRefresh), // Para el resto
+    };
   }
+}
 
-  void _onDataSynced() {
-    _refreshDataForTab(_currentIndex);
+class _SimpleRefreshButton extends StatelessWidget {
+  final VoidCallback onRefresh;
+
+  const _SimpleRefreshButton({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton(
+      onPressed: onRefresh,
+      tooltip: 'Actualizar datos',
+      icon: Icon(
+        Icons.refresh,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+    );
   }
+}
 
-  Widget _buildUserAvatar() {
+class _HabitsRefreshButton extends StatelessWidget {
+  final VoidCallback onRefresh;
+
+  const _HabitsRefreshButton({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<HabitBloc, HabitState>(
+      builder: (context, state) {
+        final isLoading = state is HabitLoaded && state.isRefreshing;
+        
+        return _RefreshIconButton(
+          isLoading: isLoading,
+          onPressed: isLoading ? null : onRefresh,
+          loadingTooltip: 'Actualizando hábitos...',
+          normalTooltip: 'Actualizar datos',
+        );
+      },
+    );
+  }
+}
+
+class _RefreshIconButton extends StatelessWidget {
+  final bool isLoading;
+  final VoidCallback? onPressed;
+  final String loadingTooltip;
+  final String normalTooltip;
+
+  const _RefreshIconButton({
+    required this.isLoading,
+    required this.onPressed,
+    required this.loadingTooltip,
+    required this.normalTooltip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
+    return IconButton(
+      onPressed: onPressed,
+      tooltip: isLoading ? loadingTooltip : normalTooltip,
+      icon: isLoading
+          ? SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: theme.colorScheme.primary,
+              ),
+            )
+          : Icon(
+              Icons.refresh,
+              color: theme.colorScheme.primary,
+            ),
+    );
+  }
+}
+
+class _UserAvatar extends StatelessWidget {
+  const _UserAvatar();
+
+  @override
+  Widget build(BuildContext context) {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         if (state is! AuthAuthenticated) {
-          return _buildAvatarContainer(
+          return _AvatarContainer(
             child: const Icon(
               Icons.person_outline,
               size: 20,
@@ -174,13 +253,11 @@ class _MainPageState extends State<MainPage> {
         }
 
         final user = state.user;
-        final isGuest = user.isGuest;
-
-        return _buildAvatarContainer(
+        return _AvatarContainer(
           photoURL: user.photoURL,
           child: user.photoURL == null
               ? Icon(
-                  isGuest ? Icons.person_outline : Icons.person,
+                  user.isGuest ? Icons.person_outline : Icons.person,
                   size: 20,
                   color: Theme.of(context).colorScheme.primary,
                 )
@@ -189,32 +266,74 @@ class _MainPageState extends State<MainPage> {
       },
     );
   }
+}
 
-  Widget _buildAvatarContainer({
-    String? photoURL,
-    Widget? child,
-  }) {
+class _AvatarContainer extends StatelessWidget {
+  final String? photoURL;
+  final Widget? child;
+
+  const _AvatarContainer({
+    this.photoURL,
+    this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return GestureDetector(
-      onTap: () {
-        Scaffold.of(context).openDrawer();
-      },
+      onTap: () => Scaffold.of(context).openDrawer(),
       child: Container(
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+            color: theme.colorScheme.primary.withOpacity(0.3),
             width: 2,
           ),
         ),
         child: CircleAvatar(
           radius: 18,
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          backgroundImage: photoURL != null
-              ? NetworkImage(photoURL)
-              : null,
+          backgroundColor: theme.colorScheme.primaryContainer,
+          backgroundImage: photoURL != null ? NetworkImage(photoURL!) : null,
           child: child,
         ),
       ),
+    );
+  }
+}
+
+class _BottomNavBar extends StatelessWidget {
+  final int currentIndex;
+  final void Function(int) onTap;
+
+  const _BottomNavBar({
+    required this.currentIndex,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return BottomNavigationBar(
+      type: BottomNavigationBarType.fixed,
+      currentIndex: currentIndex,
+      onTap: onTap,
+      items: const [
+        BottomNavigationBarItem(
+          icon: Icon(Icons.psychology_outlined),
+          activeIcon: Icon(Icons.psychology),
+          label: 'Asistente IA',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.check_circle_outline),
+          activeIcon: Icon(Icons.check_circle),
+          label: 'Hábitos',
+        ),
+        BottomNavigationBarItem(
+          icon: Icon(Icons.analytics_outlined),
+          activeIcon: Icon(Icons.analytics),
+          label: 'Estadísticas',
+        ),
+      ],
     );
   }
 }

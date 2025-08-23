@@ -1,3 +1,4 @@
+// lib/features/habits/presentation/pages/habits_page.dart
 import 'package:habitiurs/core/utils/widget_updater.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -21,7 +22,8 @@ class HabitsPage extends StatefulWidget {
 
 class HabitsPageState extends State<HabitsPage>
     with AutomaticKeepAliveClientMixin {
-  late DateTime _today;
+  late final DateTime _today;
+  bool _hasTriedAutoReload = false;
 
   @override
   bool get wantKeepAlive => true;
@@ -35,29 +37,6 @@ class HabitsPageState extends State<HabitsPage>
         context.read<HabitBloc>().add(LoadHabits());
       }
     });
-  }
-
-  @override
-  void dispose() {
-    super.dispose();
-  }
-
-  void refreshData() {
-    context.read<HabitBloc>().add(PullToRefresh());
-    WidgetUpdater.refreshWeeklyHabitsWidget();
-  }
-
-  Future<void> _onRefresh() async {
-    context.read<HabitBloc>().add(PullToRefresh());
-    await _waitForRefreshComplete();
-    await WidgetUpdater.refreshWeeklyHabitsWidget();
-  }
-
-  Future<void> _waitForRefreshComplete() async {
-    await for (final state in context.read<HabitBloc>().stream) {
-      if (state is HabitLoaded && !state.isRefreshing) break;
-      if (state is HabitError) break;
-    }
   }
 
   @override
@@ -82,98 +61,37 @@ class HabitsPageState extends State<HabitsPage>
         ),
       );
     }
+
+    // Auto-reload cuando la lista está vacía (solo una vez)
+    if (state is HabitLoaded && 
+        state.habits.isEmpty && 
+        !state.isRefreshing && 
+        !_hasTriedAutoReload) {
+      _hasTriedAutoReload = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.read<HabitBloc>().add(PullToRefresh());
+        }
+      });
+    }
   }
 
   Widget _buildBody(BuildContext context, HabitState state) {
     return switch (state) {
-      HabitLoading() => _buildLoadingView(),
-      HabitError() => _buildErrorView(context, state),
-      HabitLoaded() => _buildLoadedView(context, state),
-      _ => _buildInitialView(),
+      HabitLoading() => const _LoadingView(),
+      HabitError() => _ErrorView(
+          message: state.message,
+          onRetry: () => context.read<HabitBloc>().add(LoadHabits()),
+        ),
+      HabitLoaded() => _LoadedView(
+          state: state,
+          todayEntriesMap: _getTodayEntriesMap(state.weekEntries),
+          onToggle: _handleToggle,
+          onDelete: _handleDelete,
+          onAdd: _handleAdd,
+        ),
+      _ => const _LoadingView(),
     };
-  }
-
-  Widget _buildLoadingView() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('Cargando hábitos...'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildInitialView() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('Preparando hábitos...'),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorView(BuildContext context, HabitError state) {
-    return RefreshIndicator(
-      onRefresh: _onRefresh,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: SizedBox(
-          height: MediaQuery.of(context).size.height * 0.8,
-          child: Center(
-            child: _ErrorStateWidget(
-              message: state.message,
-              onRetry: () => context.read<HabitBloc>().add(LoadHabits()),
-              onRefresh: _onRefresh,
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLoadedView(BuildContext context, HabitLoaded state) {
-    final todayEntriesMap = _getTodayEntriesMap(state.weekEntries);
-
-    return Column(
-      children: [
-        Expanded(
-          flex: 1,
-          child: RefreshIndicator(
-            onRefresh: _onRefresh,
-            displacement: 40,
-            color: Theme.of(context).colorScheme.primary,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.4,
-                child: WeeklyGrid(
-                  habits: state.habits,
-                  weekEntries: state.weekEntries,
-                  weekStart: state.currentWeekStart,
-                ),
-              ),
-            ),
-          ),
-        ),
-        Expanded(
-          flex: 1,
-          child: DailyHabitsList(
-            habits: state.habits,
-            todayEntriesMap: todayEntriesMap,
-            onToggle: _handleToggle,
-            onDelete: _handleDelete,
-            onAdd: _handleAdd,
-          ),
-        ),
-      ],
-    );
   }
 
   Map<int, HabitStatus> _getTodayEntriesMap(List<HabitEntry> weekEntries) {
@@ -196,19 +114,14 @@ class HabitsPageState extends State<HabitsPage>
   }
 
   void _handleDelete(int habitId) {
-    final habitsPageContext = context;
-
     showDialog(
-      context: habitsPageContext,
-      builder:
-          (dialogContext) => DeleteConfirmationDialog(
-            onConfirm: () {
-              habitsPageContext.read<HabitBloc>().add(
-                DeleteHabitEvent(habitId),
-              );
-              WidgetUpdater.refreshWeeklyHabitsWidget();
-            },
-          ),
+      context: context,
+      builder: (_) => DeleteConfirmationDialog(
+        onConfirm: () {
+          context.read<HabitBloc>().add(DeleteHabitEvent(habitId));
+          WidgetUpdater.refreshWeeklyHabitsWidget();
+        },
+      ),
     );
   }
 
@@ -223,19 +136,62 @@ class HabitsPageState extends State<HabitsPage>
   }
 }
 
-class _ErrorStateWidget extends StatelessWidget {
+class _LoadingView extends StatelessWidget {
+  const _LoadingView();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(height: 16),
+          Text('Cargando hábitos...'),
+        ],
+      ),
+    );
+  }
+}
+
+class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
-  final VoidCallback onRefresh;
 
-  const _ErrorStateWidget({
+  const _ErrorView({
     required this.message,
     required this.onRetry,
-    required this.onRefresh,
   });
 
   @override
   Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      child: SizedBox(
+        height: MediaQuery.of(context).size.height * 0.8,
+        child: Center(
+          child: _ErrorContent(
+            message: message,
+            onRetry: onRetry,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ErrorContent extends StatelessWidget {
+  final String message;
+  final VoidCallback onRetry;
+
+  const _ErrorContent({
+    required this.message,
+    required this.onRetry,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
@@ -244,12 +200,12 @@ class _ErrorStateWidget extends StatelessWidget {
           Icon(
             Icons.error_outline,
             size: 64,
-            color: Theme.of(context).colorScheme.error,
+            color: theme.colorScheme.error,
           ),
           const SizedBox(height: 16),
           Text(
             message,
-            style: Theme.of(context).textTheme.bodyLarge,
+            style: theme.textTheme.bodyLarge,
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 24),
@@ -258,13 +214,57 @@ class _ErrorStateWidget extends StatelessWidget {
             icon: const Icon(Icons.refresh),
             label: const Text('Reintentar'),
           ),
-          const SizedBox(height: 12),
-          TextButton(
-            onPressed: onRefresh,
-            child: const Text('Sincronizar datos'),
-          ),
         ],
       ),
+    );
+  }
+}
+
+class _LoadedView extends StatelessWidget {
+  final HabitLoaded state;
+  final Map<int, HabitStatus> todayEntriesMap;
+  final void Function(int, HabitStatus) onToggle;
+  final void Function(int) onDelete;
+  final VoidCallback onAdd;
+
+  const _LoadedView({
+    required this.state,
+    required this.todayEntriesMap,
+    required this.onToggle,
+    required this.onDelete,
+    required this.onAdd,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Expanded(
+          flex: 1,
+          child: SingleChildScrollView(
+            child: SizedBox(
+              height: MediaQuery.of(context).size.height * 0.4,
+              child: WeeklyGrid(
+                habits: state.habits,
+                weekEntries: state.weekEntries,
+                weekStart: state.currentWeekStart,
+                isLoading: state.isRefreshing,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          flex: 1,
+          child: DailyHabitsList(
+            habits: state.habits,
+            todayEntriesMap: todayEntriesMap,
+            onToggle: onToggle,
+            onDelete: onDelete,
+            onAdd: onAdd,
+            isLoading: state.isRefreshing,
+          ),
+        ),
+      ],
     );
   }
 }
