@@ -5,15 +5,17 @@ import '../../../../shared/enums/habit_status.dart';
 import 'habit_status_styles.dart';
 
 /// Callback definitions para mejor legibilidad
-typedef OnHabitToggleCallback = void Function(int habitId, HabitStatus currentStatus);
-typedef OnHabitDeleteCallback = void Function(int habitId);
+typedef OnHabitToggleCallback =
+    void Function(int habitId, HabitStatus currentStatus);
+typedef OnHabitDeleteCallback = void Function(int habitId, String habitName);
 
 class HabitTile extends StatelessWidget {
   final Habit habit;
   final int index;
   final HabitStatus status;
   final OnHabitToggleCallback onToggle;
-  final OnHabitDeleteCallback onDelete; // Mantenemos por compatibilidad pero no se usa
+  final OnHabitDeleteCallback
+  onDelete; // Mantenemos por compatibilidad pero no se usa
 
   const HabitTile({
     super.key,
@@ -38,12 +40,7 @@ class HabitTile extends StatelessWidget {
             children: [
               _HabitNumber(number: index + 1), // Sin onLongPress
               const SizedBox(width: 12),
-              Expanded(
-                child: _HabitName(
-                  name: habit.name,
-                  status: status,
-                ),
-              ),
+              Expanded(child: _HabitName(name: habit.name, status: status)),
               _StatusToggle(status: status),
             ],
           ),
@@ -56,9 +53,7 @@ class HabitTile extends StatelessWidget {
 class _HabitNumber extends StatelessWidget {
   final int number;
 
-  const _HabitNumber({
-    required this.number,
-  });
+  const _HabitNumber({required this.number});
 
   @override
   Widget build(BuildContext context) {
@@ -87,16 +82,14 @@ class _HabitName extends StatelessWidget {
   final String name;
   final HabitStatus status;
 
-  const _HabitName({
-    required this.name,
-    required this.status,
-  });
+  const _HabitName({required this.name, required this.status});
 
   @override
   Widget build(BuildContext context) {
-    final baseStyle = Theme.of(context).textTheme.bodyMedium ?? 
+    final baseStyle =
+        Theme.of(context).textTheme.bodyMedium ??
         const TextStyle(fontWeight: FontWeight.w500);
-    
+
     return Text(
       name,
       style: HabitStatusStyles.buildHabitNameStyle(status, baseStyle),
@@ -115,9 +108,7 @@ class _StatusToggle extends StatelessWidget {
       width: 32,
       height: 32,
       decoration: HabitStatusStyles.buildToggleDecoration(status),
-      child: Center(
-        child: HabitStatusStyles.buildStatusIcon(status),
-      ),
+      child: Center(child: HabitStatusStyles.buildStatusIcon(status)),
     );
   }
 }

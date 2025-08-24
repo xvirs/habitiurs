@@ -63,9 +63,9 @@ class HabitsPageState extends State<HabitsPage>
     }
 
     // Auto-reload cuando la lista está vacía (solo una vez)
-    if (state is HabitLoaded && 
-        state.habits.isEmpty && 
-        !state.isRefreshing && 
+    if (state is HabitLoaded &&
+        state.habits.isEmpty &&
+        !state.isRefreshing &&
         !_hasTriedAutoReload) {
       _hasTriedAutoReload = true;
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -80,16 +80,16 @@ class HabitsPageState extends State<HabitsPage>
     return switch (state) {
       HabitLoading() => const _LoadingView(),
       HabitError() => _ErrorView(
-          message: state.message,
-          onRetry: () => context.read<HabitBloc>().add(LoadHabits()),
-        ),
+        message: state.message,
+        onRetry: () => context.read<HabitBloc>().add(LoadHabits()),
+      ),
       HabitLoaded() => _LoadedView(
-          state: state,
-          todayEntriesMap: _getTodayEntriesMap(state.weekEntries),
-          onToggle: _handleToggle,
-          onDelete: _handleDelete,
-          onAdd: _handleAdd,
-        ),
+        state: state,
+        todayEntriesMap: _getTodayEntriesMap(state.weekEntries),
+        onToggle: _handleToggle,
+        onDelete: _handleDelete,
+        onAdd: _handleAdd,
+      ),
       _ => const _LoadingView(),
     };
   }
@@ -113,15 +113,17 @@ class HabitsPageState extends State<HabitsPage>
     WidgetUpdater.refreshWeeklyHabitsWidget();
   }
 
-  void _handleDelete(int habitId) {
+  void _handleDelete(int habitId, String habitName) {
     showDialog(
       context: context,
-      builder: (_) => DeleteConfirmationDialog(
-        onConfirm: () {
-          context.read<HabitBloc>().add(DeleteHabitEvent(habitId));
-          WidgetUpdater.refreshWeeklyHabitsWidget();
-        },
-      ),
+      builder:
+          (_) => DeleteConfirmationDialog(
+            habitName: habitName,
+            onConfirm: () {
+              context.read<HabitBloc>().add(DeleteHabitEvent(habitId));
+              WidgetUpdater.refreshWeeklyHabitsWidget();
+            },
+          ),
     );
   }
 
@@ -158,22 +160,14 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
       child: SizedBox(
         height: MediaQuery.of(context).size.height * 0.8,
-        child: Center(
-          child: _ErrorContent(
-            message: message,
-            onRetry: onRetry,
-          ),
-        ),
+        child: Center(child: _ErrorContent(message: message, onRetry: onRetry)),
       ),
     );
   }
@@ -183,25 +177,18 @@ class _ErrorContent extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorContent({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorContent({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: theme.colorScheme.error,
-          ),
+          Icon(Icons.error_outline, size: 64, color: theme.colorScheme.error),
           const SizedBox(height: 16),
           Text(
             message,
@@ -224,7 +211,7 @@ class _LoadedView extends StatelessWidget {
   final HabitLoaded state;
   final Map<int, HabitStatus> todayEntriesMap;
   final void Function(int, HabitStatus) onToggle;
-  final void Function(int) onDelete;
+  final void Function(int, String) onDelete;
   final VoidCallback onAdd;
 
   const _LoadedView({
