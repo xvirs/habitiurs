@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:habitiurs/core/service/vibration_service.dart';
 import '../../domain/entities/habit.dart';
 import 'habit_tile.dart';
 import 'delete_confirmation_dialog.dart';
@@ -63,7 +64,10 @@ class _HeaderSection extends StatelessWidget {
           Text('Hábitos de hoy', style: Theme.of(context).textTheme.titleMedium),
           IconButton(
             icon: const Icon(Icons.add),
-            onPressed: onAdd,
+            onPressed: () {
+              VibrationService.medium(); // Vibración para crear hábito
+              onAdd();
+            },
             tooltip: 'Agregar hábito',
           ),
         ],
@@ -110,7 +114,7 @@ class _HabitsListView extends StatelessWidget {
   }
 }
 
-class _SwipeableHabitTile extends StatelessWidget {
+class _SwipeableHabitTile extends StatefulWidget {
   final Habit habit;
   final int index;
   final HabitStatus status;
@@ -127,20 +131,57 @@ class _SwipeableHabitTile extends StatelessWidget {
   });
 
   @override
+  State<_SwipeableHabitTile> createState() => _SwipeableHabitTileState();
+}
+
+class _SwipeableHabitTileState extends State<_SwipeableHabitTile> {
+  bool _hasVibrated = false;
+
+  @override
   Widget build(BuildContext context) {
     return Dismissible(
-      key: ValueKey('dismissible_${habit.id}'),
+      key: ValueKey('dismissible_${widget.habit.id}'),
       direction: DismissDirection.startToEnd,
       background: const _SwipeDeleteBackground(),
+      
+      // Configuración para hacer el swipe menos sensible
+      dismissThresholds: const {
+        DismissDirection.startToEnd: 0.6, // Requiere 60% del ancho para activar
+      },
+      movementDuration: const Duration(milliseconds: 300),
+      resizeDuration: const Duration(milliseconds: 200),
+      
+      // Vibración progresiva basada en el progreso del swipe
+      onUpdate: (details) {
+        // Vibrar cuando se alcanza el 50% del threshold (30% del ancho total)
+        if (details.progress > 0.3 && !_hasVibrated) {
+          _hasVibrated = true;
+          VibrationService.warning(); // Vibración de advertencia
+        } else if (details.progress <= 0.3) {
+          _hasVibrated = false;
+        }
+      },
+      
       confirmDismiss: (direction) async {
-        onDelete(habit.id!, habit.name);
+        // Vibración final al confirmar el swipe
+        await VibrationService.warning();
+        widget.onDelete(widget.habit.id!, widget.habit.name);
         return false; // La page decide si elimina realmente el item
       },
+      
       child: HabitTile(
-        habit: habit,
-        index: index,
-        status: status,
-        onToggle: onToggle,
+        habit: widget.habit,
+        index: widget.index,
+        status: widget.status,
+        onToggle: (habitId, currentStatus) {
+          // Vibración diferente según el estado
+          if (currentStatus == HabitStatus.pending) {
+            VibrationService.success(); // Vibración suave al completar
+          } else {
+            VibrationService.selection(); // Vibración ligera al desmarcar
+          }
+          widget.onToggle(habitId, currentStatus);
+        },
         onDelete: (_, __) {}, // No longer usado
       ),
     );
@@ -154,23 +195,53 @@ class _SwipeDeleteBackground extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.red[400],
+        gradient: LinearGradient(
+          colors: [
+            Colors.red[300]!,
+            Colors.red[500]!,
+          ],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
         borderRadius: BorderRadius.circular(8),
       ),
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.delete_outline, color: Colors.white, size: 24),
-          SizedBox(width: 12),
-          Expanded(
-            child: Text(
-              'Eliminar hábito',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 16,
-              ),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
             ),
+            child: const Icon(
+              Icons.delete_outline, 
+              color: Colors.white, 
+              size: 24
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'Eliminar hábito',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
+                ),
+
+              ],
+            ),
+          ),
+          Icon(
+            Icons.arrow_forward_ios,
+            color: Colors.white.withOpacity(0.7),
+            size: 16,
           ),
         ],
       ),
@@ -183,10 +254,39 @@ class _LoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final theme = Theme.of(context);
+    return Center(
       child: Padding(
-        padding: EdgeInsets.all(24),
-        child: CircularProgressIndicator(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            SizedBox(
+              width: 40,
+              height: 40,
+              child: CircularProgressIndicator(
+                strokeWidth: 3,
+                color: theme.colorScheme.primary.withOpacity(0.8),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              'Sincronizando tus hábitos',
+              style: theme.textTheme.titleMedium?.copyWith(
+                color: theme.colorScheme.onSurfaceVariant,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Preparando todo para ti...',
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: theme.colorScheme.outline,
+              ),
+              textAlign: TextAlign.center,
+            ),
+          ],
+        ),
       ),
     );
   }

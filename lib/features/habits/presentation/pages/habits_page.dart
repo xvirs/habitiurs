@@ -1,4 +1,5 @@
 // lib/features/habits/presentation/pages/habits_page.dart
+import 'package:habitiurs/core/service/vibration_service.dart';
 import 'package:habitiurs/core/utils/widget_updater.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
@@ -51,15 +52,24 @@ class HabitsPageState extends State<HabitsPage>
 
   void _handleStateChanges(BuildContext context, HabitState state) {
     if (state is HabitError) {
+      VibrationService.error(); // Vibración de error
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(state.message),
           action: SnackBarAction(
             label: 'Reintentar',
-            onPressed: () => context.read<HabitBloc>().add(LoadHabits()),
+            onPressed: () {
+              VibrationService.selection();
+              context.read<HabitBloc>().add(LoadHabits());
+            },
           ),
         ),
       );
+    }
+
+    // Vibración suave cuando los hábitos se cargan exitosamente
+    if (state is HabitLoaded && state.habits.isNotEmpty && !state.isRefreshing) {
+      VibrationService.selection();
     }
 
     // Auto-reload cuando la lista está vacía (solo una vez)
@@ -81,7 +91,10 @@ class HabitsPageState extends State<HabitsPage>
       HabitLoading() => const _LoadingView(),
       HabitError() => _ErrorView(
         message: state.message,
-        onRetry: () => context.read<HabitBloc>().add(LoadHabits()),
+        onRetry: () {
+          VibrationService.medium();
+          context.read<HabitBloc>().add(LoadHabits());
+        },
       ),
       HabitLoaded() => _LoadedView(
         state: state,
@@ -114,25 +127,46 @@ class HabitsPageState extends State<HabitsPage>
   }
 
   void _handleDelete(int habitId, String habitName) {
-    showDialog(
-      context: context,
-      builder:
-          (_) => DeleteConfirmationDialog(
-            habitName: habitName,
-            onConfirm: () {
-              context.read<HabitBloc>().add(DeleteHabitEvent(habitId));
-              WidgetUpdater.refreshWeeklyHabitsWidget();
-            },
+    // Usar el método estático del diálogo que incluye vibración
+    DeleteConfirmationDialog.show(
+      context,
+      habitName: habitName,
+      onConfirm: () {
+        context.read<HabitBloc>().add(DeleteHabitEvent(habitId));
+        WidgetUpdater.refreshWeeklyHabitsWidget();
+        
+        // Vibración de confirmación después de eliminar
+        VibrationService.success();
+        
+        // Mostrar feedback al usuario
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hábito "$habitName" eliminado'),
+            duration: const Duration(seconds: 2),
           ),
+        );
+      },
     );
   }
 
   void _handleAdd() {
+    VibrationService.medium(); // Vibración al abrir el bottom sheet
     AddHabitBottomSheet.show(
       context,
       onAdd: (habitName) {
         context.read<HabitBloc>().add(CreateHabitEvent(habitName));
         WidgetUpdater.refreshWeeklyHabitsWidget();
+        
+        // Vibración de éxito al crear
+        VibrationService.success();
+        
+        // Feedback al usuario
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hábito "$habitName" creado'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       },
     );
   }
@@ -143,13 +177,34 @@ class _LoadingView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
+    final theme = Theme.of(context);
+    return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircularProgressIndicator(),
-          SizedBox(height: 16),
-          Text('Cargando hábitos...'),
+          SizedBox(
+            width: 48,
+            height: 48,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              color: theme.colorScheme.primary.withOpacity(0.8),
+            ),
+          ),
+          const SizedBox(height: 24),
+          Text(
+            'Preparando tus hábitos',
+            style: theme.textTheme.headlineSmall?.copyWith(
+              fontWeight: FontWeight.bold,
+              color: theme.colorScheme.onSurface,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Construyendo una mejor versión de ti',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
         ],
       ),
     );
