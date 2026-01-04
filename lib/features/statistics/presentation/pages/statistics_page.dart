@@ -38,11 +38,7 @@ class StatisticsContent extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
-                  Icons.error_outline,
-                  size: 64,
-                  color: Colors.red[300],
-                ),
+                Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
                 const SizedBox(height: 16),
                 Text(
                   'Error al cargar estadísticas',
@@ -69,35 +65,39 @@ class StatisticsContent extends StatelessWidget {
 
         if (state is StatisticsLoaded) {
           return Expanded(
-            child: Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: RefreshIndicator(
-                onRefresh: () async {
-                  print('🔄 [StatisticsPage] Pull-to-refresh activado');
-                  // FIXED: Disparar RefreshStatistics a través del contexto
-                  if (context.mounted) {
-                    context.read<StatisticsBloc>().add(RefreshStatistics());
-                  }
-                },
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    SizedBox(
-                      child: CurrentMonthSummary(
-                        statistics: state.currentMonth,
-                      ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      print('🔄 [StatisticsPage] Pull-to-refresh activado');
+                      if (context.mounted) {
+                        context.read<StatisticsBloc>().add(RefreshStatistics());
+                      }
+                    },
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        SizedBox(
+                          child: CurrentMonthSummary(
+                            statistics: state.currentMonth,
+                          ),
+                        ),
+                        Flexible(
+                          flex: 1,
+                          child: YearlyStatisticsList(
+                            statistics: state.currentYear,
+                          ),
+                        ),
+                        Expanded(
+                          flex: 2,
+                          child: HistoricalChart(data: state.historicalData),
+                        ),
+                      ],
                     ),
-                    Flexible(
-                      flex: 1,
-                      child: YearlyStatisticsList(
-                        statistics: state.currentYear,
-                      ),
-                    ),
-                    Expanded(
-                      flex: 2,
-                      child: HistoricalChart(data: state.historicalData),
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),
@@ -108,11 +108,7 @@ class StatisticsContent extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                Icons.analytics_outlined,
-                size: 64,
-                color: Colors.grey,
-              ),
+              Icon(Icons.analytics_outlined, size: 64, color: Colors.grey),
               SizedBox(height: 16),
               Text(
                 'Cargando estadísticas...',

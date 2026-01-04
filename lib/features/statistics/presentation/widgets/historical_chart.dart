@@ -38,22 +38,27 @@ class HistoricalChart extends StatelessWidget {
         .map((e) => e.completedCount + e.skippedCount)
         .fold(0, (max, current) => max > current ? max : current);
 
-    final int chartMaxValue = (maxCount * 1.2).ceil().clamp(1, double.maxFinite.toInt());
+    final int chartMaxValue = (maxCount * 1.2).ceil().clamp(
+      1,
+      double.maxFinite.toInt(),
+    );
 
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildHeader(context),
             const SizedBox(height: 16),
-            SizedBox(
-              height: 190.0,
+            Expanded(
               child: CustomPaint(
-                size: const Size.fromHeight(190.0),
-                painter: _HistoricalChartPainter(data, chartMaxValue, Directionality.of(context)),
+                painter: _HistoricalChartPainter(
+                  data,
+                  chartMaxValue,
+                  Directionality.of(context),
+                ),
               ),
             ),
             const SizedBox(height: 10),
@@ -85,9 +90,9 @@ class HistoricalChart extends StatelessWidget {
         Expanded(
           child: Text(
             'Histórico de constancia',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -159,13 +164,15 @@ class _HistoricalChartPainter extends CustomPainter {
 
     final Paint completedBarPaint = Paint()..color = Colors.green[500]!;
     final Paint skippedBarPaint = Paint()..color = Colors.red[400]!;
-    final Paint rateLinePaint = Paint()
-      ..color = Colors.blue[600]!
-      ..strokeWidth = 2.5
-      ..style = PaintingStyle.stroke;
-    final Paint axisPaint = Paint()
-      ..color = Colors.grey[300]!
-      ..strokeWidth = 0.8;
+    final Paint rateLinePaint =
+        Paint()
+          ..color = Colors.blue[600]!
+          ..strokeWidth = 2.5
+          ..style = PaintingStyle.stroke;
+    final Paint axisPaint =
+        Paint()
+          ..color = Colors.grey[300]!
+          ..strokeWidth = 0.8;
     final TextPainter textPainter = TextPainter(
       textAlign: TextAlign.center,
       textDirection: textDirection,
@@ -183,8 +190,16 @@ class _HistoricalChartPainter extends CustomPainter {
 
     final Offset chartOrigin = Offset(yAxisLabelAreaWidth, chartAreaHeight);
 
-    canvas.drawLine(Offset(yAxisLabelAreaWidth, 0), Offset(yAxisLabelAreaWidth, chartAreaHeight), axisPaint);
-    canvas.drawLine(Offset(yAxisLabelAreaWidth, chartAreaHeight), Offset(size.width, chartAreaHeight), axisPaint);
+    canvas.drawLine(
+      Offset(yAxisLabelAreaWidth, 0),
+      Offset(yAxisLabelAreaWidth, chartAreaHeight),
+      axisPaint,
+    );
+    canvas.drawLine(
+      Offset(yAxisLabelAreaWidth, chartAreaHeight),
+      Offset(size.width, chartAreaHeight),
+      axisPaint,
+    );
 
     const int yAxisSegments = 2;
     for (int i = 0; i <= yAxisSegments; i++) {
@@ -200,12 +215,19 @@ class _HistoricalChartPainter extends CustomPainter {
       );
       textPainter.layout();
 
-      textPainter.paint(canvas, Offset(yAxisLabelAreaWidth - textPainter.width - 2, y - textPainter.height / 2));
+      textPainter.paint(
+        canvas,
+        Offset(
+          yAxisLabelAreaWidth - textPainter.width - 2,
+          y - textPainter.height / 2,
+        ),
+      );
     }
 
-    final double barAndSpacingUnit = data.isNotEmpty ? chartAreaWidth / data.length : 0;
+    final double barAndSpacingUnit =
+        data.isNotEmpty ? chartAreaWidth / data.length : 0;
     final double barWidth = barAndSpacingUnit * 0.4;
-    
+
     if (barWidth <= 0.5 && data.isNotEmpty) {
       return;
     }
@@ -213,15 +235,23 @@ class _HistoricalChartPainter extends CustomPainter {
     Offset? previousRatePoint;
     for (int i = 0; i < data.length; i++) {
       final currentData = data[i];
-      final xPos = chartOrigin.dx + (i * barAndSpacingUnit) + barAndSpacingUnit / 2;
+      final xPos =
+          chartOrigin.dx + (i * barAndSpacingUnit) + barAndSpacingUnit / 2;
 
-      final double completedHeight = ((currentData.completedCount / maxValue) * chartAreaHeight).clamp(0.0, chartAreaHeight);
-      final double skippedHeight = ((currentData.skippedCount / maxValue) * chartAreaHeight).clamp(0.0, chartAreaHeight);
+      final double completedHeight = ((currentData.completedCount / maxValue) *
+              chartAreaHeight)
+          .clamp(0.0, chartAreaHeight);
+      final double skippedHeight = ((currentData.skippedCount / maxValue) *
+              chartAreaHeight)
+          .clamp(0.0, chartAreaHeight);
 
-      final double rateY = chartAreaHeight - (currentData.completionRate / 100) * chartAreaHeight;
+      final double rateY =
+          chartAreaHeight -
+          (currentData.completionRate / 100) * chartAreaHeight;
 
       final double barSegmentWidth = barWidth / 2.5;
-      final double currentXOffset = xPos - barWidth / 2 + (barWidth - barSegmentWidth * 2) / 2;
+      final double currentXOffset =
+          xPos - barWidth / 2 + (barWidth - barSegmentWidth * 2) / 2;
 
       canvas.drawRect(
         Rect.fromLTWH(
@@ -243,7 +273,10 @@ class _HistoricalChartPainter extends CustomPainter {
         skippedBarPaint,
       );
 
-      final Offset currentRatePoint = Offset(xPos, rateY.clamp(0.0, chartAreaHeight));
+      final Offset currentRatePoint = Offset(
+        xPos,
+        rateY.clamp(0.0, chartAreaHeight),
+      );
       if (previousRatePoint != null) {
         canvas.drawLine(previousRatePoint, currentRatePoint, rateLinePaint);
       }
@@ -258,14 +291,22 @@ class _HistoricalChartPainter extends CustomPainter {
       );
       textPainter.layout();
 
-      textPainter.paint(canvas, Offset(xPos - textPainter.width / 2, chartAreaHeight + (xAxisLabelAreaHeight - textPainter.height) / 2));
+      textPainter.paint(
+        canvas,
+        Offset(
+          xPos - textPainter.width / 2,
+          chartAreaHeight + (xAxisLabelAreaHeight - textPainter.height) / 2,
+        ),
+      );
     }
   }
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) {
     if (oldDelegate is _HistoricalChartPainter) {
-      return oldDelegate.data != data || oldDelegate.maxValue != maxValue || oldDelegate.textDirection != textDirection;
+      return oldDelegate.data != data ||
+          oldDelegate.maxValue != maxValue ||
+          oldDelegate.textDirection != textDirection;
     }
     return true;
   }
