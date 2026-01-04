@@ -17,14 +17,27 @@ class MonthlyStatistics {
     required this.weeks,
   });
 
-  double get completionRate => 
+  double get completionRate =>
       totalHabits > 0 ? (completedCount / totalHabits) * 100 : 0.0;
 
   String get monthName {
     const months = [
-      'Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio',
-      'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'
+      'Enero',
+      'Febrero',
+      'Marzo',
+      'Abril',
+      'Mayo',
+      'Junio',
+      'Julio',
+      'Agosto',
+      'Septiembre',
+      'Octubre',
+      'Noviembre',
+      'Diciembre',
     ];
+    if (month < 1 || month > 12) {
+      return 'Desconocido';
+    }
     return months[month - 1];
   }
 }
@@ -47,8 +60,8 @@ class WeeklyStatistics {
   });
 
   int get totalEntries => completedCount + skippedCount + pendingCount;
-  
-  double get completionRate => 
+
+  double get completionRate =>
       totalEntries > 0 ? (completedCount / totalEntries) * 100 : 0.0;
 }
 

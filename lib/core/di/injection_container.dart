@@ -4,7 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 // Core
 import '../database/database_helper.dart';
 import '../ai/repositories/ai_repository.dart';
-import '../auth/services/auth_service.dart' hide SyncManager; 
+import '../auth/services/auth_service.dart' hide SyncManager;
 import '../auth/interfaces/i_auth_service.dart';
 import '../sync/services/firebase_service.dart';
 import '../sync/services/sync_manager.dart';
@@ -55,10 +55,11 @@ class InjectionContainer {
   // Core Services
   late final DatabaseHelper _databaseHelper;
   late final AIRepository _aiRepository;
-  late final IAuthService _authService; 
+  late final IAuthService _authService;
   late final FirebaseService _firebaseService;
   late final SyncManager _syncManager;
-  late final SyncRepository _syncRepository; // Se declara la interfaz del repositorio de sincronización
+  late final SyncRepository
+  _syncRepository; // Se declara la interfaz del repositorio de sincronización
 
   // DataSources
   late final HabitLocalDataSource _habitLocalDataSource;
@@ -85,7 +86,7 @@ class InjectionContainer {
 
   // Statistics Use Cases
   late final GetCurrentMonthStatistics _getCurrentMonthStatistics;
-  late final GetCurrentYearStatistics  _getCurrentYearStatistics;
+  late final GetCurrentYearStatistics _getCurrentYearStatistics;
   late final GetHistoricalData _getHistoricalData;
 
   // AI Assistant Use Cases
@@ -97,12 +98,12 @@ class InjectionContainer {
 
   Future<void> init() async {
     if (_isInitialized) return;
-    
+
     try {
       await _initializeFirebase();
-      await _initializeCoreServices(); 
+      await _initializeCoreServices();
       _initializeRepositories();
-      _initializeUseCases(); 
+      _initializeUseCases();
       _isInitialized = true;
     } catch (e) {
       _isInitialized = false;
@@ -127,27 +128,28 @@ class InjectionContainer {
     _initializeDataSources();
 
     _aiRepository = AIRepository();
-    
-    _authService = AuthService(); 
+
+    _authService = AuthService();
 
     _firebaseService = FirebaseService();
 
     // Se instancia SyncRepositoryImpl y se asigna a _syncRepository
-    _syncRepository = SyncRepositoryImpl( 
-      syncManager: SyncManager( // SyncManager también necesita las dependencias
+    _syncRepository = SyncRepositoryImpl(
+      syncManager: SyncManager(
+        // SyncManager también necesita las dependencias
         firebaseService: _firebaseService,
-        authService: _authService, 
+        authService: _authService,
         habitDataSource: _habitLocalDataSource,
         statisticsDataSource: _statisticsLocalDatasource,
       ),
       firebaseService: _firebaseService,
-      authService: _authService, 
+      authService: _authService,
     );
 
     // Se instancia SyncManager con el SyncRepository ya disponible
     _syncManager = SyncManager(
       firebaseService: _firebaseService,
-      authService: _authService, 
+      authService: _authService,
       habitDataSource: _habitLocalDataSource,
       statisticsDataSource: _statisticsLocalDatasource,
     );
@@ -155,16 +157,18 @@ class InjectionContainer {
 
   void _initializeDataSources() {
     _habitLocalDataSource = HabitLocalDataSourceImpl(_databaseHelper);
-    _statisticsLocalDatasource = StatisticsLocalDatasourceImpl(databaseHelper: _databaseHelper);
+    _statisticsLocalDatasource = StatisticsLocalDatasourceImpl(
+      databaseHelper: _databaseHelper,
+    );
     _offlineContentDatasource = OfflineContentDatasourceImpl();
   }
 
   void _initializeRepositories() {
     _habitRepository = HabitRepositoryImpl(
-      _habitLocalDataSource, 
+      _habitLocalDataSource,
       _syncRepository, // Se inyecta la instancia del repositorio de sincronización
     );
-    
+
     _statisticsRepository = StatisticsRepositoryImpl(
       localDatasource: _statisticsLocalDatasource,
     );
@@ -195,11 +199,16 @@ class InjectionContainer {
     _createHabit = CreateHabit(_habitRepository);
     _getWeekEntries = GetWeekEntries(_habitRepository);
     _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
-    _deleteHabit = DeleteHabit(_habitRepository, _authService); // Se inyecta el servicio de autenticación
+    _deleteHabit = DeleteHabit(
+      _habitRepository,
+      _authService,
+    ); // Se inyecta el servicio de autenticación
   }
 
   void _initializeStatisticsUseCases() {
-    _getCurrentMonthStatistics = GetCurrentMonthStatistics(_statisticsRepository);
+    _getCurrentMonthStatistics = GetCurrentMonthStatistics(
+      _statisticsRepository,
+    );
     _getCurrentYearStatistics = GetCurrentYearStatistics(_statisticsRepository);
     _getHistoricalData = GetHistoricalData(_statisticsRepository);
   }
@@ -230,6 +239,7 @@ class InjectionContainer {
     getCurrentMonthStatistics: _getCurrentMonthStatistics,
     getCurrentYearStatistics: _getCurrentYearStatistics,
     getHistoricalData: _getHistoricalData,
+    syncRepository: _syncRepository, // ADDED
   );
 
   AIAssistantBloc get aiAssistantBloc => AIAssistantBloc(
@@ -238,15 +248,15 @@ class InjectionContainer {
     getAIRecommendation: _getAIRecommendation,
   );
 
-  HabitEvaluationCubit get habitEvaluationCubit => HabitEvaluationCubit(
-    aiRepository: _aiRepository,
-  );
+  HabitEvaluationCubit get habitEvaluationCubit =>
+      HabitEvaluationCubit(aiRepository: _aiRepository);
 
   // Core Service Getters
   AIRepository get aiRepository => _aiRepository;
   IAuthService get authService => _authService;
   SyncRepository get syncRepository => _syncRepository;
-  SyncManager get syncManager => _syncManager; // Se asegura que SyncManager esté disponible
+  SyncManager get syncManager =>
+      _syncManager; // Se asegura que SyncManager esté disponible
   FirebaseService get firebaseService => _firebaseService;
   DatabaseHelper get databaseHelper => _databaseHelper;
 
