@@ -6,6 +6,7 @@ import '../datasources/habit_local_datasource.dart';
 import '../models/habit_model.dart';
 import '../models/habit_entry_model.dart';
 import '../../../../shared/enums/habit_status.dart';
+import '../../../../shared/utils/date_utils.dart';
 import '../../../../core/sync/repositories/sync_repository.dart'; // Asegúrate de importar SyncRepository
 
 class HabitRepositoryImpl implements HabitRepository {
@@ -62,22 +63,28 @@ class HabitRepositoryImpl implements HabitRepository {
 
   @override
   Future<void> updateHabitEntryStatus(int habitId, DateTime date, HabitStatus status) async {
-    final existingEntry = await localDataSource.getHabitEntryForDate(habitId, date);
+    // Normalizar fecha al inicio del día para evitar problemas de precision
+    final normalizedDate = AppDateUtils.getStartOfDay(date);
+
+    final existingEntry = await localDataSource.getHabitEntryForDate(habitId, normalizedDate);
 
     if (existingEntry != null) {
       final updatedEntry = HabitEntryModel(
         id: existingEntry.id,
         habitId: habitId,
-        date: date,
+        date: normalizedDate,
         status: status,
+        lastModified: DateTime.now(),
       );
       await localDataSource.updateHabitEntry(updatedEntry);
     } else {
+      // Solo crear entrada si el estado es diferente a pending
       if (status != HabitStatus.pending) {
         final newEntry = HabitEntryModel(
           habitId: habitId,
-          date: date,
+          date: normalizedDate,
           status: status,
+          lastModified: DateTime.now(),
         );
         await localDataSource.insertHabitEntry(newEntry);
       }

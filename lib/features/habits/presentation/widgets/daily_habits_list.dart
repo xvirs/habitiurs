@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:habitiurs/core/service/vibration_service.dart';
 import '../../domain/entities/habit.dart';
 import 'habit_tile.dart';
-import 'delete_confirmation_dialog.dart';
 import '../../../../shared/enums/habit_status.dart';
 
 class DailyHabitsList extends StatelessWidget {

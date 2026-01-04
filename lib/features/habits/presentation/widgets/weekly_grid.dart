@@ -20,8 +20,39 @@ class WeeklyGrid extends StatelessWidget {
   });
 
   @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is WeeklyGrid &&
+        _listEquals(other.habits, habits) &&
+        _listEquals(other.weekEntries, weekEntries) &&
+        other.weekStart == weekStart &&
+        other.isLoading == isLoading;
+  }
+
+  @override
+  int get hashCode {
+    return Object.hash(
+      Object.hashAll(habits),
+      Object.hashAll(weekEntries),
+      weekStart,
+      isLoading,
+    );
+  }
+
+  bool _listEquals<T>(List<T> a, List<T> b) {
+    if (a.length != b.length) return false;
+    for (int i = 0; i < a.length; i++) {
+      if (a[i] != b[i]) return false;
+    }
+    return true;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final weekDates = AppDateUtils.getWeekDates(weekStart);
+
+    // Limpiar cache al construir para asegurar datos frescos
+    _StatusCell.clearCache();
 
     return Card(
       margin: const EdgeInsets.all(16),
@@ -333,6 +364,9 @@ class _StatusCell extends StatelessWidget {
     required this.weekEntries,
   });
 
+  // Cache para mejorar rendimiento
+  static final Map<String, HabitEntry?> _entryCache = {};
+
   @override
   Widget build(BuildContext context) {
     final entry = _findEntry();
@@ -355,18 +389,48 @@ class _StatusCell extends StatelessWidget {
   }
 
   HabitEntry? _findEntry() {
+    final cacheKey = '${habitId}_${AppDateUtils.formatToYYYYMMDD(date)}';
+
+    if (_entryCache.containsKey(cacheKey)) {
+      return _entryCache[cacheKey];
+    }
+
+    // Buscar usando donde por iteración optimizada
+    final normalizedDate = AppDateUtils.getStartOfDay(date);
+    HabitEntry? foundEntry;
+
     for (final entry in weekEntries) {
-      if (entry.habitId == habitId && 
-          AppDateUtils.isSameDay(entry.date, date)) {
-        return entry;
+      if (entry.habitId == habitId) {
+        final entryDate = AppDateUtils.getStartOfDay(entry.date);
+        if (entryDate == normalizedDate) {
+          foundEntry = entry;
+          break;
+        }
       }
     }
-    return null;
+
+    _entryCache[cacheKey] = foundEntry;
+    return foundEntry;
+  }
+
+  // Método para limpiar cache cuando sea necesario
+  static void clearCache() {
+    _entryCache.clear();
   }
 
   HabitStatus _getDisplayStatus(HabitEntry? entry) {
+    // Si hay una entrada explícita, usar su estado
     if (entry != null) return entry.status;
+
+    // Si es un día futuro, mostrar como pending
+    if (AppDateUtils.isFutureDate(date)) return HabitStatus.pending;
+
+    // Si es el día actual sin entrada, mostrar como pending
+    if (AppDateUtils.isToday(date)) return HabitStatus.pending;
+
+    // Si es un día pasado sin entrada, mostrar como skipped
     if (AppDateUtils.isPastDate(date)) return HabitStatus.skipped;
+
     return HabitStatus.pending;
   }
 

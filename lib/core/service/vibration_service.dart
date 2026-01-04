@@ -49,6 +49,9 @@ class VibrationService {
     if (!_canVibrate()) return;
     
     try {
+      // Vibración más agresiva - doble heavy impact
+      await HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 80));
       await HapticFeedback.heavyImpact();
     } catch (e) {
       // Fallback silencioso si no está disponible
@@ -71,8 +74,31 @@ class VibrationService {
     if (kIsWeb) return;
     
     try {
+      // Vibración muy agresiva - triple pattern
       await HapticFeedback.heavyImpact();
       await Future.delayed(const Duration(milliseconds: 100));
+      await HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+      if (_canVibrate()) {
+        await HapticFeedback.heavyImpact();
+      }
+    } catch (e) {
+      // Fallback silencioso si no está disponible
+    }
+  }
+
+  /// Vibración EXTRA agresiva para confirmación de eliminación
+  static Future<void> deleteConfirmation() async {
+    if (kIsWeb) return;
+    
+    try {
+      // Patrón muy agresivo: heavy-pause-heavy-pause-heavy-pause-medium
+      await HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 150));
+      await HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 100));
+      await HapticFeedback.heavyImpact();
+      await Future.delayed(const Duration(milliseconds: 80));
       if (_canVibrate()) {
         await HapticFeedback.mediumImpact();
       }

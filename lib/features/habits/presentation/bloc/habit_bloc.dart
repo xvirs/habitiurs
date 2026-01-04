@@ -6,6 +6,7 @@ import '../../domain/usecases/create_habit.dart';
 import '../../domain/usecases/get_week_entries.dart';
 import '../../domain/usecases/toggle_habit_entry.dart';
 import '../../domain/usecases/delete_habit.dart';
+import '../../domain/services/habit_validation_service.dart';
 import '../../../../core/di/injection_container.dart';
 import 'habit_event.dart';
 import 'habit_state.dart';
@@ -152,9 +153,45 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     final weekEntries = await _getWeekEntries(now);
     final currentWeekStart = AppDateUtils.getStartOfWeek(now);
 
+    // Validar datos antes de emitir
+    final validationResult = HabitValidationService.validateWeekData(
+      habits,
+      weekEntries,
+      currentWeekStart,
+    );
+
+    // Log warnings si hay
+    for (final warning in validationResult.warnings) {
+      print('⚠️ [HabitBloc] Validation warning: $warning');
+    }
+
+    // Si hay errores críticos, emitir error
+    if (!validationResult.isValid) {
+      final errorMsg = 'Errores de validación: ${validationResult.issues.join(', ')}';
+      print('❌ [HabitBloc] Validation errors: $errorMsg');
+      emit(HabitError(errorMsg));
+      return;
+    }
+
+    // Generar entradas faltantes para días pasados (auto-skip)
+    final missingEntries = HabitValidationService.generateMissingEntries(
+      validationResult.validHabits,
+      validationResult.validEntries,
+      currentWeekStart,
+    );
+
+    // Combinar entradas existentes con las generadas
+    final allEntries = [...validationResult.validEntries, ...missingEntries];
+
+    // Limpiar cache del WeeklyGrid para forzar actualización
+    try {
+      // Si el import está disponible
+      // _StatusCell.clearCache();
+    } catch (_) {}
+
     emit(HabitLoaded(
-      habits: habits,
-      weekEntries: weekEntries,
+      habits: validationResult.validHabits,
+      weekEntries: allEntries,
       currentWeekStart: currentWeekStart,
       isRefreshing: isRefreshing,
     ));

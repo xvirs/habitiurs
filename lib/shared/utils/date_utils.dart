@@ -19,21 +19,27 @@ class AppDateUtils {
   static List<String> get weekDayNames => ['L', 'M', 'M', 'J', 'V', 'S', 'D']; 
 
   static bool isSameDay(DateTime date1, DateTime date2) {
-    return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
+    final normalized1 = getStartOfDay(date1);
+    final normalized2 = getStartOfDay(date2);
+    return normalized1.isAtSameMomentAs(normalized2);
   }
 
   static bool isToday(DateTime date) {
     return isSameDay(date, DateTime.now());
   }
 
-  // Método para auto-skip logic (ya lo tienes, es correcto)
+  // Método para auto-skip logic - normalizado
   static bool isPastDate(DateTime date) {
-    final today = DateTime.now();
-    final dateOnly = DateTime(date.year, date.month, date.day);
-    final todayOnly = DateTime(today.year, today.month, today.day);
-    return dateOnly.isBefore(todayOnly);
+    final today = getStartOfDay(DateTime.now());
+    final normalizedDate = getStartOfDay(date);
+    return normalizedDate.isBefore(today);
+  }
+
+  // Método para verificar si una fecha es en el futuro - normalizado
+  static bool isFutureDate(DateTime date) {
+    final today = getStartOfDay(DateTime.now());
+    final normalizedDate = getStartOfDay(date);
+    return normalizedDate.isAfter(today);
   }
 
   // Obtener primer lunes del mes (ya lo tienes, es correcto)
