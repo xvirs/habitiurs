@@ -124,10 +124,14 @@ Habitiurs te ayuda a enfocarte en lo que realmente importa: aparecer cada día y
 
 **Estados posibles:**
 🟢 Verde con ✓ = Completado
-🔴 Rojo con ✗ = No realizado conscientemente
-⚪ Gris con + = Pendiente (aún no decidido)
+🔴 Rojo con ✗ = Saltado (decidiste no hacerlo)
+⚪ Gris con • = Pendiente (aún no decidido)
 
-**Solo el día actual es editable.** Los días pasados se muestran para referencia visual de tu progreso.
+**Interacciones:**
+• **Tap en día actual:** Cambia el estado (Pendiente → Completado → Saltado → Pendiente)
+• **Mantén presionado en días pasados:** Abre un modal para modificar el estado de ese día específico
+
+**Nota:** Puedes modificar cualquier día pasado, útil si olvidaste marcar un hábito que sí completaste.
 
 **Tip:** Usa la cuadrícula para identificar patrones. ¿Hay días específicos donde te cuesta más? ¿Ciertos hábitos son más difíciles que otros?""",
         section: "weekly_grid",
@@ -160,26 +164,131 @@ Recuerda: las estadísticas son una herramienta, no un juicio. Úsalas para iden
       ),
       AppGuideModel(
         id: 4,
+        title: "Creando Hábitos con IA",
+        content: """Al crear un nuevo hábito, puedes usar la **Evaluación con IA** para validar que tu hábito sea efectivo.
+
+**¿Qué evalúa la IA?**
+La IA verifica que tu hábito cumpla 3 criterios:
+1. ¿Es una ACCIÓN específica? (no un estado mental o meta abstracta)
+2. ¿Se puede REPETIR todos los días? (no depende de eventos externos)
+3. ¿Es MEDIBLE sin ambigüedad? (sabes si lo completaste o no)
+
+**Ejemplos de hábitos BUENOS:**
+✅ "Leer 10 páginas"
+✅ "Meditar 5 minutos"
+✅ "Beber un vaso de agua al despertar"
+
+**Ejemplos de hábitos MALOS:**
+❌ "Ser feliz" → Es un estado emocional, no una acción
+❌ "Conquistar el mundo" → Meta grandiosa, no acción diaria
+❌ "Ganar la lotería" → No depende de ti
+
+**Tip:** La IA NUNCA sugerirá horarios específicos (ej: "por la mañana"). Habitiurs se enfoca en que HAGAS el hábito cada día, sin importar CUÁNDO lo hagas.""",
+        section: "ai_features",
+        order: 4,
+      ),
+      AppGuideModel(
+        id: 5,
+        title: "Asistente de IA Personalizado",
+        content: """El Asistente de IA analiza tus datos reales y te da recomendaciones específicas y accionables.
+
+**¿Qué analiza?**
+• Tus hábitos actuales
+• Tu tasa de cumplimiento promedio
+• Tu racha actual
+• Hábitos con los que estás teniendo dificultades
+
+**Formato de la recomendación:**
+**[EMOJI] Estado:** Evaluación honesta de tu situación actual
+**💡 Acción clave:** UNA cosa específica que puedes hacer HOY
+**⚠️ Alerta:** (Si aplica) Hábitos problemáticos y por qué fallan
+
+**Niveles de rendimiento:**
+🔥 Excelente (≥80%): Mantén el momentum
+💪 Buen ritmo (60-79%): Identifica patrones
+📈 En desarrollo (40-59%): Enfócate en 1 hábito
+⚡ Necesita atención (<40%): Simplifica radicalmente
+
+**Nota:** El asistente es DIRECTO y HONESTO. Si vas mal, te lo dirá claramente. No encontrarás motivación vacía, solo feedback accionable.""",
+        section: "ai_features",
+        order: 5,
+      ),
+      AppGuideModel(
+        id: 6,
+        title: "Modificando Días Pasados",
+        content: """A veces olvidas marcar un hábito que sí completaste. Habitiurs te permite corregir días pasados.
+
+**Cómo modificar un día pasado:**
+1. Ve a la cuadrícula semanal en la página principal
+2. **Mantén presionado** sobre la casilla del día que quieres modificar
+3. Se abrirá un modal con el nombre del hábito y la fecha
+4. Selecciona el nuevo estado: **Completado** o **Saltado**
+5. El cambio se guarda automáticamente
+
+**Restricciones:**
+• Solo puedes modificar días PASADOS (no el día actual ni futuros)
+• El día actual se modifica con un tap simple, no con mantener presionado
+
+**Caso de uso común:**
+"Ayer leí 10 páginas pero olvidé marcarlo. Ahora puedo mantener presionado sobre ese día y marcarlo como completado."
+
+**Tip:** Esto NO es para hacer trampa. La honestidad en el seguimiento es clave para el progreso real.""",
+        section: "features",
+        order: 6,
+      ),
+      AppGuideModel(
+        id: 7,
+        title: "Eliminando Hábitos",
+        content: """Si un hábito ya no te sirve o quieres reemplazarlo, puedes eliminarlo fácilmente.
+
+**Cómo eliminar un hábito:**
+1. Ve a la cuadrícula semanal
+2. **Mantén presionado sobre el número** del hábito (lado izquierdo)
+3. Aparecerá un diálogo de confirmación
+4. Confirma la eliminación
+
+**⚠️ Advertencia:**
+Esta acción es IRREVERSIBLE. Se eliminarán:
+• El hábito
+• Todo su historial de registros
+• Sus estadísticas asociadas
+
+**Alternativa:**
+Si solo quieres "pausar" un hábito temporalmente, considera simplemente no marcarlo en lugar de eliminarlo. Así conservas tu historial.
+
+**Mejor práctica:**
+Mantén solo 3-5 hábitos activos. La calidad supera la cantidad.""",
+        section: "features",
+        order: 7,
+      ),
+      AppGuideModel(
+        id: 8,
         title: "Mejores Prácticas",
         content: """**1. Comienza pequeño**
 Es mejor ser consistente con hábitos pequeños que fallar con hábitos grandes. Aplica la regla de los 2 minutos.
 
-**2. Sé honesto contigo mismo**
-Marca "No realizado" cuando corresponda. La honestidad en el seguimiento es crucial para el progreso real.
+**2. Usa la evaluación de IA al crear hábitos**
+Deja que la IA valide que tu hábito sea una acción concreta, repetible y medible.
 
-**3. Enfócate en la constancia, no en la perfección**
+**3. Sé honesto contigo mismo**
+Marca "Saltado" cuando corresponda. La honestidad en el seguimiento es crucial para el progreso real.
+
+**4. Revisa el Asistente de IA regularmente**
+Usa sus recomendaciones para ajustar tu estrategia. Si te dice que estás sobrecargado, escucha.
+
+**5. Enfócate en la constancia, no en la perfección**
 El objetivo no es nunca fallar, sino aparecer consistentemente. Una semana con 6/7 días es mejor que una semana perfecta seguida de dos semanas sin registro.
 
-**4. Revisa tus estadísticas regularmente**
-Usa las estadísticas semanalmente para identificar patrones y ajustar tu estrategia.
+**6. Usa las estadísticas para identificar patrones**
+¿Siempre fallas los fines de semana? Prepara una estrategia específica para esos días.
 
-**5. Mantén tus hábitos actualizados**
-Elimina hábitos que ya no te sirven y agrega nuevos gradualmente. 3-5 hábitos activos es un buen número para empezar.
+**7. Mantén 3-5 hábitos activos**
+Más hábitos = energía dispersa. La calidad supera la cantidad.
 
-**6. Usa el contexto de días**
-La cuadrícula te muestra el día de la semana. Usa esta información para identificar si ciertos días son más desafiantes.""",
+**8. Corrige errores del pasado**
+Si olvidaste marcar un hábito completado, usa el mantener presionado para corregirlo.""",
         section: "best_practices",
-        order: 4,
+        order: 8,
       ),
     ];
   }
