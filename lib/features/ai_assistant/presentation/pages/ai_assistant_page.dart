@@ -1,7 +1,6 @@
 // lib/features/ai_assistant/presentation/pages/ai_assistant_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../core/di/injection_container.dart';
 import '../bloc/ai_assistant_bloc.dart';
 import '../bloc/ai_assistant_event.dart';
 import '../bloc/ai_assistant_state.dart';
@@ -14,10 +13,9 @@ class AIAssistantPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return BlocProvider(
-      create: (context) => InjectionContainer().aiAssistantBloc..add(LoadAIAssistantData()),
-      child: const _AIAssistantContent(),
-    );
+    // FIXED: Removed local BlocProvider to use the global one from AppPage
+    // This allows MainPage to access the same AIAssistantBloc instance
+    return const _AIAssistantContent();
   }
 }
 
@@ -31,9 +29,11 @@ class _AIAssistantContent extends StatelessWidget {
         return switch (state) {
           AIAssistantLoading() => const _LoadingView(),
           AIAssistantError() => _ErrorView(
-              message: state.message,
-              onRetry: () => context.read<AIAssistantBloc>().add(LoadAIAssistantData()),
-            ),
+            message: state.message,
+            onRetry:
+                () =>
+                    context.read<AIAssistantBloc>().add(LoadAIAssistantData()),
+          ),
           AIAssistantLoaded() => _LoadedView(state: state),
           _ => const _InitialView(),
         };
@@ -55,10 +55,7 @@ class _ErrorView extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
 
-  const _ErrorView({
-    required this.message,
-    required this.onRetry,
-  });
+  const _ErrorView({required this.message, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -79,10 +76,7 @@ class _ErrorView extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: onRetry,
-            child: const Text('Reintentar'),
-          ),
+          ElevatedButton(onPressed: onRetry, child: const Text('Reintentar')),
         ],
       ),
     );
@@ -96,27 +90,19 @@ class _LoadedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        context.read<AIAssistantBloc>().add(LoadAIAssistantData());
-      },
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            AIRecommendationSection(
-              recommendation: state.currentRecommendation,
-              isLoading: state.isRecommendationLoading,
-              hasInternetConnection: state.hasInternetConnection,
-              onRefresh: () {
-                context.read<AIAssistantBloc>().add(RefreshAIRecommendation());
-              },
-            ),
-            EducationalContentSection(content: state.educationalContent),
-            AppGuideSection(guides: state.appGuides),
-            const SizedBox(height: 16),
-          ],
-        ),
+    return SingleChildScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
+        children: [
+          AIRecommendationSection(
+            recommendation: state.currentRecommendation,
+            isLoading: state.isRecommendationLoading,
+            hasInternetConnection: state.hasInternetConnection,
+          ),
+          EducationalContentSection(content: state.educationalContent),
+          AppGuideSection(guides: state.appGuides),
+          const SizedBox(height: 16),
+        ],
       ),
     );
   }

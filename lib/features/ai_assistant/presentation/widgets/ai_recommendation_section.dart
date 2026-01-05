@@ -6,14 +6,12 @@ class AIRecommendationSection extends StatelessWidget {
   final AIResponse? recommendation;
   final bool isLoading;
   final bool hasInternetConnection;
-  final VoidCallback onRefresh;
 
   const AIRecommendationSection({
     Key? key,
     this.recommendation,
     this.isLoading = false,
     this.hasInternetConnection = false,
-    required this.onRefresh,
   }) : super(key: key);
 
   @override
@@ -25,10 +23,7 @@ class AIRecommendationSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Header(
-              isLoading: isLoading,
-              onRefresh: onRefresh,
-            ),
+            _Header(isLoading: isLoading),
             const SizedBox(height: 8),
             _ConnectionStatus(hasInternetConnection: hasInternetConnection),
             const SizedBox(height: 16),
@@ -45,12 +40,8 @@ class AIRecommendationSection extends StatelessWidget {
 
 class _Header extends StatelessWidget {
   final bool isLoading;
-  final VoidCallback onRefresh;
 
-  const _Header({
-    required this.isLoading,
-    required this.onRefresh,
-  });
+  const _Header({required this.isLoading});
 
   @override
   Widget build(BuildContext context) {
@@ -64,14 +55,10 @@ class _Header extends StatelessWidget {
         Expanded(
           child: Text(
             'Asistente IA Personalizado',
-            style: Theme.of(context).textTheme.titleLarge?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
           ),
-        ),
-        IconButton(
-          icon: const Icon(Icons.refresh),
-          onPressed: isLoading ? null : onRefresh,
         ),
       ],
     );
@@ -94,12 +81,13 @@ class _ConnectionStatus extends StatelessWidget {
         ),
         const SizedBox(width: 4),
         Text(
-          hasInternetConnection 
-              ? 'Conectado con Gemini AI' 
+          hasInternetConnection
+              ? 'Conectado con Gemini AI'
               : 'Modo offline - Consejos locales',
           style: TextStyle(
             fontSize: 12,
-            color: hasInternetConnection ? Colors.green[600] : Colors.orange[600],
+            color:
+                hasInternetConnection ? Colors.green[600] : Colors.orange[600],
           ),
         ),
       ],
@@ -182,7 +170,7 @@ class _RecommendationCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isFromAI = recommendation.isFromAI;
-    
+
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -202,10 +190,7 @@ class _RecommendationCard extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             recommendation.content,
-            style: const TextStyle(
-              fontSize: 13,
-              height: 1.4,
-            ),
+            style: const TextStyle(fontSize: 13, height: 1.4),
           ),
         ],
       ),
@@ -243,10 +228,7 @@ class _RecommendationHeader extends StatelessWidget {
         const Spacer(),
         Text(
           _formatTime(timestamp),
-          style: TextStyle(
-            fontSize: 10,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
         ),
       ],
     );
@@ -255,7 +237,7 @@ class _RecommendationHeader extends StatelessWidget {
   String _formatTime(DateTime timestamp) {
     final now = DateTime.now();
     final difference = now.difference(timestamp);
-    
+
     if (difference.inMinutes < 1) {
       return 'Ahora';
     } else if (difference.inHours < 1) {

@@ -36,16 +36,20 @@ class HabitRepositoryImpl implements HabitRepository {
   Future<void> deleteHabit(int id, String userId) async {
     try {
       // 1. Eliminar localmente el hábito y sus entradas relacionadas
-      await localDataSource.deleteHabit(id); 
+      await localDataSource.deleteHabit(id);
       print('✅ [HabitRepository] Hábito $id eliminado localmente.');
 
       // 2. Solicitar la eliminación remota del hábito.
       // Se utiliza `deleteHabitRemotely` para una eliminación completa en la nube.
       await _syncRepository.deleteHabitRemotely(userId, id);
-      print('✅ [HabitRepository] Solicitada eliminación remota para hábito $id.');
+      print(
+        '✅ [HabitRepository] Solicitada eliminación remota para hábito $id.',
+      );
     } catch (e, stackTrace) {
       // Captura cualquier error que provenga de la eliminación local o remota
-      print('❌ [HabitRepository] Error CRÍTICO al eliminar hábito $id: $e\n$stackTrace');
+      print(
+        '❌ [HabitRepository] Error CRÍTICO al eliminar hábito $id: $e\n$stackTrace',
+      );
       rethrow; // Propaga la excepción para que sea manejada por el BLoC
     }
   }
@@ -53,7 +57,10 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<List<HabitEntry>> getHabitEntriesForWeek(DateTime startOfWeek) async {
     final endOfWeek = startOfWeek.add(const Duration(days: 6));
-    return await localDataSource.getHabitEntriesForDateRange(startOfWeek, endOfWeek);
+    return await localDataSource.getHabitEntriesForDateRange(
+      startOfWeek,
+      endOfWeek,
+    );
   }
 
   @override
@@ -62,11 +69,18 @@ class HabitRepositoryImpl implements HabitRepository {
   }
 
   @override
-  Future<void> updateHabitEntryStatus(int habitId, DateTime date, HabitStatus status) async {
+  Future<void> updateHabitEntryStatus(
+    int habitId,
+    DateTime date,
+    HabitStatus status,
+  ) async {
     // Normalizar fecha al inicio del día para evitar problemas de precision
     final normalizedDate = AppDateUtils.getStartOfDay(date);
 
-    final existingEntry = await localDataSource.getHabitEntryForDate(habitId, normalizedDate);
+    final existingEntry = await localDataSource.getHabitEntryForDate(
+      habitId,
+      normalizedDate,
+    );
 
     if (existingEntry != null) {
       final updatedEntry = HabitEntryModel(
@@ -89,10 +103,26 @@ class HabitRepositoryImpl implements HabitRepository {
         await localDataSource.insertHabitEntry(newEntry);
       }
     }
+
+    // FASE 1: IMPROVED SYNC RELIABILITY
+    // Force immediate sync of entries to cloud to prevent data loss if app is closed.
+    // We don't await the result to avoid blocking UI, but we trigger it.
+    _syncRepository.syncEntriesOnly().then((success) {
+      if (!success)
+        print(
+          '⚠️ [HabitRepo] Immediate sync after update failed, will retry later.',
+        );
+    });
   }
 
   @override
-  Future<List<HabitEntry>> getHabitEntriesForDateRange(DateTime startDate, DateTime endDate) async {
-    return await localDataSource.getHabitEntriesForDateRange(startDate, endDate);
+  Future<List<HabitEntry>> getHabitEntriesForDateRange(
+    DateTime startDate,
+    DateTime endDate,
+  ) async {
+    return await localDataSource.getHabitEntriesForDateRange(
+      startDate,
+      endDate,
+    );
   }
 }

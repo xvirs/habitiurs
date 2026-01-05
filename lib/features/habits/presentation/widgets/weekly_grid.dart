@@ -71,11 +71,11 @@ class WeeklyGrid extends StatelessWidget {
     if (isLoading) {
       return const _LoadingState();
     }
-    
+
     if (habits.isEmpty) {
       return const _EmptyState();
     }
-    
+
     return _HabitsGrid(
       habits: habits,
       weekDates: weekDates,
@@ -92,18 +92,14 @@ class _HeaderSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Row(
         children: [
           _VerticalAccent(color: theme.colorScheme.primary),
           const SizedBox(width: 12),
-          Icon(
-            Icons.view_week,
-            color: theme.colorScheme.primary,
-            size: 20,
-          ),
+          Icon(Icons.view_week, color: theme.colorScheme.primary, size: 20),
           const SizedBox(width: 8),
           Expanded(
             child: Text(
@@ -113,10 +109,7 @@ class _HeaderSection extends StatelessWidget {
               ),
             ),
           ),
-          _DateRange(
-            startDay: weekDates.first.day,
-            endDay: weekDates.last.day,
-          ),
+          _DateRange(startDay: weekDates.first.day, endDay: weekDates.last.day),
         ],
       ),
     );
@@ -145,10 +138,7 @@ class _DateRange extends StatelessWidget {
   final int startDay;
   final int endDay;
 
-  const _DateRange({
-    required this.startDay,
-    required this.endDay,
-  });
+  const _DateRange({required this.startDay, required this.endDay});
 
   @override
   Widget build(BuildContext context) {
@@ -213,16 +203,17 @@ class _DayColumn extends StatelessWidget {
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 6),
-      decoration: isToday
-          ? BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: primaryColor.withOpacity(0.8),
-                  width: 1.5,
+      decoration:
+          isToday
+              ? BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: primaryColor.withOpacity(0.8),
+                    width: 1.5,
+                  ),
                 ),
-              ),
-            )
-          : null,
+              )
+              : null,
       child: Column(
         children: [
           Text(
@@ -265,23 +256,24 @@ class _HabitsGrid extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
-        children: habits.asMap().entries.map((entry) {
-          final index = entry.key;
-          final habit = entry.value;
-          final isLast = index == habits.length - 1;
+        children:
+            habits.asMap().entries.map((entry) {
+              final index = entry.key;
+              final habit = entry.value;
+              final isLast = index == habits.length - 1;
 
-          return Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
-              child: _HabitRow(
-                habit: habit,
-                index: index,
-                weekDates: weekDates,
-                weekEntries: weekEntries,
-              ),
-            ),
-          );
-        }).toList(),
+              return Expanded(
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
+                  child: _HabitRow(
+                    habit: habit,
+                    index: index,
+                    weekDates: weekDates,
+                    weekEntries: weekEntries,
+                  ),
+                ),
+              );
+            }).toList(),
       ),
     );
   }
@@ -309,13 +301,16 @@ class _HabitRow extends StatelessWidget {
           color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(width: 4),
-        ...weekDates.map((date) => Expanded(
-          child: _StatusCell(
-            habitId: habit.id!,
-            date: date,
-            weekEntries: weekEntries,
+        ...weekDates.map(
+          (date) => Expanded(
+            child: _StatusCell(
+              habitId: habit.id!,
+              createdAt: habit.createdAt, // Pass creation date
+              date: date,
+              weekEntries: weekEntries,
+            ),
           ),
-        )),
+        ),
       ],
     );
   }
@@ -325,10 +320,7 @@ class _HabitNumber extends StatelessWidget {
   final int number;
   final Color color;
 
-  const _HabitNumber({
-    required this.number,
-    required this.color,
-  });
+  const _HabitNumber({required this.number, required this.color});
 
   @override
   Widget build(BuildContext context) {
@@ -355,11 +347,14 @@ class _HabitNumber extends StatelessWidget {
 
 class _StatusCell extends StatelessWidget {
   final int habitId;
+  final DateTime?
+  createdAt; // Accepted nullable just in case, but domain should have it
   final DateTime date;
   final List<HabitEntry> weekEntries;
 
   const _StatusCell({
     required this.habitId,
+    required this.createdAt,
     required this.date,
     required this.weekEntries,
   });
@@ -377,12 +372,13 @@ class _StatusCell extends StatelessWidget {
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
         color: _getStatusColor(status),
-        border: isToday
-            ? Border.all(
-                color: Theme.of(context).colorScheme.primary,
-                width: 2,
-              )
-            : null,
+        border:
+            isToday
+                ? Border.all(
+                  color: Theme.of(context).colorScheme.primary,
+                  width: 2,
+                )
+                : null,
         borderRadius: BorderRadius.circular(4),
       ),
     );
@@ -425,10 +421,21 @@ class _StatusCell extends StatelessWidget {
     // Si es un día futuro, mostrar como pending
     if (AppDateUtils.isFutureDate(date)) return HabitStatus.pending;
 
+    // LÓGICA DE INCORPORACIÓN: GRIS ANTES DE CREAR
+    // Si la fecha es anterior a la creación del hábito, mostrar como pending (Gris),
+    // no como skipped (Rojo).
+    if (createdAt != null) {
+      final normalizedCreatedAt = AppDateUtils.getStartOfDay(createdAt!);
+      final normalizedDate = AppDateUtils.getStartOfDay(date);
+      if (normalizedDate.isBefore(normalizedCreatedAt)) {
+        return HabitStatus.pending;
+      }
+    }
+
     // Si es el día actual sin entrada, mostrar como pending
     if (AppDateUtils.isToday(date)) return HabitStatus.pending;
 
-    // Si es un día pasado sin entrada, mostrar como skipped
+    // Si es un día pasado sin entrada (y posterior a la creación), mostrar como skipped (Rojo)
     if (AppDateUtils.isPastDate(date)) return HabitStatus.skipped;
 
     return HabitStatus.pending;
@@ -492,7 +499,7 @@ class _EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

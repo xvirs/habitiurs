@@ -16,17 +16,6 @@ class StatisticsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // FIXED: Se remueve el BlocProvider local. StatisticsBloc ya es provisto por AppPage.
-    return StatisticsContent();
-  }
-}
-
-class StatisticsContent extends StatelessWidget {
-  const StatisticsContent({Key? key}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    // Fixed: Ahora usa BlocBuilder directamente ya que el BlocProvider está en AppPage.
     return BlocBuilder<StatisticsBloc, StatisticsState>(
       builder: (context, state) {
         if (state is StatisticsLoading) {
@@ -53,7 +42,6 @@ class StatisticsContent extends StatelessWidget {
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () {
-                    // FIXED: Disparar LoadStatistics a través del contexto
                     context.read<StatisticsBloc>().add(LoadStatistics());
                   },
                   child: const Text('Reintentar'),
@@ -64,39 +52,30 @@ class StatisticsContent extends StatelessWidget {
         }
 
         if (state is StatisticsLoaded) {
-          return Expanded(
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 600),
+          return Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
-                  padding: const EdgeInsets.only(top: 16.0),
-                  child: RefreshIndicator(
-                    onRefresh: () async {
-                      print('🔄 [StatisticsPage] Pull-to-refresh activado');
-                      if (context.mounted) {
-                        context.read<StatisticsBloc>().add(RefreshStatistics());
-                      }
-                    },
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(
-                          child: CurrentMonthSummary(
-                            statistics: state.currentMonth,
-                          ),
-                        ),
-                        Flexible(
-                          flex: 1,
-                          child: YearlyStatisticsList(
-                            statistics: state.currentYear,
-                          ),
-                        ),
-                        Expanded(
-                          flex: 2,
-                          child: HistoricalChart(data: state.historicalData),
-                        ),
-                      ],
-                    ),
+                  padding: const EdgeInsets.symmetric(vertical: 16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      CurrentMonthSummary(
+                        statistics: state.currentMonth,
+                        isRefreshing: state.isRefreshing,
+                      ),
+                      YearlyStatisticsList(
+                        statistics: state.currentYear,
+                        isRefreshing: state.isRefreshing,
+                      ),
+                      HistoricalChart(
+                        data: state.historicalData,
+                        isRefreshing: state.isRefreshing,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
                   ),
                 ),
               ),

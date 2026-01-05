@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_event.dart';
+import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_state.dart'; // Added
 import 'package:habitiurs/features/ai_assistant/presentation/pages/ai_assistant_page.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_bloc.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_event.dart';
@@ -10,6 +11,7 @@ import 'package:habitiurs/features/habits/presentation/bloc/habit_state.dart';
 import 'package:habitiurs/features/habits/presentation/pages/habits_page.dart';
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_bloc.dart';
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_event.dart';
+import 'package:habitiurs/features/statistics/presentation/bloc/statistics_state.dart'; // Added
 import 'package:habitiurs/features/statistics/presentation/pages/statistics_page.dart';
 import '../../../../shared/widgets/user_drawer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
@@ -26,6 +28,7 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 1;
   StreamSubscription? _authBlocSyncSubscription;
+  final Set<int> _visitedTabs = {1}; // Start with Habits tab as visited
 
   static const List<String> _pageTitles = [
     'Asistente IA',
@@ -96,7 +99,11 @@ class _MainPageState extends State<MainPage> {
       setState(() {
         _currentIndex = index;
       });
-      _loadDataForTab(index);
+      // Solo cargar datos si es la primera vez que se visita esta pestaña
+      if (!_visitedTabs.contains(index)) {
+        _visitedTabs.add(index);
+        _loadDataForTab(index);
+      }
     }
   }
 
@@ -126,11 +133,7 @@ class _MainPageState extends State<MainPage> {
       drawer: UserDrawer(onDataSynced: _refreshCurrentTab),
       body: IndexedStack(
         index: _currentIndex,
-        children: const [
-          AIAssistantPage(),
-          HabitsPage(),
-          StatisticsPage(),
-        ],
+        children: const [AIAssistantPage(), HabitsPage(), StatisticsPage()],
       ),
       bottomNavigationBar: _BottomNavBar(
         currentIndex: _currentIndex,
@@ -144,34 +147,63 @@ class _RefreshButton extends StatelessWidget {
   final int currentIndex;
   final VoidCallback onRefresh;
 
-  const _RefreshButton({
-    required this.currentIndex,
-    required this.onRefresh,
-  });
+  const _RefreshButton({required this.currentIndex, required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
     return switch (currentIndex) {
-      1 => _HabitsRefreshButton(onRefresh: onRefresh), // Solo para hábitos por ahora
-      _ => _SimpleRefreshButton(onRefresh: onRefresh), // Para el resto
+      0 => _AIRefreshButton(onRefresh: onRefresh),
+      1 => _HabitsRefreshButton(onRefresh: onRefresh),
+      2 => _StatisticsRefreshButton(onRefresh: onRefresh),
+      _ => _RefreshIconButton(
+        isLoading: false,
+        onPressed: onRefresh,
+        loadingTooltip: '',
+        normalTooltip: 'Actualizar',
+      ),
     };
   }
 }
 
-class _SimpleRefreshButton extends StatelessWidget {
+class _AIRefreshButton extends StatelessWidget {
   final VoidCallback onRefresh;
 
-  const _SimpleRefreshButton({required this.onRefresh});
+  const _AIRefreshButton({required this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
-    return IconButton(
-      onPressed: onRefresh,
-      tooltip: 'Actualizar datos',
-      icon: Icon(
-        Icons.refresh,
-        color: Theme.of(context).colorScheme.primary,
-      ),
+    return BlocBuilder<AIAssistantBloc, AIAssistantState>(
+      builder: (context, state) {
+        final isLoading =
+            state is AIAssistantLoaded && state.isRecommendationLoading;
+        return _RefreshIconButton(
+          isLoading: isLoading,
+          onPressed: isLoading ? null : onRefresh,
+          loadingTooltip: 'Generando recomendación...',
+          normalTooltip: 'Nueva recomendación',
+        );
+      },
+    );
+  }
+}
+
+class _StatisticsRefreshButton extends StatelessWidget {
+  final VoidCallback onRefresh;
+
+  const _StatisticsRefreshButton({required this.onRefresh});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<StatisticsBloc, StatisticsState>(
+      builder: (context, state) {
+        final isLoading = state is StatisticsLoaded && state.isRefreshing;
+        return _RefreshIconButton(
+          isLoading: isLoading,
+          onPressed: isLoading ? null : onRefresh,
+          loadingTooltip: 'Actualizando estadísticas...',
+          normalTooltip: 'Actualizar estadísticas',
+        );
+      },
     );
   }
 }
@@ -186,12 +218,14 @@ class _HabitsRefreshButton extends StatelessWidget {
     return BlocBuilder<HabitBloc, HabitState>(
       builder: (context, state) {
         final isLoading = state is HabitLoaded && state.isRefreshing;
-        
+        // También mostrar loading si se está cargando inicialmente no cubierto por el esqueleto
+        final isGlobalLoading = state is HabitLoading;
+
         return _RefreshIconButton(
-          isLoading: isLoading,
-          onPressed: isLoading ? null : onRefresh,
+          isLoading: isLoading || isGlobalLoading,
+          onPressed: (isLoading || isGlobalLoading) ? null : onRefresh,
           loadingTooltip: 'Actualizando hábitos...',
-          normalTooltip: 'Actualizar datos',
+          normalTooltip: 'Actualizar hábitos',
         );
       },
     );
@@ -214,23 +248,21 @@ class _RefreshIconButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return IconButton(
       onPressed: onPressed,
       tooltip: isLoading ? loadingTooltip : normalTooltip,
-      icon: isLoading
-          ? SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(
-                strokeWidth: 2,
-                color: theme.colorScheme.primary,
-              ),
-            )
-          : Icon(
-              Icons.refresh,
-              color: theme.colorScheme.primary,
-            ),
+      icon:
+          isLoading
+              ? SizedBox(
+                width: 18,
+                height: 18,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: theme.colorScheme.primary,
+                ),
+              )
+              : Icon(Icons.refresh, color: theme.colorScheme.primary),
     );
   }
 }
@@ -255,13 +287,14 @@ class _UserAvatar extends StatelessWidget {
         final user = state.user;
         return _AvatarContainer(
           photoURL: user.photoURL,
-          child: user.photoURL == null
-              ? Icon(
-                  user.isGuest ? Icons.person_outline : Icons.person,
-                  size: 20,
-                  color: Theme.of(context).colorScheme.primary,
-                )
-              : null,
+          child:
+              user.photoURL == null
+                  ? Icon(
+                    user.isGuest ? Icons.person_outline : Icons.person,
+                    size: 20,
+                    color: Theme.of(context).colorScheme.primary,
+                  )
+                  : null,
         );
       },
     );
@@ -272,15 +305,12 @@ class _AvatarContainer extends StatelessWidget {
   final String? photoURL;
   final Widget? child;
 
-  const _AvatarContainer({
-    this.photoURL,
-    this.child,
-  });
+  const _AvatarContainer({this.photoURL, this.child});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return GestureDetector(
       onTap: () => Scaffold.of(context).openDrawer(),
       child: Container(
@@ -306,10 +336,7 @@ class _BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onTap;
 
-  const _BottomNavBar({
-    required this.currentIndex,
-    required this.onTap,
-  });
+  const _BottomNavBar({required this.currentIndex, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
