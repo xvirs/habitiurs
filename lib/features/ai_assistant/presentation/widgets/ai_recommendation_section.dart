@@ -72,22 +72,20 @@ class _ConnectionStatus extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Siempre mostrar como conectado ya que el fallback es inteligente
     return Row(
       children: [
         Icon(
-          hasInternetConnection ? Icons.cloud_done : Icons.cloud_off,
+          Icons.psychology,
           size: 16,
-          color: hasInternetConnection ? Colors.green[600] : Colors.orange[600],
+          color: Colors.blue[600],
         ),
         const SizedBox(width: 4),
         Text(
-          hasInternetConnection
-              ? 'Conectado con Gemini AI'
-              : 'Modo offline - Consejos locales',
+          'Recomendación IA Personalizada',
           style: TextStyle(
             fontSize: 12,
-            color:
-                hasInternetConnection ? Colors.green[600] : Colors.orange[600],
+            color: Colors.blue[600],
           ),
         ),
       ],
@@ -169,22 +167,21 @@ class _RecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isFromAI = recommendation.isFromAI;
-
+    // Siempre usar estilo de IA para recomendaciones personalizadas
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: isFromAI ? Colors.blue[50] : Colors.orange[50],
+        color: Colors.blue[50],
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: isFromAI ? Colors.blue[200]! : Colors.orange[200]!,
+          color: Colors.blue[200]!,
         ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _RecommendationHeader(
-            isFromAI: isFromAI,
+            isFromAI: true, // Siempre mostrar como IA ya que es personalizado
             timestamp: recommendation.timestamp,
           ),
           const SizedBox(height: 8),

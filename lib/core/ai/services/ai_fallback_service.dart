@@ -9,9 +9,9 @@ class AIFallbackService {
   Future<AIResponse> generateFallbackResponse(AIRequest request) async {
     // Simular delay para UX realista
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     final content = _getFallbackContent(request.type, request.metadata);
-    
+
     return AIResponse(
       id: 'fallback_${DateTime.now().millisecondsSinceEpoch}',
       content: content,
@@ -127,22 +127,45 @@ class AIFallbackService {
   // AI ASSISTANT FALLBACKS
   String _getPersonalRecommendationFallback(Map<String, dynamic> metadata) {
     final performanceLevel = metadata['performance_level'] as String?;
-    final currentStreak = metadata['current_streak'] as int?;
-    
-    if (performanceLevel == 'excellent') {
-      return '¡Excelente trabajo! Tu consistencia es admirable. Para mantener este nivel, considera variar ocasionalmente tus rutinas para evitar monotonía y celebra tus logros regularmente.';
-    } else if (performanceLevel == 'good') {
-      return 'Vas por buen camino. Tu progreso es sólido y constante. Para el siguiente nivel, enfócate en optimizar tu rutina matutina y prepara estrategias para días desafiantes.';
-    } else if (currentStreak != null && currentStreak > 0) {
-      return 'Tu racha de ${currentStreak} días muestra compromiso real. Los hábitos se están consolidando. Mantén la simplicidad y enfócate en aparecer todos los días, incluso en versiones mínimas.';
+    final currentStreak = metadata['current_streak'] as int? ?? 0;
+    final habitNames = metadata['habit_names'] as List?;
+    final strugglingHabits = metadata['struggling_habits'] as List?;
+    final avgCompletionRate = metadata['average_completion_rate'] as double? ?? 0.0;
+
+    // Construir mensaje personalizado basado en los datos reales
+    final hasHabits = habitNames != null && habitNames.isNotEmpty;
+    final hasStrugglingHabits = strugglingHabits != null && strugglingHabits.isNotEmpty;
+
+    // Caso: Sin hábitos aún
+    if (!hasHabits) {
+      return '¡Bienvenido a Habitiurs! Comienza creando tu primer hábito. Recuerda empezar con algo pequeño y específico. Los grandes cambios comienzan con pequeñas acciones consistentes.';
     }
-    
-    final fallbacks = [
-      'Recuerda que los hábitos pequeños y consistentes superan a los grandes y esporádicos. Si has fallado algunos días, simplemente vuelve a empezar mañana. Lo importante es la tendencia general, no la perfección absoluta.',
-      'Identifica qué está funcionando bien en tus hábitos actuales y trata de aplicar esas mismas estrategias a los hábitos que te cuestan más trabajo. A menudo, el éxito en un área puede transferirse a otras.',
-      'Considera revisar tus hábitos actuales. ¿Siguen siendo relevantes para tus objetivos? A veces es mejor enfocarse en 2-3 hábitos importantes que intentar mantener muchos a medias. La calidad supera a la cantidad.',
-    ];
-    return fallbacks[DateTime.now().second % fallbacks.length];
+
+    // Caso: Excelente rendimiento
+    if (performanceLevel == 'excellent' || avgCompletionRate >= 0.8) {
+      return '¡Excelente trabajo! Con ${(avgCompletionRate * 100).toStringAsFixed(0)}% de cumplimiento, tu consistencia es admirable. ${currentStreak > 0 ? "Tu racha de $currentStreak días lo demuestra. " : ""}Sigue así y considera agregar gradualmente nuevos desafíos.';
+    }
+
+    // Caso: Buen rendimiento
+    if (performanceLevel == 'good' || avgCompletionRate >= 0.6) {
+      return 'Vas por buen camino con ${(avgCompletionRate * 100).toStringAsFixed(0)}% de cumplimiento. ${currentStreak > 0 ? "Tu racha de $currentStreak días muestra compromiso. " : ""}Para mejorar, enfócate en tus rutinas matutinas y prepara estrategias para días difíciles.';
+    }
+
+    // Caso: Rendimiento en mejora
+    if (performanceLevel == 'improving' || avgCompletionRate >= 0.4) {
+      if (hasStrugglingHabits) {
+        return 'Estás progresando (${(avgCompletionRate * 100).toStringAsFixed(0)}%). Los hábitos "${strugglingHabits.take(2).join(', ')}" necesitan atención. Prueba simplificarlos y establecer recordatorios específicos. ${currentStreak > 0 ? "Tu racha de $currentStreak días es un buen inicio." : "Enfócate en construir una racha pequeña primero."}';
+      }
+      return 'Con ${(avgCompletionRate * 100).toStringAsFixed(0)}% de cumplimiento, vas mejorando. ${currentStreak > 0 ? "Tu racha de $currentStreak días muestra que estás construyendo momentum. " : ""}Mantén la consistencia y los resultados vendrán con el tiempo.';
+    }
+
+    // Caso: Necesita enfoque
+    if (hasStrugglingHabits) {
+      return 'Es momento de reevaluar. ${strugglingHabits.length > 1 ? "Varios hábitos" : "El hábito \"${strugglingHabits.first}\""} necesita${strugglingHabits.length > 1 ? "n" : ""} ajustes. Simplifica tus objetivos, reduce la cantidad de hábitos activos y enfócate en 1-2 que realmente importan. La calidad supera la cantidad.';
+    }
+
+    // Fallback final con datos del contexto
+    return 'Con ${habitNames.length} ${habitNames.length == 1 ? "hábito" : "hábitos"} activos, tienes ${(avgCompletionRate * 100).toStringAsFixed(0)}% de cumplimiento. ${currentStreak > 0 ? "Tu racha de $currentStreak días es un buen comienzo. " : ""}Recuerda: los hábitos pequeños y consistentes superan a los grandes y esporádicos. Enfócate en aparecer cada día.';
   }
 
   String _getMotivationalMessageFallback(Map<String, dynamic> metadata) {

@@ -19,17 +19,23 @@ class AIRepository {
   Future<AIResponse> generateResponse(AIRequest request) async {
     try {
       final hasConnection = await _geminiService.checkConnectivity();
-      
+
       if (hasConnection) {
         try {
-          return await _geminiService.generateContent(request);
+          final response = await _geminiService.generateContent(request);
+          return response;
         } catch (e) {
+          // Log solo si es un error crítico (no rate limit)
+          if (!e.toString().contains('Límite de API')) {
+            print('⚠️ [AIRepository] Gemini API error: $e');
+          }
           return await _fallbackService.generateFallbackResponse(request);
         }
       } else {
         return await _fallbackService.generateFallbackResponse(request);
       }
     } catch (e) {
+      print('❌ [AIRepository] Critical error: $e');
       return await _fallbackService.generateFallbackResponse(request);
     }
   }

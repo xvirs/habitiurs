@@ -42,7 +42,7 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
   Future<AIResponse> getAIRecommendation() async {
     try {
       final userContext = await _generateUserContext();
-      
+
       final aiContext = AIContextBuilder.buildPersonalRecommendationContext(
         habitNames: userContext['habit_names'] ?? [],
         completionRates: Map<String, double>.from(userContext['completion_rates'] ?? {}),
