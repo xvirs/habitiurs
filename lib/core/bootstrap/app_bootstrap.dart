@@ -2,6 +2,7 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:habitiurs/core/errors/app_error.dart';
 import '../di/injection_container.dart';
+import '../notifications/notification_service.dart';
 import '../../firebase_options.dart';
 import 'app_state.dart';
 
@@ -9,10 +10,11 @@ class AppBootstrap {
   Future<AppState> initialize() async {
     try {
       print('🚀 [Bootstrap] Iniciando aplicación...');
-      
+
       await _initializeFirebase();
       await _initializeDependencies();
-      
+      await _initializeNotifications();
+
       print('✅ [Bootstrap] Inicialización exitosa');
       return AppState.success();
       
@@ -49,6 +51,16 @@ class AppBootstrap {
     } catch (e) {
       print('⚠️ [Bootstrap] DI falló: $e');
       // Continuar con servicios básicos
+    }
+  }
+
+  Future<void> _initializeNotifications() async {
+    try {
+      await NotificationService().initialize();
+      print('✅ [Bootstrap] Notificaciones inicializadas');
+    } catch (e) {
+      print('⚠️ [Bootstrap] Notificaciones fallaron: $e');
+      // Continuar sin notificaciones
     }
   }
 }

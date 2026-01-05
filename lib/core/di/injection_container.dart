@@ -48,6 +48,15 @@ import '../../features/ai_assistant/domain/usecases/get_app_guides.dart';
 import '../../features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
 import '../../features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 
+// Settings
+import 'package:shared_preferences/shared_preferences.dart';
+import '../../features/settings/data/datasources/settings_local_datasource.dart';
+import '../../features/settings/data/repositories/settings_repository_impl.dart';
+import '../../features/settings/domain/repositories/settings_repository.dart';
+import '../../features/settings/domain/usecases/get_settings.dart';
+import '../../features/settings/domain/usecases/update_settings.dart';
+import '../../features/settings/presentation/bloc/settings_bloc.dart';
+
 class InjectionContainer {
   static final InjectionContainer _instance = InjectionContainer._internal();
   factory InjectionContainer() => _instance;
@@ -66,11 +75,13 @@ class InjectionContainer {
   late final HabitLocalDataSource _habitLocalDataSource;
   late final StatisticsLocalDatasource _statisticsLocalDatasource;
   late final OfflineContentDatasource _offlineContentDatasource;
+  late final SettingsLocalDatasource _settingsLocalDatasource;
 
   // Repositories
   late final HabitRepository _habitRepository;
   late final StatisticsRepository _statisticsRepository;
   late final AIAssistantRepository _aiAssistantRepository;
+  late final SettingsRepository _settingsRepository;
 
   // Auth Use Cases
   late final CheckAuthStatus _checkAuthStatus;
@@ -95,6 +106,10 @@ class InjectionContainer {
   late final GetEducationalContent _getEducationalContent;
   late final GetAppGuides _getAppGuides;
   late final GetAIRecommendation _getAIRecommendation;
+
+  // Settings Use Cases
+  late final GetSettings _getSettings;
+  late final UpdateSettings _updateSettings;
 
   bool _isInitialized = false;
 
@@ -127,7 +142,7 @@ class InjectionContainer {
     _databaseHelper = SqliteDatabaseHelper();
     await _databaseHelper.database;
 
-    _initializeDataSources();
+    await _initializeDataSources();
 
     _aiRepository = AIRepository();
 
@@ -157,12 +172,18 @@ class InjectionContainer {
     );
   }
 
-  void _initializeDataSources() {
+  Future<void> _initializeDataSources() async {
     _habitLocalDataSource = HabitLocalDataSourceImpl(_databaseHelper);
     _statisticsLocalDatasource = StatisticsLocalDatasourceImpl(
       databaseHelper: _databaseHelper,
     );
     _offlineContentDatasource = OfflineContentDatasourceImpl();
+
+    // Inicializar SharedPreferences para Settings
+    final sharedPreferences = await SharedPreferences.getInstance();
+    _settingsLocalDatasource = SettingsLocalDatasourceImpl(
+      sharedPreferences: sharedPreferences,
+    );
   }
 
   void _initializeRepositories() {
@@ -180,6 +201,10 @@ class InjectionContainer {
       aiRepository: _aiRepository,
       habitRepository: _habitRepository,
     );
+
+    _settingsRepository = SettingsRepositoryImpl(
+      localDatasource: _settingsLocalDatasource,
+    );
   }
 
   void _initializeUseCases() {
@@ -187,6 +212,7 @@ class InjectionContainer {
     _initializeHabitsUseCases();
     _initializeStatisticsUseCases();
     _initializeAIAssistantUseCases();
+    _initializeSettingsUseCases();
   }
 
   void _initializeAuthUseCases() {
@@ -222,6 +248,11 @@ class InjectionContainer {
     _getAIRecommendation = GetAIRecommendation(_aiAssistantRepository);
   }
 
+  void _initializeSettingsUseCases() {
+    _getSettings = GetSettings(_settingsRepository);
+    _updateSettings = UpdateSettings(_settingsRepository);
+  }
+
   // BLoC Getters
   AuthBloc get authBloc => AuthBloc(
     checkAuthStatus: _checkAuthStatus,
@@ -255,6 +286,11 @@ class InjectionContainer {
   HabitEvaluationCubit get habitEvaluationCubit =>
       HabitEvaluationCubit(aiRepository: _aiRepository);
 
+  SettingsBloc get settingsBloc => SettingsBloc(
+    getSettings: _getSettings,
+    updateSettings: _updateSettings,
+  );
+
   // Core Service Getters
   AIRepository get aiRepository => _aiRepository;
   IAuthService get authService => _authService;
@@ -268,6 +304,7 @@ class InjectionContainer {
   HabitRepository get habitRepository => _habitRepository;
   StatisticsRepository get statisticsRepository => _statisticsRepository;
   AIAssistantRepository get aiAssistantRepository => _aiAssistantRepository;
+  SettingsRepository get settingsRepository => _settingsRepository;
 
   Future<void> dispose() async {
     try {

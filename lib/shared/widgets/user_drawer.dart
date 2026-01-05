@@ -8,6 +8,9 @@ import '../../core/sync/models/sync_models.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_event.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
+import '../../features/settings/presentation/pages/settings_page.dart';
+import '../../features/settings/presentation/bloc/settings_bloc.dart';
+import '../../features/settings/presentation/bloc/settings_event.dart';
 
 class UserDrawer extends StatefulWidget {
   final VoidCallback? onDataSynced;
@@ -261,11 +264,19 @@ class _UserDrawerState extends State<UserDrawer> {
 
   void _handleSettingsTap(BuildContext context) {
     Navigator.pop(context);
-    // TODO: Navegar a página de configuración
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Configuración - Próximamente'),
-        duration: Duration(seconds: 2),
+
+    // Obtener el SettingsBloc del contenedor de inyección de dependencias
+    final settingsBloc = InjectionContainer().settingsBloc;
+
+    // Cargar configuración y navegar
+    settingsBloc.add(const LoadSettings());
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => BlocProvider.value(
+          value: settingsBloc,
+          child: const SettingsPage(),
+        ),
       ),
     );
   }

@@ -34,8 +34,15 @@ dependencies:
   
   # Utilidades
   intl: ^0.18.1
-  
-  # Inyección de dependencias  
+
+  # Notificaciones locales
+  flutter_local_notifications: ^17.2.3
+  timezone: ^0.9.4
+
+  # Persistencia de configuración
+  shared_preferences: ^2.2.2
+
+  # Inyección de dependencias
   get_it: ^7.6.7
 
 dev_dependencies:

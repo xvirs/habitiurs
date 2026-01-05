@@ -8,7 +8,9 @@ import '../../domain/usecases/toggle_habit_entry.dart';
 import '../../domain/usecases/update_past_habit_entry.dart';
 import '../../domain/usecases/delete_habit.dart';
 import '../../domain/services/habit_validation_service.dart';
+import '../../../../shared/enums/habit_status.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../../../core/notifications/notification_service.dart';
 import 'habit_event.dart';
 import 'habit_state.dart';
 
@@ -198,6 +200,9 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     // Combinar entradas existentes con las generadas
     final allEntries = [...validationResult.validEntries, ...missingEntries];
 
+    // Programar notificación para hábitos pendientes del día actual
+    _scheduleDailyNotification(validationResult.validHabits, allEntries);
+
     // Limpiar cache del WeeklyGrid para forzar actualización
     try {
       // Si el import está disponible
@@ -210,5 +215,68 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       currentWeekStart: currentWeekStart,
       isRefreshing: isRefreshing,
     ));
+  }
+
+  /// Programa la notificación diaria con los hábitos pendientes
+  void _scheduleDailyNotification(List habits, List entries) {
+    _performNotificationScheduling(habits, entries).catchError((error) {
+      print('⚠️ [HabitBloc] Error programando notificación: $error');
+    });
+  }
+
+  Future<void> _performNotificationScheduling(List habits, List entries) async {
+    try {
+      // Obtener configuración de notificaciones
+      final settingsRepo = InjectionContainer().settingsRepository;
+      final settings = await settingsRepo.getSettings();
+
+      // Si las notificaciones están deshabilitadas, cancelar y salir
+      if (!settings.notificationsEnabled) {
+        await NotificationService().cancelNotification(0);
+        return;
+      }
+
+      final today = DateTime.now();
+      final todayNormalized = AppDateUtils.getStartOfDay(today);
+
+      // Filtrar hábitos pendientes del día actual
+      final pendingHabits = <Map<String, String>>[];
+
+      for (final habit in habits) {
+        // Buscar la entrada de hoy para este hábito
+        final todayEntry = entries.where((e) {
+          final entryDate = AppDateUtils.getStartOfDay(e.date);
+          return e.habitId == habit.id &&
+              entryDate.year == todayNormalized.year &&
+              entryDate.month == todayNormalized.month &&
+              entryDate.day == todayNormalized.day;
+        }).firstOrNull;
+
+        // Si no hay entrada o está pendiente, agregarlo
+        if (todayEntry == null || todayEntry.status.toString() == 'HabitStatus.pending') {
+          pendingHabits.add({
+            'id': habit.id.toString(),
+            'name': habit.name,
+          });
+        }
+      }
+
+      // Programar notificación si hay hábitos pendientes
+      if (pendingHabits.isNotEmpty) {
+        final habitNames = pendingHabits.map((h) => h['name']!).toList();
+        await NotificationService().scheduleDailyReminder(
+          pendingHabitsCount: pendingHabits.length,
+          pendingHabitNames: habitNames,
+          hour: settings.notificationHour,
+          minute: settings.notificationMinute,
+        );
+      } else {
+        // Si no hay hábitos pendientes, cancelar notificación
+        NotificationService().cancelNotification(0);
+      }
+    } catch (e) {
+      // Silent fail - no queremos que las notificaciones rompan la app
+      print('⚠️ [HabitBloc] Error programando notificación: $e');
+    }
   }
 }
