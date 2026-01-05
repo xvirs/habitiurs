@@ -5,6 +5,7 @@ import '../../domain/usecases/get_all_habits.dart';
 import '../../domain/usecases/create_habit.dart';
 import '../../domain/usecases/get_week_entries.dart';
 import '../../domain/usecases/toggle_habit_entry.dart';
+import '../../domain/usecases/update_past_habit_entry.dart';
 import '../../domain/usecases/delete_habit.dart';
 import '../../domain/services/habit_validation_service.dart';
 import '../../../../core/di/injection_container.dart';
@@ -16,6 +17,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   final CreateHabit _createHabit;
   final GetWeekEntries _getWeekEntries;
   final ToggleHabitEntry _toggleHabitEntry;
+  final UpdatePastHabitEntry _updatePastHabitEntry;
   final DeleteHabit _deleteHabit;
 
   HabitBloc({
@@ -23,16 +25,19 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     required CreateHabit createHabit,
     required GetWeekEntries getWeekEntries,
     required ToggleHabitEntry toggleHabitEntry,
+    required UpdatePastHabitEntry updatePastHabitEntry,
     required DeleteHabit deleteHabit,
   })  : _getAllHabits = getAllHabits,
         _createHabit = createHabit,
         _getWeekEntries = getWeekEntries,
         _toggleHabitEntry = toggleHabitEntry,
+        _updatePastHabitEntry = updatePastHabitEntry,
         _deleteHabit = deleteHabit,
         super(HabitInitial()) {
     on<LoadHabits>(_onLoadHabits);
     on<CreateHabitEvent>(_onCreateHabit);
     on<ToggleHabitEntryEvent>(_onToggleHabitEntry);
+    on<UpdatePastHabitEntryEvent>(_onUpdatePastHabitEntry);
     on<DeleteHabitEvent>(_onDeleteHabit);
     on<RefreshData>(_onRefreshData);
     on<PullToRefresh>(_onPullToRefresh);
@@ -64,6 +69,16 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       _syncInBackground('toggle_entry');
     } catch (e) {
       emit(HabitError('Error actualizando hábito: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onUpdatePastHabitEntry(UpdatePastHabitEntryEvent event, Emitter<HabitState> emit) async {
+    try {
+      await _updatePastHabitEntry(event.habitId, event.date, event.newStatus);
+      await _loadAndEmitData(emit);
+      _syncInBackground('update_past_entry');
+    } catch (e) {
+      emit(HabitError('Error actualizando hábito del día anterior: ${e.toString()}'));
     }
   }
 

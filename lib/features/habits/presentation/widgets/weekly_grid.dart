@@ -1,9 +1,13 @@
 // lib/features/habits/presentation/widgets/weekly_grid.dart
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../../../shared/enums/habit_status.dart';
+import '../bloc/habit_bloc.dart';
+import '../bloc/habit_event.dart';
+import 'habit_status_selector_modal.dart';
 
 class WeeklyGrid extends StatelessWidget {
   final List<Habit> habits;
@@ -305,6 +309,7 @@ class _HabitRow extends StatelessWidget {
           (date) => Expanded(
             child: _StatusCell(
               habitId: habit.id!,
+              habitName: habit.name,
               createdAt: habit.createdAt, // Pass creation date
               date: date,
               weekEntries: weekEntries,
@@ -347,6 +352,7 @@ class _HabitNumber extends StatelessWidget {
 
 class _StatusCell extends StatelessWidget {
   final int habitId;
+  final String habitName;
   final DateTime?
   createdAt; // Accepted nullable just in case, but domain should have it
   final DateTime date;
@@ -354,6 +360,7 @@ class _StatusCell extends StatelessWidget {
 
   const _StatusCell({
     required this.habitId,
+    required this.habitName,
     required this.createdAt,
     required this.date,
     required this.weekEntries,
@@ -367,21 +374,49 @@ class _StatusCell extends StatelessWidget {
     final entry = _findEntry();
     final status = _getDisplayStatus(entry);
     final isToday = AppDateUtils.isToday(date);
+    final isPastDate = AppDateUtils.isPastDate(date);
 
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 1),
-      decoration: BoxDecoration(
-        color: _getStatusColor(status),
-        border:
-            isToday
-                ? Border.all(
-                  color: Theme.of(context).colorScheme.primary,
-                  width: 2,
-                )
-                : null,
-        borderRadius: BorderRadius.circular(4),
+    return GestureDetector(
+      onLongPress: isPastDate ? () => _handleLongPress(context, status) : null,
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 1),
+        decoration: BoxDecoration(
+          color: _getStatusColor(status),
+          border:
+              isToday
+                  ? Border.all(
+                    color: Theme.of(context).colorScheme.primary,
+                    width: 2,
+                  )
+                  : null,
+          borderRadius: BorderRadius.circular(4),
+        ),
       ),
     );
+  }
+
+  Future<void> _handleLongPress(BuildContext context, HabitStatus currentStatus) async {
+    if (!context.mounted) return;
+
+    // Mostrar modal de selección (la vibración se hace dentro del modal)
+    final selectedStatus = await HabitStatusSelectorModal.show(
+      context,
+      habitName: habitName,
+      currentStatus: currentStatus,
+    );
+
+    if (!context.mounted) return;
+
+    if (selectedStatus != null) {
+      // Enviar evento al bloc para actualizar el estado
+      context.read<HabitBloc>().add(
+        UpdatePastHabitEntryEvent(
+          habitId: habitId,
+          date: date,
+          newStatus: selectedStatus,
+        ),
+      );
+    }
   }
 
   HabitEntry? _findEntry() {

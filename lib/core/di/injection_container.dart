@@ -26,6 +26,7 @@ import '../../features/habits/domain/usecases/delete_habit.dart';
 import '../../features/habits/domain/usecases/get_all_habits.dart';
 import '../../features/habits/domain/usecases/get_week_entries.dart';
 import '../../features/habits/domain/usecases/toggle_habit_entry.dart';
+import '../../features/habits/domain/usecases/update_past_habit_entry.dart';
 import '../../features/habits/presentation/bloc/habit_bloc.dart';
 import '../../features/habits/presentation/bloc/habit_evaluation_cubit.dart';
 
@@ -82,6 +83,7 @@ class InjectionContainer {
   late final CreateHabit _createHabit;
   late final GetWeekEntries _getWeekEntries;
   late final ToggleHabitEntry _toggleHabitEntry;
+  late final UpdatePastHabitEntry _updatePastHabitEntry;
   late final DeleteHabit _deleteHabit; // Se declara el use case de eliminación
 
   // Statistics Use Cases
@@ -199,6 +201,7 @@ class InjectionContainer {
     _createHabit = CreateHabit(_habitRepository);
     _getWeekEntries = GetWeekEntries(_habitRepository);
     _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
+    _updatePastHabitEntry = UpdatePastHabitEntry(_habitRepository);
     _deleteHabit = DeleteHabit(
       _habitRepository,
       _authService,
@@ -232,6 +235,7 @@ class InjectionContainer {
     createHabit: _createHabit,
     getWeekEntries: _getWeekEntries,
     toggleHabitEntry: _toggleHabitEntry,
+    updatePastHabitEntry: _updatePastHabitEntry,
     deleteHabit: _deleteHabit, // Se expone el use case de eliminación
   );
 

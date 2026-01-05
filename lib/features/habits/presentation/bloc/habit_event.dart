@@ -50,3 +50,18 @@ class RefreshData extends HabitEvent {}
 class PullToRefresh extends HabitEvent {
   const PullToRefresh();
 }
+
+class UpdatePastHabitEntryEvent extends HabitEvent {
+  final int habitId;
+  final DateTime date;
+  final HabitStatus newStatus;
+
+  const UpdatePastHabitEntryEvent({
+    required this.habitId,
+    required this.date,
+    required this.newStatus,
+  });
+
+  @override
+  List<Object> get props => [habitId, date, newStatus];
+}
