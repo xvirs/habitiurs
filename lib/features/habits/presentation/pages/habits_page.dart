@@ -22,8 +22,8 @@ class HabitsPage extends StatefulWidget {
 }
 
 class HabitsPageState extends State<HabitsPage>
-    with AutomaticKeepAliveClientMixin {
-  late final DateTime _today;
+    with AutomaticKeepAliveClientMixin, WidgetsBindingObserver {
+  late DateTime _lastLoadDate;
   bool _hasTriedAutoReload = false;
 
   @override
@@ -32,12 +32,39 @@ class HabitsPageState extends State<HabitsPage>
   @override
   void initState() {
     super.initState();
-    _today = DateTime.now();
+    _lastLoadDate = DateTime.now();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
         context.read<HabitBloc>().add(LoadHabits());
       }
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+
+    // Cuando la app vuelve del background o se reactiva
+    if (state == AppLifecycleState.resumed) {
+      final now = DateTime.now();
+
+      // Verificar si cambió el día desde la última carga
+      if (!AppDateUtils.isSameDay(now, _lastLoadDate)) {
+        print('🔄 [HabitsPage] Día cambió de ${AppDateUtils.formatToYYYYMMDD(_lastLoadDate)} a ${AppDateUtils.formatToYYYYMMDD(now)} - Recargando hábitos');
+        _lastLoadDate = now;
+
+        if (mounted) {
+          context.read<HabitBloc>().add(LoadHabits());
+        }
+      }
+    }
   }
 
   @override
@@ -108,18 +135,20 @@ class HabitsPageState extends State<HabitsPage>
   }
 
   Map<int, HabitStatus> _getTodayEntriesMap(List<HabitEntry> weekEntries) {
+    final today = DateTime.now();
     return {
       for (final entry in weekEntries)
-        if (AppDateUtils.isSameDay(entry.date, _today))
+        if (AppDateUtils.isSameDay(entry.date, today))
           entry.habitId: entry.status,
     };
   }
 
   void _handleToggle(int habitId, HabitStatus currentStatus) {
+    final today = DateTime.now();
     context.read<HabitBloc>().add(
       ToggleHabitEntryEvent(
         habitId: habitId,
-        date: _today,
+        date: today,
         currentStatus: currentStatus,
       ),
     );

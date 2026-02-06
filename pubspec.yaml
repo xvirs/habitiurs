@@ -44,6 +44,7 @@ dependencies:
 
   # Inyección de dependencias
   get_it: ^7.6.7
+  flutter_dotenv: ^6.0.0
 
 dev_dependencies:
   flutter_test:
@@ -55,9 +56,8 @@ flutter:
   uses-material-design: true
   
   # Assets comentados hasta que los necesites
-  # assets:
-  #   - assets/images/
-  #   - assets/icons/
+  assets:
+    - .env
 
 flutter_icons:
   android: true

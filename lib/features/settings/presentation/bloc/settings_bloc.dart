@@ -51,14 +51,25 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
           // Las notificaciones se reprogramarán la próxima vez que se carguen los hábitos
           print('✅ [SettingsBloc] Notificaciones habilitadas');
         } else {
-          await NotificationService().cancelNotification(0);
-          print('🔕 [SettingsBloc] Notificaciones deshabilitadas');
+          try {
+            await NotificationService().cancelNotification(0);
+            print('🔕 [SettingsBloc] Notificaciones deshabilitadas');
+          } catch (notifError) {
+            print('⚠️ [SettingsBloc] Error cancelando notificación: $notifError');
+            // Continuar de todas formas, el estado ya se guardó
+          }
         }
 
         emit(SettingsLoaded(newSettings));
       }
     } catch (e) {
-      emit(SettingsError('Error al actualizar notificaciones: ${e.toString()}'));
+      print('❌ [SettingsBloc] Error: $e');
+      // Mantener el estado actual en lugar de error para evitar crash
+      if (state is SettingsLoaded) {
+        emit(state as SettingsLoaded);
+      } else {
+        emit(SettingsError('Error al actualizar notificaciones: ${e.toString()}'));
+      }
     }
   }
 
@@ -77,13 +88,24 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         await updateSettings(newSettings);
 
         // Cancelar notificación anterior y reprogramar con nueva hora
-        await NotificationService().cancelNotification(0);
-        print('⏰ [SettingsBloc] Hora actualizada: ${event.hour}:${event.minute}');
+        try {
+          await NotificationService().cancelNotification(0);
+          print('⏰ [SettingsBloc] Hora actualizada: ${event.hour}:${event.minute}');
+        } catch (notifError) {
+          print('⚠️ [SettingsBloc] Error cancelando notificación: $notifError');
+          // Continuar de todas formas, se reprogramará en el próximo load de hábitos
+        }
 
         emit(SettingsLoaded(newSettings));
       }
     } catch (e) {
-      emit(SettingsError('Error al actualizar hora: ${e.toString()}'));
+      print('❌ [SettingsBloc] Error actualizando hora: $e');
+      // Mantener el estado actual
+      if (state is SettingsLoaded) {
+        emit(state as SettingsLoaded);
+      } else {
+        emit(SettingsError('Error al actualizar hora: ${e.toString()}'));
+      }
     }
   }
 

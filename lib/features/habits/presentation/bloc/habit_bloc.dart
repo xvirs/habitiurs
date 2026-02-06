@@ -1,6 +1,7 @@
 // lib/features/habits/presentation/bloc/habit_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
+import '../../domain/entities/habit_entry.dart';
 import '../../domain/usecases/get_all_habits.dart';
 import '../../domain/usecases/create_habit.dart';
 import '../../domain/usecases/get_week_entries.dart';
@@ -197,8 +198,28 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       currentWeekStart,
     );
 
-    // Combinar entradas existentes con las generadas
-    final allEntries = [...validationResult.validEntries, ...missingEntries];
+    // CRÍTICO: Deduplicar entradas antes de emitir
+    // Las entradas existentes (de BD) tienen prioridad sobre las generadas
+    final entriesMap = <String, HabitEntry>{};
+
+    // Primero agregar las entradas válidas (de BD) - tienen prioridad
+    for (final entry in validationResult.validEntries) {
+      final key = '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
+      entriesMap[key] = entry;
+    }
+
+    // Luego agregar missing entries SOLO si no existe ya una entrada para esa combinación
+    for (final entry in missingEntries) {
+      final key = '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
+      if (!entriesMap.containsKey(key)) {
+        entriesMap[key] = entry;
+      } else {
+        // Log de deduplicación para debugging
+        print('⚠️ [HabitBloc] Entrada duplicada evitada: habitId=${entry.habitId}, date=${AppDateUtils.formatToYYYYMMDD(entry.date)}');
+      }
+    }
+
+    final allEntries = entriesMap.values.toList();
 
     // Programar notificación para hábitos pendientes del día actual
     _scheduleDailyNotification(validationResult.validHabits, allEntries);

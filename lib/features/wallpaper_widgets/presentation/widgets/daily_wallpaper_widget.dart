@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:habitiurs/features/habits/domain/entities/habit.dart';
-import 'package:habitiurs/features/habits/domain/entities/habit_entry.dart';
 import 'package:habitiurs/shared/enums/habit_status.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import 'package:habitiurs/core/di/injection_container.dart';

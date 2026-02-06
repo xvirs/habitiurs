@@ -172,12 +172,20 @@ class NotificationService {
 
   /// Cancela todas las notificaciones programadas
   Future<void> cancelAllNotifications() async {
+    if (!_initialized) {
+      await initialize();
+    }
     await _notifications.cancelAll();
+    print('🔕 [NotificationService] Todas las notificaciones canceladas');
   }
 
   /// Cancela una notificación específica
   Future<void> cancelNotification(int id) async {
+    if (!_initialized) {
+      await initialize();
+    }
     await _notifications.cancel(id);
+    print('🔕 [NotificationService] Notificación $id cancelada');
   }
 
   /// Muestra una notificación inmediata (para testing)

@@ -121,7 +121,11 @@ class HabitValidationService {
         final key = '${habit.id!}_${AppDateUtils.formatToYYYYMMDD(normalizedDate)}';
 
         // Skip si ya existe una entrada
-        if (existingEntriesMap.containsKey(key)) continue;
+        if (existingEntriesMap.containsKey(key)) {
+          // Log para debugging: entrada ya existe
+          print('✓ [ValidationService] Entrada existente: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}');
+          continue;
+        }
 
         // Skip si la fecha es antes de que se creara el hábito
         if (normalizedDate.isBefore(habitCreationDate)) continue;
@@ -131,6 +135,7 @@ class HabitValidationService {
 
         // Para días pasados sin entrada, crear entrada con estado skipped
         if (normalizedDate.isBefore(today)) {
+          print('⚠️ [ValidationService] Generando entrada SKIPPED: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}');
           missingEntries.add(HabitEntry(
             habitId: habit.id!,
             date: normalizedDate,
