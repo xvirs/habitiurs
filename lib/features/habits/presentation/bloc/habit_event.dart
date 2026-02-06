@@ -51,6 +51,8 @@ class PullToRefresh extends HabitEvent {
   const PullToRefresh();
 }
 
+class RescheduleNotifications extends HabitEvent {}
+
 class UpdatePastHabitEntryEvent extends HabitEvent {
   final int habitId;
   final DateTime date;

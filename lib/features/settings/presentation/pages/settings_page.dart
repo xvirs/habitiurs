@@ -1,9 +1,10 @@
-// lib/features/settings/presentation/pages/settings_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
+import '../../../habits/presentation/bloc/habit_bloc.dart';
+import '../../../habits/presentation/bloc/habit_event.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -11,92 +12,109 @@ class SettingsPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Configuración'),
-        elevation: 0,
-      ),
-      body: BlocBuilder<SettingsBloc, SettingsState>(
-        builder: (context, state) {
-          if (state is SettingsLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (state is SettingsError) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Text(
-                  state.message,
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
-              ),
-            );
-          }
-
+      appBar: AppBar(title: const Text('Configuración'), elevation: 0),
+      body: BlocListener<SettingsBloc, SettingsState>(
+        listener: (context, state) {
           if (state is SettingsLoaded) {
-            final settings = state.settings;
+            // Cuando cambia la configuración, reprogramar notificaciones
+            // Usamos un try-catch por si el Bloc no está en el contexto (aunque debería)
+            try {
+              context.read<HabitBloc>().add(RescheduleNotifications());
+            } catch (_) {}
+          }
+        },
+        child: BlocBuilder<SettingsBloc, SettingsState>(
+          builder: (context, state) {
+            if (state is SettingsLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-            return ListView(
-              children: [
-                // Sección de Notificaciones
-                const _SectionHeader(title: 'Notificaciones'),
-
-                SwitchListTile(
-                  title: const Text('Recordatorio diario'),
-                  subtitle: const Text('Recibir notificación con hábitos pendientes'),
-                  value: settings.notificationsEnabled,
-                  onChanged: (value) {
-                    context.read<SettingsBloc>().add(ToggleNotifications(value));
-                  },
+            if (state is SettingsError) {
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Text(
+                    state.message,
+                    style: const TextStyle(color: Colors.red),
+                    textAlign: TextAlign.center,
+                  ),
                 ),
+              );
+            }
 
-                if (settings.notificationsEnabled)
-                  ListTile(
-                    leading: const Icon(Icons.access_time),
-                    title: const Text('Hora de recordatorio'),
-                    subtitle: Text(settings.formattedNotificationTime),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () => _showTimePicker(
-                      context,
-                      settings.notificationHour,
-                      settings.notificationMinute,
+            if (state is SettingsLoaded) {
+              final settings = state.settings;
+
+              return ListView(
+                children: [
+                  // Sección de Notificaciones
+                  const _SectionHeader(title: 'Notificaciones'),
+
+                  SwitchListTile(
+                    title: const Text('Recordatorio diario'),
+                    subtitle: const Text(
+                      'Recibir notificación con hábitos pendientes',
                     ),
+                    value: settings.notificationsEnabled,
+                    onChanged: (value) {
+                      context.read<SettingsBloc>().add(
+                        ToggleNotifications(value),
+                      );
+                    },
                   ),
 
-                const Divider(),
+                  if (settings.notificationsEnabled)
+                    ListTile(
+                      leading: const Icon(Icons.access_time),
+                      title: const Text('Hora de recordatorio'),
+                      subtitle: Text(settings.formattedNotificationTime),
+                      trailing: const Icon(Icons.chevron_right),
+                      onTap:
+                          () => _showTimePicker(
+                            context,
+                            settings.notificationHour,
+                            settings.notificationMinute,
+                          ),
+                    ),
 
-                // Sección de Información
-                const _SectionHeader(title: 'Información'),
+                  const Divider(),
 
-                const ListTile(
-                  leading: Icon(Icons.info_outline),
-                  title: Text('Versión'),
-                  subtitle: Text('1.0.0'),
-                ),
+                  // Sección de Información
+                  const _SectionHeader(title: 'Información'),
 
-                const Divider(),
+                  const ListTile(
+                    leading: Icon(Icons.info_outline),
+                    title: Text('Versión'),
+                    subtitle: Text('1.0.0'),
+                  ),
 
-                // Resetear configuración
-                const _SectionHeader(title: 'Avanzado'),
+                  const Divider(),
 
-                ListTile(
-                  leading: const Icon(Icons.restore, color: Colors.orange),
-                  title: const Text('Restablecer configuración'),
-                  subtitle: const Text('Volver a valores por defecto'),
-                  onTap: () => _showResetDialog(context),
-                ),
-              ],
-            );
-          }
+                  // Resetear configuración
+                  const _SectionHeader(title: 'Avanzado'),
 
-          return const SizedBox.shrink();
-        },
+                  ListTile(
+                    leading: const Icon(Icons.restore, color: Colors.orange),
+                    title: const Text('Restablecer configuración'),
+                    subtitle: const Text('Volver a valores por defecto'),
+                    onTap: () => _showResetDialog(context),
+                  ),
+                ],
+              );
+            }
+
+            return const SizedBox.shrink();
+          },
+        ),
       ),
     );
   }
 
-  Future<void> _showTimePicker(BuildContext context, int currentHour, int currentMinute) async {
+  Future<void> _showTimePicker(
+    BuildContext context,
+    int currentHour,
+    int currentMinute,
+  ) async {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: TimeOfDay(hour: currentHour, minute: currentMinute),
@@ -110,30 +128,31 @@ class SettingsPage extends StatelessWidget {
 
     if (picked != null && context.mounted) {
       context.read<SettingsBloc>().add(
-            UpdateNotificationTime(picked.hour, picked.minute),
-          );
+        UpdateNotificationTime(picked.hour, picked.minute),
+      );
     }
   }
 
   Future<void> _showResetDialog(BuildContext context) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('¿Restablecer configuración?'),
-        content: const Text(
-          'Se restaurarán todos los ajustes a sus valores por defecto.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancelar'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('¿Restablecer configuración?'),
+            content: const Text(
+              'Se restaurarán todos los ajustes a sus valores por defecto.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Restablecer'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Restablecer'),
-          ),
-        ],
-      ),
     );
 
     if (confirmed == true && context.mounted) {

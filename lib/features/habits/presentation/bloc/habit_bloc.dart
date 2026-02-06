@@ -30,13 +30,13 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     required ToggleHabitEntry toggleHabitEntry,
     required UpdatePastHabitEntry updatePastHabitEntry,
     required DeleteHabit deleteHabit,
-  })  : _getAllHabits = getAllHabits,
-        _createHabit = createHabit,
-        _getWeekEntries = getWeekEntries,
-        _toggleHabitEntry = toggleHabitEntry,
-        _updatePastHabitEntry = updatePastHabitEntry,
-        _deleteHabit = deleteHabit,
-        super(HabitInitial()) {
+  }) : _getAllHabits = getAllHabits,
+       _createHabit = createHabit,
+       _getWeekEntries = getWeekEntries,
+       _toggleHabitEntry = toggleHabitEntry,
+       _updatePastHabitEntry = updatePastHabitEntry,
+       _deleteHabit = deleteHabit,
+       super(HabitInitial()) {
     on<LoadHabits>(_onLoadHabits);
     on<CreateHabitEvent>(_onCreateHabit);
     on<ToggleHabitEntryEvent>(_onToggleHabitEntry);
@@ -44,6 +44,17 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     on<DeleteHabitEvent>(_onDeleteHabit);
     on<RefreshData>(_onRefreshData);
     on<PullToRefresh>(_onPullToRefresh);
+    on<RescheduleNotifications>(_onRescheduleNotifications);
+  }
+
+  Future<void> _onRescheduleNotifications(
+    RescheduleNotifications event,
+    Emitter<HabitState> emit,
+  ) async {
+    if (state is HabitLoaded) {
+      final currentState = state as HabitLoaded;
+      _scheduleDailyNotification(currentState.habits, currentState.weekEntries);
+    }
   }
 
   Future<void> _onLoadHabits(LoadHabits event, Emitter<HabitState> emit) async {
@@ -55,7 +66,10 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     }
   }
 
-  Future<void> _onCreateHabit(CreateHabitEvent event, Emitter<HabitState> emit) async {
+  Future<void> _onCreateHabit(
+    CreateHabitEvent event,
+    Emitter<HabitState> emit,
+  ) async {
     try {
       await _createHabit(event.name);
       await _loadAndEmitData(emit);
@@ -65,7 +79,10 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     }
   }
 
-  Future<void> _onToggleHabitEntry(ToggleHabitEntryEvent event, Emitter<HabitState> emit) async {
+  Future<void> _onToggleHabitEntry(
+    ToggleHabitEntryEvent event,
+    Emitter<HabitState> emit,
+  ) async {
     try {
       await _toggleHabitEntry(event.habitId, event.date, event.currentStatus);
       await _loadAndEmitData(emit);
@@ -75,17 +92,27 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     }
   }
 
-  Future<void> _onUpdatePastHabitEntry(UpdatePastHabitEntryEvent event, Emitter<HabitState> emit) async {
+  Future<void> _onUpdatePastHabitEntry(
+    UpdatePastHabitEntryEvent event,
+    Emitter<HabitState> emit,
+  ) async {
     try {
       await _updatePastHabitEntry(event.habitId, event.date, event.newStatus);
       await _loadAndEmitData(emit);
       _syncInBackground('update_past_entry');
     } catch (e) {
-      emit(HabitError('Error actualizando hábito del día anterior: ${e.toString()}'));
+      emit(
+        HabitError(
+          'Error actualizando hábito del día anterior: ${e.toString()}',
+        ),
+      );
     }
   }
 
-  Future<void> _onDeleteHabit(DeleteHabitEvent event, Emitter<HabitState> emit) async {
+  Future<void> _onDeleteHabit(
+    DeleteHabitEvent event,
+    Emitter<HabitState> emit,
+  ) async {
     try {
       await _deleteHabit(event.habitId);
       await _loadAndEmitData(emit);
@@ -99,7 +126,10 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     }
   }
 
-  Future<void> _onRefreshData(RefreshData event, Emitter<HabitState> emit) async {
+  Future<void> _onRefreshData(
+    RefreshData event,
+    Emitter<HabitState> emit,
+  ) async {
     if (state is HabitLoaded) {
       try {
         await _loadAndEmitData(emit);
@@ -109,7 +139,10 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     }
   }
 
-  Future<void> _onPullToRefresh(PullToRefresh event, Emitter<HabitState> emit) async {
+  Future<void> _onPullToRefresh(
+    PullToRefresh event,
+    Emitter<HabitState> emit,
+  ) async {
     try {
       if (state is HabitLoaded) {
         final currentState = state as HabitLoaded;
@@ -185,7 +218,8 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
 
     // Si hay errores críticos, emitir error
     if (!validationResult.isValid) {
-      final errorMsg = 'Errores de validación: ${validationResult.issues.join(', ')}';
+      final errorMsg =
+          'Errores de validación: ${validationResult.issues.join(', ')}';
       print('❌ [HabitBloc] Validation errors: $errorMsg');
       emit(HabitError(errorMsg));
       return;
@@ -204,18 +238,22 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
 
     // Primero agregar las entradas válidas (de BD) - tienen prioridad
     for (final entry in validationResult.validEntries) {
-      final key = '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
+      final key =
+          '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
       entriesMap[key] = entry;
     }
 
     // Luego agregar missing entries SOLO si no existe ya una entrada para esa combinación
     for (final entry in missingEntries) {
-      final key = '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
+      final key =
+          '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
       if (!entriesMap.containsKey(key)) {
         entriesMap[key] = entry;
       } else {
         // Log de deduplicación para debugging
-        print('⚠️ [HabitBloc] Entrada duplicada evitada: habitId=${entry.habitId}, date=${AppDateUtils.formatToYYYYMMDD(entry.date)}');
+        print(
+          '⚠️ [HabitBloc] Entrada duplicada evitada: habitId=${entry.habitId}, date=${AppDateUtils.formatToYYYYMMDD(entry.date)}',
+        );
       }
     }
 
@@ -230,12 +268,14 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       // _StatusCell.clearCache();
     } catch (_) {}
 
-    emit(HabitLoaded(
-      habits: validationResult.validHabits,
-      weekEntries: allEntries,
-      currentWeekStart: currentWeekStart,
-      isRefreshing: isRefreshing,
-    ));
+    emit(
+      HabitLoaded(
+        habits: validationResult.validHabits,
+        weekEntries: allEntries,
+        currentWeekStart: currentWeekStart,
+        isRefreshing: isRefreshing,
+      ),
+    );
   }
 
   /// Programa la notificación diaria con los hábitos pendientes
@@ -265,20 +305,18 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
 
       for (final habit in habits) {
         // Buscar la entrada de hoy para este hábito
-        final todayEntry = entries.where((e) {
-          final entryDate = AppDateUtils.getStartOfDay(e.date);
-          return e.habitId == habit.id &&
-              entryDate.year == todayNormalized.year &&
-              entryDate.month == todayNormalized.month &&
-              entryDate.day == todayNormalized.day;
-        }).firstOrNull;
+        final todayEntry =
+            entries.where((e) {
+              final entryDate = AppDateUtils.getStartOfDay(e.date);
+              return e.habitId == habit.id &&
+                  entryDate.year == todayNormalized.year &&
+                  entryDate.month == todayNormalized.month &&
+                  entryDate.day == todayNormalized.day;
+            }).firstOrNull;
 
         // Si no hay entrada o está pendiente, agregarlo
-        if (todayEntry == null || todayEntry.status.toString() == 'HabitStatus.pending') {
-          pendingHabits.add({
-            'id': habit.id.toString(),
-            'name': habit.name,
-          });
+        if (todayEntry == null || todayEntry.status == HabitStatus.pending) {
+          pendingHabits.add({'id': habit.id.toString(), 'name': habit.name});
         }
       }
 

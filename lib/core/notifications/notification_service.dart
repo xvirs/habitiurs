@@ -2,12 +2,15 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'package:flutter_timezone/flutter_timezone.dart';
+
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
   factory NotificationService() => _instance;
   NotificationService._internal();
 
-  final FlutterLocalNotificationsPlugin _notifications = FlutterLocalNotificationsPlugin();
+  final FlutterLocalNotificationsPlugin _notifications =
+      FlutterLocalNotificationsPlugin();
   bool _initialized = false;
 
   /// Inicializa el servicio de notificaciones
@@ -17,8 +20,20 @@ class NotificationService {
     // Inicializar timezone
     tz.initializeTimeZones();
 
+    // Obtener y configurar la zona horaria local del dispositivo
+    try {
+      final timeZoneName = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timeZoneName.toString()));
+      print('✅ [NotificationService] Timezone configurado: $timeZoneName');
+    } catch (e) {
+      print('❌ [NotificationService] Error configurando timezone: $e');
+      // Fallback a UTC o local por defecto si falla
+    }
+
     // Configuración para Android
-    const androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const androidSettings = AndroidInitializationSettings(
+      '@mipmap/ic_launcher',
+    );
 
     // Configuración para iOS
     const iosSettings = DarwinInitializationSettings(
@@ -46,22 +61,26 @@ class NotificationService {
 
   /// Solicita permisos en iOS
   Future<void> _requestPermissions() async {
-    final platform = _notifications.resolvePlatformSpecificImplementation<
-        IOSFlutterLocalNotificationsPlugin>();
+    final platform =
+        _notifications
+            .resolvePlatformSpecificImplementation<
+              IOSFlutterLocalNotificationsPlugin
+            >();
 
     if (platform != null) {
-      await platform.requestPermissions(
-        alert: true,
-        badge: true,
-        sound: true,
-      );
+      await platform.requestPermissions(alert: true, badge: true, sound: true);
     }
 
-    final androidPlatform = _notifications.resolvePlatformSpecificImplementation<
-        AndroidFlutterLocalNotificationsPlugin>();
+    final androidPlatform =
+        _notifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
 
     if (androidPlatform != null) {
       await androidPlatform.requestNotificationsPermission();
+      await androidPlatform
+          .requestExactAlarmsPermission(); // Solicitar permiso de alarmas exactas
     }
   }
 
@@ -105,18 +124,20 @@ class NotificationService {
     }
 
     // Crear mensaje personalizado
-    final title = pendingHabitsCount == 1
-        ? '¡Tienes 1 hábito pendiente!'
-        : '¡Tienes $pendingHabitsCount hábitos pendientes!';
+    final title =
+        pendingHabitsCount == 1
+            ? '¡Tienes 1 hábito pendiente!'
+            : '¡Tienes $pendingHabitsCount hábitos pendientes!';
 
     final body = _buildNotificationBody(pendingHabitsCount, pendingHabitNames);
 
     // Detalles de Android
     const androidDetails = AndroidNotificationDetails(
-      'daily_habit_reminder',
+      'daily_habit_reminder_v2', // Cambiado ID para forzar actualización de configuración
       'Recordatorio Diario de Hábitos',
-      channelDescription: 'Notificación diaria para recordar hábitos pendientes',
-      importance: Importance.high,
+      channelDescription:
+          'Notificación diaria para recordar hábitos pendientes',
+      importance: Importance.max, // Forzar importancia máxima
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
     );
@@ -143,11 +164,17 @@ class NotificationService {
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents: DateTimeComponents.time, // Repetir diariamente a la misma hora
+      matchDateTimeComponents:
+          DateTimeComponents.time, // Repetir diariamente a la misma hora
     );
 
-    final timeStr = '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
+    final timeStr =
+        '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
     print('✅ Notificación programada para las $timeStr: $title');
+    print(
+      '   📅 Fecha exacta programada: $scheduledDate (Zona horaria: ${scheduledDate.location})',
+    );
+    print('   ⌚ Hora actual referencia: $now');
   }
 
   /// Construye el cuerpo del mensaje según la cantidad de hábitos
