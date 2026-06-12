@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' hide TextDirection;
 import 'dart:ui' as ui;
 import '../../domain/entities/statistics.dart';
+import 'stat_components.dart';
 
 class HistoricalChart extends StatelessWidget {
   final List<HistoricalDataPoint> data;
@@ -48,7 +49,10 @@ class HistoricalChart extends StatelessWidget {
       double.maxFinite.toInt(),
     );
 
+    final theme = Theme.of(context);
+
     return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           height: 200,
@@ -58,11 +62,26 @@ class HistoricalChart extends StatelessWidget {
               data,
               chartMaxValue,
               Directionality.of(context),
+              completedColor: StatColors.completed,
+              skippedColor: StatColors.skipped.withValues(alpha: 0.85),
+              lineColor: theme.colorScheme.primary,
+              gridColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              labelColor: theme.colorScheme.outline,
             ),
           ),
         ),
-        const SizedBox(height: 20),
-        _buildLegend(),
+        const SizedBox(height: 12),
+        StatLegend(
+          entries: [
+            StatLegendEntry(StatColors.completed, 'Completados'),
+            StatLegendEntry(StatColors.skipped, 'No realizados'),
+            StatLegendEntry(
+              theme.colorScheme.primary,
+              '% Logro',
+              isLine: true,
+            ),
+          ],
+        ),
       ],
     );
   }
@@ -99,64 +118,28 @@ class HistoricalChart extends StatelessWidget {
     );
   }
 
-  Widget _buildLegend() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _LegendItem(color: Colors.green[400]!, label: 'Completado'),
-        const SizedBox(width: 16),
-        _LegendItem(color: Colors.red[300]!, label: 'Omitido'),
-        const SizedBox(width: 16),
-        _LegendItem(color: Colors.blue[400]!, label: '% Logro', isLine: true),
-      ],
-    );
-  }
-}
-
-class _LegendItem extends StatelessWidget {
-  final Color color;
-  final String label;
-  final bool isLine;
-
-  const _LegendItem({
-    required this.color,
-    required this.label,
-    this.isLine = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: 12,
-          height: isLine ? 2 : 12,
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.8),
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 6),
-        Text(
-          label,
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: Colors.grey[600],
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 class _HistoricalChartPainter extends CustomPainter {
   final List<HistoricalDataPoint> data;
   final int maxValue;
   final TextDirection? textDirection;
+  final Color completedColor;
+  final Color skippedColor;
+  final Color lineColor;
+  final Color gridColor;
+  final Color labelColor;
 
-  _HistoricalChartPainter(this.data, this.maxValue, this.textDirection);
+  _HistoricalChartPainter(
+    this.data,
+    this.maxValue,
+    this.textDirection, {
+    required this.completedColor,
+    required this.skippedColor,
+    required this.lineColor,
+    required this.gridColor,
+    required this.labelColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -169,13 +152,14 @@ class _HistoricalChartPainter extends CustomPainter {
     final double chartHeight = size.height - paddingBottom;
 
     final double barWidth = chartWidth / data.length;
-    final double spacing = barWidth * 0.2;
+    final double spacing = barWidth * 0.35;
     final double actualBarWidth = barWidth - spacing;
+    final Radius barRadius = Radius.circular(actualBarWidth / 3);
 
     // Dibujar líneas de referencia Y
     final paintGrid =
         Paint()
-          ..color = Colors.grey[100]!
+          ..color = gridColor
           ..strokeWidth = 1.0;
 
     for (int i = 0; i <= 4; i++) {
@@ -189,7 +173,7 @@ class _HistoricalChartPainter extends CustomPainter {
       final tp = TextPainter(
         text: TextSpan(
           text: ((maxValue / 4) * i).toInt().toString(),
-          style: TextStyle(color: Colors.grey[400], fontSize: 10),
+          style: TextStyle(color: labelColor, fontSize: 10),
         ),
         textDirection: textDirection,
       )..layout();
@@ -215,10 +199,10 @@ class _HistoricalChartPainter extends CustomPainter {
               actualBarWidth,
               completedHeight,
             ),
-            topLeft: const Radius.circular(2),
-            topRight: const Radius.circular(2),
+            topLeft: skippedHeight > 0 ? Radius.zero : barRadius,
+            topRight: skippedHeight > 0 ? Radius.zero : barRadius,
           ),
-          Paint()..color = Colors.green[400]!.withOpacity(0.6),
+          Paint()..color = completedColor,
         );
       }
 
@@ -231,10 +215,10 @@ class _HistoricalChartPainter extends CustomPainter {
               actualBarWidth,
               skippedHeight,
             ),
-            topLeft: const Radius.circular(2),
-            topRight: const Radius.circular(2),
+            topLeft: barRadius,
+            topRight: barRadius,
           ),
-          Paint()..color = Colors.red[300]!.withOpacity(0.6),
+          Paint()..color = skippedColor,
         );
       }
 
@@ -243,24 +227,28 @@ class _HistoricalChartPainter extends CustomPainter {
         final tp = TextPainter(
           text: TextSpan(
             text: DateFormat('MMM').format(point.date),
-            style: const TextStyle(color: Colors.grey, fontSize: 10),
+            style: TextStyle(color: labelColor, fontSize: 10),
           ),
           textDirection: textDirection,
         )..layout();
         tp.paint(
           canvas,
-          Offset(x + (barWidth - tp.width) / 2, chartHeight + 4),
+          Offset(x + (actualBarWidth - tp.width) / 2, chartHeight + 4),
         );
       }
     }
 
-    // Línea de porcentaje
+    // Línea de porcentaje de logro
     final path = Path();
     final ratePaint =
         Paint()
-          ..color = Colors.blue
+          ..color = lineColor
           ..strokeWidth = 2.0
+          ..strokeCap = ui.StrokeCap.round
+          ..strokeJoin = ui.StrokeJoin.round
           ..style = ui.PaintingStyle.stroke;
+
+    final dotFill = Paint()..color = lineColor;
 
     for (int i = 0; i < data.length; i++) {
       final point = data[i];
@@ -272,10 +260,16 @@ class _HistoricalChartPainter extends CustomPainter {
       } else {
         path.lineTo(x, y);
       }
-
-      canvas.drawCircle(Offset(x, y), 3, Paint()..color = Colors.blue);
     }
     canvas.drawPath(path, ratePaint);
+
+    // Puntos sobre la línea (encima del trazo para que queden nítidos)
+    for (int i = 0; i < data.length; i++) {
+      final point = data[i];
+      final double x = paddingLeft + i * barWidth + barWidth / 2;
+      final double y = chartHeight - (point.completionRate / 100) * chartHeight;
+      canvas.drawCircle(Offset(x, y), 2.5, dotFill);
+    }
   }
 
   @override

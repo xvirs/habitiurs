@@ -1,6 +1,7 @@
 // lib/features/statistics/presentation/widgets/current_month_summary.dart
 import 'package:flutter/material.dart';
 import '../../domain/entities/statistics.dart';
+import 'stat_components.dart';
 
 class CurrentMonthSummary extends StatelessWidget {
   final MonthlyStatistics statistics;
@@ -40,7 +41,11 @@ class CurrentMonthSummary extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: statistics.weeks.map((week) => _buildWeekItem(context, week)).toList(),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...statistics.weeks.map((week) => _buildWeekItem(context, week)),
+        const StatLegend(),
+      ],
     );
   }
 
@@ -77,78 +82,14 @@ class CurrentMonthSummary extends StatelessWidget {
   }
 
   Widget _buildWeekItem(BuildContext context, WeeklyStatistics week) {
-    final theme = Theme.of(context);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.02),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Text(
-              'Semana ${week.weekNumber}',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ),
-          _buildStatBadge(
-            Icons.check_circle_outline,
-            week.completedCount.toString(),
-            Colors.green[600]!,
-          ),
-          const SizedBox(width: 8),
-          _buildStatBadge(
-            Icons.highlight_off,
-            week.skippedCount.toString(),
-            Colors.red[400]!,
-          ),
-          const SizedBox(width: 8),
-          _buildStatBadge(
-            Icons.access_time,
-            week.pendingCount.toString(),
-            Colors.orange[400]!,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatBadge(IconData icon, String count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 14, color: color.withOpacity(0.8)),
-          const SizedBox(width: 4),
-          Text(
-            count,
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              color: color.withOpacity(0.9),
-            ),
-          ),
-        ],
-      ),
+    final total =
+        week.completedCount + week.skippedCount + week.pendingCount;
+    return StatRow(
+      label: 'Semana ${week.weekNumber}',
+      completed: week.completedCount,
+      skipped: week.skippedCount,
+      pending: week.pendingCount,
+      trailing: total > 0 ? '${week.completedCount}/$total' : null,
     );
   }
 

@@ -1,6 +1,7 @@
 // lib/features/statistics/presentation/widgets/yearly_statistics_list.dart
 import 'package:flutter/material.dart';
 import '../../domain/entities/statistics.dart';
+import 'stat_components.dart';
 
 class YearlyStatisticsList extends StatelessWidget {
   final List<MonthlyStatistics> statistics;
@@ -42,7 +43,11 @@ class YearlyStatisticsList extends StatelessWidget {
     // o asegurar que shrinkWrap esté activo y physics sea NeverScrollableScrollPhysics
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: statistics.map((month) => _buildMonthItem(context, month)).toList(),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ...statistics.map((month) => _buildMonthItem(context, month)),
+        const StatLegend(),
+      ],
     );
   }
 
@@ -79,111 +84,11 @@ class YearlyStatisticsList extends StatelessWidget {
   }
 
   Widget _buildMonthItem(BuildContext context, MonthlyStatistics stats) {
-    final theme = Theme.of(context);
-    final completionRate = stats.completionRate;
-    final color =
-        completionRate >= 70
-            ? Colors.green[600]!
-            : completionRate >= 40
-            ? Colors.orange[400]!
-            : Colors.red[400]!;
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surfaceContainerHighest,
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: theme.colorScheme.outlineVariant),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.01),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            flex: 2,
-            child: Text(
-              stats.monthName,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: theme.colorScheme.onSurface,
-              ),
-            ),
-          ),
-          Expanded(
-            flex: 3,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                _buildStatBadge(
-                  Icons.check_circle_outline,
-                  stats.completedCount.toString(),
-                  Colors.green[600]!,
-                ),
-                const SizedBox(width: 6),
-                _buildStatBadge(
-                  Icons.highlight_off,
-                  stats.skippedCount.toString(),
-                  Colors.red[400]!,
-                ),
-                const SizedBox(width: 6),
-                _buildStatBadge(
-                  Icons.access_time,
-                  stats.pendingCount.toString(),
-                  Colors.orange[400]!,
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Text(
-              '${completionRate.toStringAsFixed(0)}%',
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildStatBadge(IconData icon, String count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.06),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: 12, color: color.withOpacity(0.7)),
-          const SizedBox(width: 2),
-          Text(
-            count,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              color: color.withOpacity(0.8),
-            ),
-          ),
-        ],
-      ),
+    return StatRow(
+      label: stats.monthName,
+      completed: stats.completedCount,
+      skipped: stats.skippedCount,
+      pending: stats.pendingCount,
     );
   }
 }
