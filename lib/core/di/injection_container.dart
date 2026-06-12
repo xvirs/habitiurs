@@ -1,10 +1,10 @@
 // lib/core/di/injection_container.dart
-import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_core/firebase_core.dart' hide FirebaseService;
 
 // Core
 import '../database/database_helper.dart';
 import '../ai/repositories/ai_repository.dart';
-import '../auth/services/auth_service.dart' hide SyncManager;
+import '../auth/services/auth_service.dart';
 import '../auth/interfaces/i_auth_service.dart';
 import '../sync/services/firebase_service.dart';
 import '../sync/services/sync_manager.dart';
@@ -111,6 +111,13 @@ class InjectionContainer {
   late final GetSettings _getSettings;
   late final UpdateSettings _updateSettings;
 
+  // BLoC singletons (una sola instancia compartida con el árbol de widgets)
+  late final HabitBloc _habitBloc;
+  late final StatisticsBloc _statisticsBloc;
+  late final AIAssistantBloc _aiAssistantBloc;
+  late final HabitEvaluationCubit _habitEvaluationCubit;
+  late final SettingsBloc _settingsBloc;
+
   bool _isInitialized = false;
 
   Future<void> init() async {
@@ -147,28 +154,23 @@ class InjectionContainer {
     _aiRepository = AIRepository();
 
     _authService = AuthService();
+    await _authService.initGuestSession();
 
     _firebaseService = FirebaseService();
 
-    // Se instancia SyncRepositoryImpl y se asigna a _syncRepository
-    _syncRepository = SyncRepositoryImpl(
-      syncManager: SyncManager(
-        // SyncManager también necesita las dependencias
-        firebaseService: _firebaseService,
-        authService: _authService,
-        habitDataSource: _habitLocalDataSource,
-        statisticsDataSource: _statisticsLocalDatasource,
-      ),
-      firebaseService: _firebaseService,
-      authService: _authService,
-    );
-
-    // Se instancia SyncManager con el SyncRepository ya disponible
+    // SyncManager: instancia única compartida
     _syncManager = SyncManager(
       firebaseService: _firebaseService,
       authService: _authService,
       habitDataSource: _habitLocalDataSource,
       statisticsDataSource: _statisticsLocalDatasource,
+    );
+
+    // SyncRepository reutiliza la misma instancia de SyncManager
+    _syncRepository = SyncRepositoryImpl(
+      syncManager: _syncManager,
+      firebaseService: _firebaseService,
+      authService: _authService,
     );
   }
 
@@ -213,6 +215,34 @@ class InjectionContainer {
     _initializeStatisticsUseCases();
     _initializeAIAssistantUseCases();
     _initializeSettingsUseCases();
+    _initializeBlocs();
+  }
+
+  void _initializeBlocs() {
+    _habitBloc = HabitBloc(
+      getAllHabits: _getAllHabits,
+      createHabit: _createHabit,
+      getWeekEntries: _getWeekEntries,
+      toggleHabitEntry: _toggleHabitEntry,
+      updatePastHabitEntry: _updatePastHabitEntry,
+      deleteHabit: _deleteHabit,
+    );
+    _statisticsBloc = StatisticsBloc(
+      getCurrentMonthStatistics: _getCurrentMonthStatistics,
+      getCurrentYearStatistics: _getCurrentYearStatistics,
+      getHistoricalData: _getHistoricalData,
+      syncRepository: _syncRepository,
+    );
+    _aiAssistantBloc = AIAssistantBloc(
+      getEducationalContent: _getEducationalContent,
+      getAppGuides: _getAppGuides,
+      getAIRecommendation: _getAIRecommendation,
+    );
+    _habitEvaluationCubit = HabitEvaluationCubit(aiRepository: _aiRepository);
+    _settingsBloc = SettingsBloc(
+      getSettings: _getSettings,
+      updateSettings: _updateSettings,
+    );
   }
 
   void _initializeAuthUseCases() {
@@ -261,35 +291,11 @@ class InjectionContainer {
     logoutUser: _logoutUser,
   );
 
-  HabitBloc get habitBloc => HabitBloc(
-    getAllHabits: _getAllHabits,
-    createHabit: _createHabit,
-    getWeekEntries: _getWeekEntries,
-    toggleHabitEntry: _toggleHabitEntry,
-    updatePastHabitEntry: _updatePastHabitEntry,
-    deleteHabit: _deleteHabit, // Se expone el use case de eliminación
-  );
-
-  StatisticsBloc get statisticsBloc => StatisticsBloc(
-    getCurrentMonthStatistics: _getCurrentMonthStatistics,
-    getCurrentYearStatistics: _getCurrentYearStatistics,
-    getHistoricalData: _getHistoricalData,
-    syncRepository: _syncRepository, // ADDED
-  );
-
-  AIAssistantBloc get aiAssistantBloc => AIAssistantBloc(
-    getEducationalContent: _getEducationalContent,
-    getAppGuides: _getAppGuides,
-    getAIRecommendation: _getAIRecommendation,
-  );
-
-  HabitEvaluationCubit get habitEvaluationCubit =>
-      HabitEvaluationCubit(aiRepository: _aiRepository);
-
-  SettingsBloc get settingsBloc => SettingsBloc(
-    getSettings: _getSettings,
-    updateSettings: _updateSettings,
-  );
+  HabitBloc get habitBloc => _habitBloc;
+  StatisticsBloc get statisticsBloc => _statisticsBloc;
+  AIAssistantBloc get aiAssistantBloc => _aiAssistantBloc;
+  HabitEvaluationCubit get habitEvaluationCubit => _habitEvaluationCubit;
+  SettingsBloc get settingsBloc => _settingsBloc;
 
   // Core Service Getters
   AIRepository get aiRepository => _aiRepository;

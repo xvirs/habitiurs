@@ -1,5 +1,7 @@
 // lib/core/bootstrap/app_bootstrap.dart - LÓGICA PURA (sin UI)
+import 'package:firebase_app_check/firebase_app_check.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter/foundation.dart';
 import 'package:habitiurs/core/errors/app_error.dart';
 import '../di/injection_container.dart';
 import '../notifications/notification_service.dart';
@@ -36,10 +38,27 @@ class AppBootstrap {
       await Firebase.initializeApp(
         options: DefaultFirebaseOptions.currentPlatform,
       );
+      await _activateAppCheck();
       print('✅ [Bootstrap] Firebase inicializado');
     } catch (e) {
       print('⚠️ [Bootstrap] Firebase falló: $e');
       // Continuar sin Firebase - modo offline
+    }
+  }
+
+  Future<void> _activateAppCheck() async {
+    try {
+      await FirebaseAppCheck.instance.activate(
+        androidProvider:
+            kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
+        appleProvider: kDebugMode
+            ? AppleProvider.debug
+            : AppleProvider.appAttestWithDeviceCheckFallback,
+      );
+      print('✅ [Bootstrap] App Check activado');
+    } catch (e) {
+      print('⚠️ [Bootstrap] App Check falló: $e');
+      // Continuar sin App Check - las llamadas a IA pueden fallar
     }
   }
 

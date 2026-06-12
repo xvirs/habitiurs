@@ -1,4 +1,4 @@
-package com.example.habitiurs
+package com.habitiurs.app
 
 import android.content.ContentValues
 import android.content.Context

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -22,12 +23,12 @@ class NotificationService {
 
     // Obtener y configurar la zona horaria local del dispositivo
     try {
-      final timeZoneName = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(timeZoneName.toString()));
-      print('✅ [NotificationService] Timezone configurado: $timeZoneName');
+      final timezoneInfo = await FlutterTimezone.getLocalTimezone();
+      tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
+      print('✅ [NotificationService] Timezone configurado: ${timezoneInfo.identifier}');
     } catch (e) {
       print('❌ [NotificationService] Error configurando timezone: $e');
-      // Fallback a UTC o local por defecto si falla
+      // Fallback a UTC si falla
     }
 
     // Configuración para Android
@@ -154,19 +155,36 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // Programar notificación
-    await _notifications.zonedSchedule(
-      0, // ID de la notificación
-      title,
-      body,
-      scheduledDate,
-      details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-      uiLocalNotificationDateInterpretation:
-          UILocalNotificationDateInterpretation.absoluteTime,
-      matchDateTimeComponents:
-          DateTimeComponents.time, // Repetir diariamente a la misma hora
-    );
+    // Programar notificación. Si el usuario no concedió el permiso de
+    // alarmas exactas (Android 12+), reintentar en modo inexacto.
+    try {
+      await _notifications.zonedSchedule(
+        0, // ID de la notificación
+        title,
+        body,
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents:
+            DateTimeComponents.time, // Repetir diariamente a la misma hora
+      );
+    } on PlatformException catch (e) {
+      if (e.code != 'exact_alarms_not_permitted') rethrow;
+      print('⚠️ Sin permiso de alarmas exactas, programando en modo inexacto');
+      await _notifications.zonedSchedule(
+        0,
+        title,
+        body,
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.time,
+      );
+    }
 
     final timeStr =
         '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';

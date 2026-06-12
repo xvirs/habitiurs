@@ -23,10 +23,10 @@ dependencies:
   path: ^1.9.0
   
   # Firebase & Auth
-  firebase_core: ^2.27.0 # ¡Verifica la última en pub.dev!
-  firebase_auth: ^4.18.0 # ¡Verifica la última en pub.dev!
+  firebase_core: ^4.10.0 # ¡Verifica la última en pub.dev!
+  firebase_auth: ^6.5.2 # ¡Verifica la última en pub.dev!
   google_sign_in: ^6.2.1 # ¡Verifica la última en pub.dev!
-  cloud_firestore: ^4.17.0 # Si la usas, también actualiza
+  cloud_firestore: ^6.5.0 # Si la usas, también actualiza
   
   # HTTP y conectividad para AI
   http: ^1.1.2
@@ -44,8 +44,9 @@ dependencies:
 
   # Inyección de dependencias
   get_it: ^7.6.7
-  flutter_dotenv: ^6.0.0
   flutter_timezone: ^5.0.1
+  firebase_ai: ^3.12.2
+  firebase_app_check: ^0.4.4+2
 
 dev_dependencies:
   flutter_test:
@@ -55,10 +56,6 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  
-  # Assets comentados hasta que los necesites
-  assets:
-    - .env
 
 flutter_icons:
   android: true

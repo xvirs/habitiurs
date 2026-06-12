@@ -4,11 +4,8 @@ import 'package:flutter/services.dart';
 import 'core/bootstrap/app_bootstrap.dart';
 import 'features/app/presentation/pages/app_page.dart';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart';
-
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await dotenv.load(fileName: ".env");
 
   // AÑADIDO: Manejador global de errores de Flutter.
   // Esto capturará cualquier excepción no controlada que ocurra en el framework de Flutter

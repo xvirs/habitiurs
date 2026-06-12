@@ -45,22 +45,23 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyAKAQl97fpJ8AROD3kIu-2MjH6ELmzIK3Q',
-    appId: '1:819697521102:android:9795e4fab473378b551b9f',
+    appId: '1:819697521102:android:5de8a675de7be642551b9f',
     messagingSenderId: '819697521102',
     projectId: 'habitiurs',
-    storageBucket: 'habitiurs.firebasestorage.app',
     databaseURL: 'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
+    storageBucket: 'habitiurs.firebasestorage.app',
   );
 
   static const FirebaseOptions ios = FirebaseOptions(
-    apiKey: 'AIzaSyAKAQl97fpJ8AROD3kIu-2MjH6ELmzIK3Q',
-    appId: '1:819697521102:ios:PENDIENTE', // ⚠️ Necesitas crear app iOS si planeas usarla
+    apiKey: 'AIzaSyDoAC1gUgu-AraENT9B89Z4RFM8B-5XEDk',
+    appId: '1:819697521102:ios:ce4ed0eae806329e551b9f',
     messagingSenderId: '819697521102',
     projectId: 'habitiurs',
-    storageBucket: 'habitiurs.firebasestorage.app',
     databaseURL: 'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
-    iosClientId: '819697521102-4rpdp15lq4in3uho5sc8cdrrc29vvhs4.apps.googleusercontent.com',
-    iosBundleId: 'com.example.habitiurs',
+    storageBucket: 'habitiurs.firebasestorage.app',
+    androidClientId: '819697521102-4rpdp15lq4in3uho5sc8cdrrc29vvhs4.apps.googleusercontent.com',
+    iosClientId: '819697521102-kodd2j2o6febq2269sp1i5u7bj5jiuks.apps.googleusercontent.com',
+    iosBundleId: 'com.habitiurs.app',
   );
 
   static const FirebaseOptions macos = FirebaseOptions(

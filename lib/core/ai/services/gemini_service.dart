@@ -1,19 +1,19 @@
-import 'dart:convert';
 import 'dart:io';
+import 'package:firebase_ai/firebase_ai.dart';
 import 'package:habitiurs/core/ai/models/ai_response_model.dart';
 import 'package:http/http.dart' as http;
 import '../models/ai_request_model.dart';
 
-import 'package:flutter_dotenv/flutter_dotenv.dart'; // Importante para leer el .env
-
 class GeminiService {
-  static const String _baseUrl =
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+  static const String _modelName = 'gemini-2.0-flash';
 
-  // Eliminamos la constante estática hardcodeada
-  // static const String _apiKey = '...';
+  // El modelo se crea de forma perezosa porque FirebaseAI requiere que
+  // Firebase.initializeApp() ya se haya ejecutado.
+  GenerativeModel? _model;
 
-  String get _apiKey => dotenv.env['GEMINI_API_KEY'] ?? '';
+  GenerativeModel get _generativeModel {
+    return _model ??= FirebaseAI.googleAI().generativeModel(model: _modelName);
+  }
 
   final http.Client _client;
   static final GeminiService _instance = GeminiService._internal();
@@ -22,45 +22,26 @@ class GeminiService {
   GeminiService._internal() : _client = http.Client();
 
   Future<AIResponse> generateContent(AIRequest request) async {
-    if (_apiKey == 'YOUR_GEMINI_API_KEY_HERE') {
-      throw AIException('API Key no configurada');
-    }
-
     try {
-      final requestBody = {
-        'contents': [
-          {
-            'parts': [
-              {'text': request.prompt},
-            ],
-          },
-        ],
-      };
-
-      final response = await _client
-          .post(
-            Uri.parse('$_baseUrl?key=$_apiKey'),
-            headers: {'Content-Type': 'application/json'},
-            body: jsonEncode(requestBody),
-          )
+      final response = await _generativeModel
+          .generateContent([Content.text(request.prompt)])
           .timeout(const Duration(seconds: 20));
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        final content =
-            data['candidates'][0]['content']['parts'][0]['text'] as String;
-
-        return AIResponse(
-          id: DateTime.now().millisecondsSinceEpoch.toString(),
-          content: content.trim(),
-          type: request.type,
-          metadata: request.metadata,
-          timestamp: DateTime.now(),
-          isFromAI: true,
-        );
-      } else {
-        throw _handleHttpError(response.statusCode, response.body);
+      final content = response.text;
+      if (content == null || content.isEmpty) {
+        throw AIException('Respuesta vacía del modelo');
       }
+
+      return AIResponse(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        content: content.trim(),
+        type: request.type,
+        metadata: request.metadata,
+        timestamp: DateTime.now(),
+        isFromAI: true,
+      );
+    } on FirebaseAIException catch (e) {
+      throw _mapFirebaseAIError(e);
     } on SocketException {
       throw AINetworkException('Sin conexión a internet');
     } on HttpException {
@@ -91,19 +72,22 @@ class GeminiService {
     }
   }
 
-  AIException _handleHttpError(int statusCode, String body) {
-    switch (statusCode) {
-      case 400:
-        return AIException('Request inválido: $body');
-      case 403:
-        return AIException('API Key inválida o sin permisos');
-      case 404:
-        return AIException('Modelo no disponible');
-      case 429:
-        return AIRateLimitException('Límite de API alcanzado');
-      default:
-        return AIException('Error de API: $statusCode');
+  AIException _mapFirebaseAIError(FirebaseAIException e) {
+    final message = e.message.toLowerCase();
+    if (message.contains('quota') ||
+        message.contains('resource exhausted') ||
+        message.contains('429')) {
+      return AIRateLimitException('Límite de API alcanzado');
     }
+    if (message.contains('permission') ||
+        message.contains('app check') ||
+        message.contains('forbidden')) {
+      return AIException('Acceso denegado al servicio de IA');
+    }
+    if (message.contains('not found')) {
+      return AIException('Modelo no disponible');
+    }
+    return AIException('Error de API: ${e.message}');
   }
 
   void dispose() {
