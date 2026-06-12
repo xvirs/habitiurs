@@ -88,21 +88,36 @@ class _LoadedView extends StatelessWidget {
 
   const _LoadedView({required this.state});
 
+  /// Pull-to-refresh: regenera la recomendación IA (acción manual,
+  /// equivalente al botón de la topbar — cuesta una llamada a Gemini).
+  Future<void> _refreshRecommendation(BuildContext context) async {
+    final bloc = context.read<AIAssistantBloc>();
+    bloc.add(RefreshAIRecommendation());
+    await bloc.stream
+        .firstWhere(
+          (s) => s is! AIAssistantLoaded || !s.isRecommendationLoading,
+        )
+        .timeout(const Duration(seconds: 25), onTimeout: () => bloc.state);
+  }
+
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      child: Column(
-        children: [
-          AIRecommendationSection(
-            recommendation: state.currentRecommendation,
-            isLoading: state.isRecommendationLoading,
-            hasInternetConnection: state.hasInternetConnection,
-          ),
-          EducationalContentSection(content: state.educationalContent),
-          AppGuideSection(guides: state.appGuides),
-          const SizedBox(height: 16),
-        ],
+    return RefreshIndicator(
+      onRefresh: () => _refreshRecommendation(context),
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        child: Column(
+          children: [
+            AIRecommendationSection(
+              recommendation: state.currentRecommendation,
+              isLoading: state.isRecommendationLoading,
+              hasInternetConnection: state.hasInternetConnection,
+            ),
+            EducationalContentSection(content: state.educationalContent),
+            AppGuideSection(guides: state.appGuides),
+            const SizedBox(height: 16),
+          ],
+        ),
       ),
     );
   }

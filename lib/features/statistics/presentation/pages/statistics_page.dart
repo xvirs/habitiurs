@@ -14,6 +14,16 @@ import '../widgets/historical_chart.dart';
 class StatisticsPage extends StatelessWidget {
   const StatisticsPage({Key? key}) : super(key: key);
 
+  /// Dispara el recálculo y espera a que el bloc termine, para que el
+  /// indicador del gesto pull-to-refresh gire hasta que haya datos frescos.
+  Future<void> _refreshStatistics(BuildContext context) async {
+    final bloc = context.read<StatisticsBloc>();
+    bloc.add(RefreshStatistics());
+    await bloc.stream
+        .firstWhere((s) => s is! StatisticsLoaded || !s.isRefreshing)
+        .timeout(const Duration(seconds: 15), onTimeout: () => bloc.state);
+  }
+
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<StatisticsBloc, StatisticsState>(
@@ -52,11 +62,13 @@ class StatisticsPage extends StatelessWidget {
         }
 
         if (state is StatisticsLoaded) {
-          return Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
+          return RefreshIndicator(
+            onRefresh: () => _refreshStatistics(context),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   child: Column(
@@ -80,6 +92,7 @@ class StatisticsPage extends StatelessWidget {
                 ),
               ),
             ),
+          ),
           );
         }
 

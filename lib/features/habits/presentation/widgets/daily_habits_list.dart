@@ -92,6 +92,7 @@ class _HabitsListView extends StatelessWidget {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
       child: ListView.separated(
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         itemCount: habits.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),

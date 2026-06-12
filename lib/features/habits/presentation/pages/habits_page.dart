@@ -123,15 +123,28 @@ class HabitsPageState extends State<HabitsPage>
           context.read<HabitBloc>().add(LoadHabits());
         },
       ),
-      HabitLoaded() => _LoadedView(
-        state: state,
-        todayEntriesMap: _getTodayEntriesMap(state.weekEntries),
-        onToggle: _handleToggle,
-        onDelete: _handleDelete,
-        onAdd: _handleAdd,
+      HabitLoaded() => RefreshIndicator(
+        onRefresh: _handlePullToRefresh,
+        child: _LoadedView(
+          state: state,
+          todayEntriesMap: _getTodayEntriesMap(state.weekEntries),
+          onToggle: _handleToggle,
+          onDelete: _handleDelete,
+          onAdd: _handleAdd,
+        ),
       ),
       _ => const _LoadingView(),
     };
+  }
+
+  /// Pull-to-refresh: sincronización completa con la nube. El indicador
+  /// gira hasta que el bloc termina de refrescar.
+  Future<void> _handlePullToRefresh() async {
+    final bloc = context.read<HabitBloc>();
+    bloc.add(PullToRefresh());
+    await bloc.stream
+        .firstWhere((s) => s is! HabitLoaded || !s.isRefreshing)
+        .timeout(const Duration(seconds: 20), onTimeout: () => bloc.state);
   }
 
   Map<int, HabitStatus> _getTodayEntriesMap(List<HabitEntry> weekEntries) {
@@ -313,6 +326,7 @@ class _LoadedView extends StatelessWidget {
         Expanded(
           flex: 1,
           child: SingleChildScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.4,
               child: WeeklyGrid(

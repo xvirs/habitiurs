@@ -106,11 +106,26 @@ class _MainPageState extends State<MainPage> {
       setState(() {
         _currentIndex = index;
       });
-      // Solo cargar datos si es la primera vez que se visita esta pestaña
       if (!_visitedTabs.contains(index)) {
         _visitedTabs.add(index);
         _loadDataForTab(index);
+      } else {
+        _silentRefreshTab(index);
       }
+    }
+  }
+
+  /// Refresco barato (solo lectura local) al volver a una pestaña ya visitada,
+  /// para que nunca muestre datos viejos. La recomendación IA queda fuera:
+  /// regenerarla cuesta una llamada a Gemini y solo se hace manualmente.
+  void _silentRefreshTab(int index) {
+    switch (index) {
+      case 1:
+        context.read<HabitBloc>().add(RefreshData());
+        break;
+      case 2:
+        context.read<StatisticsBloc>().add(RefreshStatistics());
+        break;
     }
   }
 
