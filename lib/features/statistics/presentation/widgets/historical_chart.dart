@@ -279,7 +279,8 @@ class _HistoricalChartPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(_HistoricalChartPainter oldDelegate) =>
+      data != oldDelegate.data || maxValue != oldDelegate.maxValue;
 }
 
 class _LoadingContent extends StatelessWidget {

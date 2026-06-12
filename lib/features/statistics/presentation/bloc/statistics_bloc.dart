@@ -28,6 +28,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     LoadStatistics event,
     Emitter<StatisticsState> emit,
   ) async {
+    print('🔄 [StatisticsBloc] Cargando estadísticas...');
     emit(StatisticsLoading());
     try {
       final results = await Future.wait([
@@ -35,6 +36,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         getCurrentYearStatistics(),
         getHistoricalData(),
       ]);
+      print('✅ [StatisticsBloc] Estadísticas cargadas correctamente');
       emit(
         StatisticsLoaded(
           currentMonth: results[0] as MonthlyStatistics,
@@ -44,6 +46,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         ),
       );
     } catch (e) {
+      print('❌ [StatisticsBloc] Error al cargar estadísticas: $e');
       emit(StatisticsError('Error al cargar estadísticas: ${e.toString()}'));
     }
   }
@@ -52,6 +55,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     RefreshStatistics event,
     Emitter<StatisticsState> emit,
   ) async {
+    print('🔄 [StatisticsBloc] Actualizando estadísticas con sync...');
     final currentState = state;
     try {
       if (currentState is StatisticsLoaded) {
@@ -60,7 +64,6 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         emit(StatisticsLoading());
       }
 
-      // Realiza una sincronización completa usando el repositorio inyectado
       await syncRepository.syncAll();
 
       final results = await Future.wait([
@@ -68,6 +71,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         getCurrentYearStatistics(),
         getHistoricalData(),
       ]);
+      print('✅ [StatisticsBloc] Estadísticas actualizadas tras sync');
       emit(
         StatisticsLoaded(
           currentMonth: results[0] as MonthlyStatistics,
@@ -77,6 +81,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         ),
       );
     } catch (e) {
+      print('❌ [StatisticsBloc] Error al actualizar estadísticas: $e');
       if (currentState is StatisticsLoaded) {
         emit(
           currentState.copyWith(

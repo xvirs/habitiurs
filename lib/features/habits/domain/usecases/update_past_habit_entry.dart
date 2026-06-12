@@ -8,15 +8,17 @@ class UpdatePastHabitEntry {
   UpdatePastHabitEntry(this.repository);
 
   Future<void> call(int habitId, DateTime date, HabitStatus newStatus) async {
-    // Validar que la fecha NO sea hoy o futuro (solo días pasados)
     final isToday = AppDateUtils.isToday(date);
     final isFuture = AppDateUtils.isFutureDate(date);
+    final dateStr = date.toIso8601String().split('T')[0];
 
     if (isToday || isFuture) {
+      print('❌ [UpdatePastHabitEntry] Fecha inválida para edición histórica: $dateStr');
       throw Exception('Solo se puede modificar el estado de días pasados');
     }
 
-    // Actualizar el estado del hábito
+    print('🔄 [UpdatePastHabitEntry] Editando día pasado — habitId: $habitId, fecha: $dateStr → ${newStatus.name}');
     await repository.updateHabitEntryStatus(habitId, date, newStatus);
+    print('✅ [UpdatePastHabitEntry] Entrada actualizada: habitId=$habitId, $dateStr → ${newStatus.name}');
   }
 }

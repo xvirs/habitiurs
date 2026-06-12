@@ -6,7 +6,10 @@ abstract class AuthState {}
 
 class AuthInitial extends AuthState {}
 
-class AuthLoading extends AuthState {}
+class AuthLoading extends AuthState {
+  final String? message;
+  AuthLoading({this.message});
+}
 
 class AuthAuthenticated extends AuthState {
   final User user;
@@ -31,6 +34,5 @@ class AuthError extends AuthState {
 
   AuthError(this.message, {this.technicalDetails}); // Add the named parameter
 
-  @override
   List<Object?> get props => [message, technicalDetails];
 }

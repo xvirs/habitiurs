@@ -17,13 +17,18 @@ class HabitRepositoryImpl implements HabitRepository {
 
   @override
   Future<List<Habit>> getAllHabits() async {
-    return await localDataSource.getAllHabits(includeInactive: false);
+    final habits = await localDataSource.getAllHabits(includeInactive: false);
+    print('📋 [HabitRepository] ${habits.length} hábito(s) activo(s) cargados de BD local');
+    return habits;
   }
 
   @override
   Future<int> createHabit(Habit habit) async {
+    print('🔄 [HabitRepository] Insertando hábito: "${habit.name}"');
     final habitModel = HabitModel.fromEntity(habit);
-    return await localDataSource.insertHabit(habitModel);
+    final id = await localDataSource.insertHabit(habitModel);
+    print('✅ [HabitRepository] Hábito insertado con ID: $id');
+    return id;
   }
 
   @override
@@ -34,24 +39,20 @@ class HabitRepositoryImpl implements HabitRepository {
 
   @override
   Future<void> deleteHabit(int id, String userId) async {
-    try {
-      // 1. Eliminar localmente el hábito y sus entradas relacionadas
-      await localDataSource.deleteHabit(id);
-      print('✅ [HabitRepository] Hábito $id eliminado localmente.');
+    // 1. Eliminar localmente — operación principal, debe completarse siempre
+    await localDataSource.deleteHabit(id);
+    print('✅ [HabitRepository] Hábito $id eliminado localmente.');
 
-      // 2. Solicitar la eliminación remota del hábito.
-      // Se utiliza `deleteHabitRemotely` para una eliminación completa en la nube.
-      await _syncRepository.deleteHabitRemotely(userId, id);
+    // 2. Eliminar remotamente de forma best-effort (no bloquea, no lanza)
+    // Guests y usuarios offline no tienen acceso a Firestore — es correcto ignorar el error.
+    // En el próximo syncAll los cambios locales se propagan.
+    _syncRepository.deleteHabitRemotely(userId, id).then((_) {
+      print('✅ [HabitRepository] Hábito $id eliminado remotamente.');
+    }).catchError((e) {
       print(
-        '✅ [HabitRepository] Solicitada eliminación remota para hábito $id.',
+        '⚠️ [HabitRepository] Eliminación remota de hábito $id no completada (se reintentará): $e',
       );
-    } catch (e, stackTrace) {
-      // Captura cualquier error que provenga de la eliminación local o remota
-      print(
-        '❌ [HabitRepository] Error CRÍTICO al eliminar hábito $id: $e\n$stackTrace',
-      );
-      rethrow; // Propaga la excepción para que sea manejada por el BLoC
-    }
+    });
   }
 
   @override
@@ -82,6 +83,9 @@ class HabitRepositoryImpl implements HabitRepository {
       normalizedDate,
     );
 
+    final dateStr = normalizedDate.toIso8601String().split('T')[0];
+    print('🔄 [HabitRepository] Actualizando entrada — habitId: $habitId, fecha: $dateStr, estado: ${status.name}');
+
     if (existingEntry != null) {
       final updatedEntry = HabitEntryModel(
         id: existingEntry.id,
@@ -91,6 +95,7 @@ class HabitRepositoryImpl implements HabitRepository {
         lastModified: DateTime.now(),
       );
       await localDataSource.updateHabitEntry(updatedEntry);
+      print('✅ [HabitRepository] Entrada actualizada — habitId: $habitId, $dateStr → ${status.name}');
     } else {
       // Solo crear entrada si el estado es diferente a pending
       if (status != HabitStatus.pending) {
@@ -101,6 +106,9 @@ class HabitRepositoryImpl implements HabitRepository {
           lastModified: DateTime.now(),
         );
         await localDataSource.insertHabitEntry(newEntry);
+        print('✅ [HabitRepository] Entrada creada — habitId: $habitId, $dateStr → ${status.name}');
+      } else {
+        print('ℹ️ [HabitRepository] Sin entrada creada — estado pending no requiere registro (habitId: $habitId, $dateStr)');
       }
     }
 

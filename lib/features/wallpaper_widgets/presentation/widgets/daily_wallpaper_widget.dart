@@ -53,8 +53,8 @@ class _WallpaperHabitName extends StatelessWidget {
             ? TextDecoration.lineThrough
             : null,
         color: status == HabitStatus.completed
-            ? Colors.grey[600]
-            : Colors.black87, // Color predeterminado para el texto
+            ? Colors.white60
+            : Colors.white,
         fontWeight: FontWeight.w500,
         fontSize: 14,
       ),
@@ -177,14 +177,7 @@ class _DailyWallpaperWidgetState extends State<DailyWallpaperWidget> {
         if (entryForHabitToday != null) {
           todayEntries[habit.id!] = entryForHabitToday.status;
         } else {
-          // Si no hay entrada para hoy, y el hábito es de un día anterior,
-          // se podría considerar 'skipped' por defecto para el wallpaper
-          // Esto es una simplificación ya que no hay interacción para cambiarlo
-          if (AppDateUtils.isPastDate(today)) {
-             todayEntries[habit.id!] = HabitStatus.skipped;
-          } else {
-             todayEntries[habit.id!] = HabitStatus.pending;
-          }
+          todayEntries[habit.id!] = HabitStatus.pending;
         }
       }
 

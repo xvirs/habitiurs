@@ -70,7 +70,10 @@ class SyncManager {
 
         // 2. Si no hay sync en progreso, intentar sync con nube
         if (!_isSyncing) {
-          syncAll();
+          syncAll().catchError((e) {
+            print('⚠️ [SyncManager] Error en auto-sync: $e');
+            return false;
+          });
         }
       }
     });
@@ -163,9 +166,21 @@ class SyncManager {
         throw Exception('Sin conexión a internet');
       }
 
-      await _syncUser(user);
+      // User sync is non-critical: quota/network failure shouldn't abort habit download
+      try {
+        await _syncUser(user);
+      } catch (e) {
+        _logSyncError('User sync', e);
+      }
+
       await _syncHabitsWithBidirectionalMerge(user.id);
-      await _syncHabitEntriesWithBidirectionalMerge(user.id);
+
+      // Entry sync is non-critical: failure should not prevent showing downloaded habits
+      try {
+        await _syncHabitEntriesWithBidirectionalMerge(user.id);
+      } catch (e) {
+        _logSyncError('Entry sync', e);
+      }
 
       _setLastSyncTime(DateTime.now());
       _syncStatusController.add(SyncStatus.completed);
@@ -472,19 +487,6 @@ class SyncManager {
     }
   }
 
-  // Strategy to resolve status conflicts for habit entries (keeping this for context, though `lastModified` approach is better for entries)
-  HabitStatus _resolveStatusConflict(HabitStatus local, HabitStatus remote) {
-    const priority = {
-      HabitStatus.completed: 3,
-      HabitStatus.skipped: 2,
-      HabitStatus.pending: 1,
-    };
-    final localPriority = priority[local] ?? 0;
-    final remotePriority = priority[remote] ?? 0;
-
-    return localPriority >= remotePriority ? local : remote;
-  }
-
   Future<bool> syncHabitsOnly() async {
     final user = _authService.currentUser;
     if (user == null || user.isGuest) return false;
@@ -544,6 +546,15 @@ class SyncManager {
   void resumeAutoSync() {
     _initializeAutoSync(); // Re-inicializa el temporizador
     print('▶️ [SyncManager] Auto-sync reanudado');
+  }
+
+  void _logSyncError(String step, Object e) {
+    final msg = e.toString();
+    if (msg.contains('RESOURCE_EXHAUSTED') || msg.contains('Quota exceeded')) {
+      print('🚫 [SyncManager] $step fallido — cuota de Firestore agotada (se renueva en 24 h): $e');
+    } else {
+      print('⚠️ [SyncManager] $step fallido, continuando: $e');
+    }
   }
 
   void _setIsSyncing(bool value) {

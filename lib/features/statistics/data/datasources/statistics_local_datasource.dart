@@ -17,12 +17,14 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
   @override
   Future<MonthlyStatisticsModel> getCurrentMonthStatistics() async {
     final now = DateTime.now();
+    print('📊 [Statistics] Cargando estadísticas mes ${now.month}/${now.year}');
     return await getMonthStatistics(now.year, now.month);
   }
 
   @override
   Future<List<MonthlyStatisticsModel>> getCurrentYearStatistics() async {
     final now = DateTime.now();
+    print('📊 [Statistics] Cargando estadísticas del año ${now.year}');
     final List<MonthlyStatisticsModel> yearStatistics = [];
     for (int month = 1; month <= 12; month++) {
       final monthStats = await getMonthStatistics(now.year, month);
@@ -30,14 +32,16 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
         yearStatistics.add(monthStats);
       }
     }
+    print('📊 [Statistics] Año ${now.year}: ${yearStatistics.length} mes(es) con datos');
     return yearStatistics;
   }
 
   @override
   Future<List<HistoricalDataPointModel>> getHistoricalData() async {
+    print('📊 [Statistics] Cargando datos históricos...');
     final db = await databaseHelper.database;
     const query = '''
-      SELECT 
+      SELECT
         strftime('%Y-%m', date) as date,
         COUNT(CASE WHEN status = ? THEN 1 END) as completed_count,
         COUNT(CASE WHEN status = ? THEN 1 END) as skipped_count
@@ -52,6 +56,7 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
       HabitStatus.completed.index,
       HabitStatus.skipped.index,
     ]);
+    print('📊 [Statistics] ${result.length} punto(s) histórico(s) obtenidos');
     return result.map((map) {
       final dateStr = map['date'] as String;
       final parts = dateStr.split('-');
@@ -74,7 +79,7 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
 
     // 1. Obtener "Total Esperado" (Opportunities) calculado teóricamente
     // Basado en cuándo se creó cada hábito.
-    final habitsResult = await db.query('habits'); // Asumimos tabla 'habits'
+    final habitsResult = await db.query('habits');
     int calculatedTotalHabits = 0;
 
     // Límite superior para contar "oportunidades": Hasta hoy o fin de mes, lo que pase antes.

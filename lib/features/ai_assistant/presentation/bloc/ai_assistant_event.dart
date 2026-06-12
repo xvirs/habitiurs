@@ -5,4 +5,3 @@ class LoadAIAssistantData extends AIAssistantEvent {}
 
 class RefreshAIRecommendation extends AIAssistantEvent {}
 
-class RefreshEducationalContent extends AIAssistantEvent {}

@@ -56,7 +56,7 @@ class _WallpaperDayColumn extends StatelessWidget {
           ? BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: primaryColor.withOpacity(0.8),
+                  color: primaryColor.withValues(alpha: 0.8),
                   width: 1.5,
                 ),
               ),
@@ -92,11 +92,13 @@ class _WallpaperStatusCell extends StatelessWidget {
   final int habitId;
   final DateTime date;
   final List<HabitEntry> weekEntries;
+  final DateTime createdAt;
 
   const _WallpaperStatusCell({
     required this.habitId,
     required this.date,
     required this.weekEntries,
+    required this.createdAt,
   });
 
   HabitEntry? _findEntryForDate() {
@@ -126,18 +128,20 @@ class _WallpaperStatusCell extends StatelessWidget {
     final isToday = AppDateUtils.isToday(date);
     final isPastDate = AppDateUtils.isPastDate(date);
 
-    // Para el wallpaper, si es una fecha pasada y no hay entrada, se considera omitido
-    final displayStatus = (isPastDate && entry == null)
+    // Fechas anteriores a la creación del hábito no deben mostrarse como omitidas
+    final habitCreationDay = AppDateUtils.getStartOfDay(createdAt);
+    final isBeforeCreation = date.isBefore(habitCreationDay);
+    final displayStatus = (isPastDate && entry == null && !isBeforeCreation)
         ? HabitStatus.skipped
         : status;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 1),
       decoration: BoxDecoration(
-        color: _getCellColor(displayStatus).withOpacity(0.8), // Un poco transparente para el wallpaper
+        color: _getCellColor(displayStatus).withValues(alpha: 0.8),
         border: isToday
             ? Border.all(
-                color: Theme.of(context).colorScheme.primary.withOpacity(0.8),
+                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.8),
                 width: 2,
               )
             : null,
@@ -273,6 +277,7 @@ class _WeeklyWallpaperWidgetState extends State<WeeklyWallpaperWidget> {
                                 habitId: habit.id!,
                                 date: date,
                                 weekEntries: _weekEntries,
+                                createdAt: habit.createdAt,
                               ),
                             )),
                       ],

@@ -1,4 +1,5 @@
 // lib/core/sync/services/firebase_service.dart
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:habitiurs/core/auth/models/user_preferences.dart';
 import '../../auth/models/user.dart';
@@ -157,34 +158,39 @@ class FirebaseService {
   // HABIT ENTRIES SYNC 
   Future<void> syncHabitEntries(String userId, List<Map<String, dynamic>> entries) async {
     try {
-      final batch = _firestore.batch();
       final userEntriesRef = _firestore
           .collection(_usersCollection)
           .doc(userId)
           .collection(_habitEntriesCollection);
 
       const chunkSize = 500;
-      
+
       for (int i = 0; i < entries.length; i += chunkSize) {
         final chunk = entries.skip(i).take(chunkSize).toList();
-        
+        // Nuevo batch por chunk — un WriteBatch no puede reutilizarse tras commit()
+        final chunkBatch = _firestore.batch();
+
         for (final entry in chunk) {
           final entryKey = '${entry['habit_id']}_${entry['date']}';
           final docRef = userEntriesRef.doc(entryKey);
-          
-          batch.set(docRef, {
+
+          chunkBatch.set(docRef, {
             'habit_id': entry['habit_id'],
             'date': entry['date'],
             'status': entry['status'],
-             if (entry['id'] != null) 'entry_id': entry['id'],
+            if (entry['id'] != null) 'entry_id': entry['id'],
             'user_id': userId,
             'last_sync': FieldValue.serverTimestamp(),
             'device_sync_time': DateTime.now().toIso8601String(),
-            'last_modified': FieldValue.serverTimestamp(), // Se usa timestamp del servidor
+            // Preservar el timestamp real del cambio; solo usar server timestamp para entradas nuevas
+            if (entry['last_modified'] != null)
+              'last_modified': Timestamp.fromDate(DateTime.parse(entry['last_modified'] as String))
+            else
+              'last_modified': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         }
-        
-        await batch.commit();
+
+        await chunkBatch.commit();
         print('✅ [Firebase] Chunk ${(i / chunkSize).floor() + 1} sincronizado (${chunk.length} entradas)');
       }
     } catch (e) {
@@ -215,7 +221,9 @@ class FirebaseService {
           'entry_id': data['entry_id'],
           'last_sync': data['last_sync'],
           'firestore_id': doc.id,
-          'last_modified': (data['last_modified'] as Timestamp?)?.toDate().toIso8601String(), 
+          'last_modified': data['last_modified'] is Timestamp
+              ? (data['last_modified'] as Timestamp).toDate().toIso8601String()
+              : data['last_modified'] as String?,
         };
       }).toList();
 
@@ -275,30 +283,12 @@ class FirebaseService {
     }
   }
 
-  Future<DateTime> getServerTimestamp() async {
-    try {
-      final doc = await _firestore.collection('_timestamp').add({
-        'timestamp': FieldValue.serverTimestamp(),
-      });
-      
-      final snapshot = await doc.get();
-      await doc.delete(); 
-      
-      final timestamp = snapshot.data()?['timestamp'] as Timestamp?;
-      return timestamp?.toDate() ?? DateTime.now();
-    } catch (e) {
-      return DateTime.now();
-    }
-  }
-
   Future<bool> hasInternetConnection() async {
     try {
-      // Intenta habilitar la red de Firestore para verificar la conectividad.
-      // Si no hay red, esto lanzará una excepción.
-      await _firestore.enableNetwork();
-      return true;
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 5));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (e) {
-      print('❌ [FirebaseService] No hay conexión a internet o error de red: $e');
       return false;
     }
   }

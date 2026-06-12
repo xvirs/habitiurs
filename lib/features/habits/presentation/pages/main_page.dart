@@ -18,6 +18,8 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import 'dart:async';
 
+
+
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -28,7 +30,8 @@ class MainPage extends StatefulWidget {
 class _MainPageState extends State<MainPage> {
   int _currentIndex = 1;
   StreamSubscription? _authBlocSyncSubscription;
-  final Set<int> _visitedTabs = {1}; // Start with Habits tab as visited
+  final Set<int> _visitedTabs = {1};
+  bool _isSyncing = false;
 
   static const List<String> _pageTitles = [
     'Asistente IA',
@@ -50,19 +53,23 @@ class _MainPageState extends State<MainPage> {
 
   void _setupAuthSyncSubscription() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _authBlocSyncSubscription = context
-            .read<AuthBloc>()
-            .initialSyncCompletedStream
-            .listen((_) => _onInitialSyncCompleted());
+      if (!mounted) return;
+      final authBloc = context.read<AuthBloc>();
+      final authState = authBloc.state;
+      if (authState is AuthAuthenticated &&
+          !authState.user.isGuest &&
+          !authBloc.isSyncCompleted) {
+        setState(() => _isSyncing = true);
       }
+      _authBlocSyncSubscription = authBloc.initialSyncCompletedStream
+          .listen((_) => _onInitialSyncCompleted());
     });
   }
 
   void _onInitialSyncCompleted() {
-    // Solo recargar AI Assistant y Statistics
-    // HabitsPage maneja su propia carga
+    if (mounted) setState(() => _isSyncing = false);
     _loadDataForTab(0);
+    _loadDataForTab(1);
     _loadDataForTab(2);
   }
 
@@ -72,7 +79,7 @@ class _MainPageState extends State<MainPage> {
         context.read<AIAssistantBloc>().add(LoadAIAssistantData());
         break;
       case 1:
-        // HabitsPage maneja su propia carga inicial
+        context.read<HabitBloc>().add(LoadHabits());
         break;
       case 2:
         context.read<StatisticsBloc>().add(LoadStatistics());
@@ -131,9 +138,21 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
       drawer: UserDrawer(onDataSynced: _refreshCurrentTab),
-      body: IndexedStack(
-        index: _currentIndex,
-        children: const [AIAssistantPage(), HabitsPage(), StatisticsPage()],
+      body: Column(
+        children: [
+          if (_isSyncing)
+            LinearProgressIndicator(
+              minHeight: 2,
+              backgroundColor: Colors.transparent,
+              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+            ),
+          Expanded(
+            child: IndexedStack(
+              index: _currentIndex,
+              children: const [AIAssistantPage(), HabitsPage(), StatisticsPage()],
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: _BottomNavBar(
         currentIndex: _currentIndex,

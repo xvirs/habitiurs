@@ -173,9 +173,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   }
 
   void _syncInBackground(String action) {
-    _performBackgroundSync(action).catchError((_) {
-      // Silent fail for background sync
-    });
+    _performBackgroundSync(action).catchError((_) => false);
   }
 
   Future<bool> _performBackgroundSync(String action) async {

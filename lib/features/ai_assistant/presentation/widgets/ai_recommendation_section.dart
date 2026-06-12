@@ -25,7 +25,7 @@ class AIRecommendationSection extends StatelessWidget {
           children: [
             _Header(isLoading: isLoading),
             const SizedBox(height: 8),
-            _ConnectionStatus(hasInternetConnection: hasInternetConnection),
+            const _ConnectionStatus(),
             const SizedBox(height: 16),
             _RecommendationContent(
               recommendation: recommendation,
@@ -66,9 +66,7 @@ class _Header extends StatelessWidget {
 }
 
 class _ConnectionStatus extends StatelessWidget {
-  final bool hasInternetConnection;
-
-  const _ConnectionStatus({required this.hasInternetConnection});
+  const _ConnectionStatus();
 
   @override
   Widget build(BuildContext context) {
@@ -145,15 +143,16 @@ class _EmptyContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[100],
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(8),
       ),
-      child: const Text(
+      child: Text(
         'No se pudo obtener una recomendación en este momento. Intenta refrescar.',
-        style: TextStyle(fontSize: 13),
+        style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
         textAlign: TextAlign.center,
       ),
     );
@@ -167,14 +166,14 @@ class _RecommendationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Siempre usar estilo de IA para recomendaciones personalizadas
+    final theme = Theme.of(context);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: theme.colorScheme.primaryContainer,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.blue[200]!,
+          color: theme.colorScheme.primary.withValues(alpha: 0.3),
         ),
       ),
       child: Column(

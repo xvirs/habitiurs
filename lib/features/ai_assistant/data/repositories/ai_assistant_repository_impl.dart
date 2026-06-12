@@ -3,6 +3,7 @@ import '../../../../core/ai/models/ai_request_model.dart';
 import '../../../../core/ai/models/ai_response_model.dart';
 import '../../../../core/ai/models/ai_context_builder.dart';
 import '../../../../core/ai/repositories/ai_repository.dart';
+import '../../../../shared/enums/habit_status.dart';
 import '../../../habits/domain/repositories/habit_repository.dart';
 import '../../domain/entities/educational_content.dart';
 import '../../domain/entities/app_guide.dart';
@@ -40,8 +41,10 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
 
   @override
   Future<AIResponse> getAIRecommendation() async {
+    print('🤖 [AIAssistant] Generando contexto de usuario...');
     try {
       final userContext = await _generateUserContext();
+      print('🤖 [AIAssistant] Contexto listo — hábitos: ${(userContext['habit_names'] as List?)?.length ?? 0}, racha actual: ${userContext['current_streak']}, días rastreados: ${userContext['total_days_tracked']}');
 
       final aiContext = AIContextBuilder.buildPersonalRecommendationContext(
         habitNames: userContext['habit_names'] ?? [],
@@ -93,7 +96,7 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
 
       for (final habit in habits) {
         final habitEntries = entries.where((e) => e.habitId == habit.id).toList();
-        final completedCount = habitEntries.where((e) => e.status.toString() == 'HabitStatus.completed').length;
+        final completedCount = habitEntries.where((e) => e.status == HabitStatus.completed).length;
         final totalCount = habitEntries.length;
         
         final rate = totalCount > 0 ? completedCount / totalCount : 0.0;
@@ -138,23 +141,27 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
 
   int _calculateCurrentStreak(List entries) {
     if (entries.isEmpty) return 0;
-    
+
     final Map<String, bool> dayCompletions = {};
-    
+
     for (final entry in entries) {
       final dateStr = entry.date.toIso8601String().split('T')[0];
-      if (entry.status.toString() == 'HabitStatus.completed') {
+      if (entry.status == HabitStatus.completed) {
         dayCompletions[dateStr] = true;
       }
     }
 
     int streak = 0;
     final today = DateTime.now();
-    
-    for (int i = 0; i < 365; i++) {
+    // If today has no completion yet, the streak is still alive from yesterday —
+    // don't penalize users who haven't completed habits yet today.
+    final todayStr = today.toIso8601String().split('T')[0];
+    final startOffset = dayCompletions[todayStr] == true ? 0 : 1;
+
+    for (int i = startOffset; i < 365; i++) {
       final checkDate = today.subtract(Duration(days: i));
       final dateStr = checkDate.toIso8601String().split('T')[0];
-      
+
       if (dayCompletions[dateStr] == true) {
         streak++;
       } else {
@@ -172,7 +179,7 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
     
     for (final entry in entries) {
       final dateStr = entry.date.toIso8601String().split('T')[0];
-      if (entry.status.toString() == 'HabitStatus.completed') {
+      if (entry.status == HabitStatus.completed) {
         dayCompletions[dateStr] = true;
       }
     }

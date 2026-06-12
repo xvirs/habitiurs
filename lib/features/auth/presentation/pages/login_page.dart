@@ -171,7 +171,32 @@ class LoginPage extends StatelessWidget {
               height: 50,
               child: OutlinedButton(
                 onPressed: isLoading ? null : () {
-                  context.read<AuthBloc>().add(AuthGuestSessionRequested()); // FIXED: Changed to AuthGuestSessionRequested()
+                  showDialog<void>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: const Text('Modo sin cuenta'),
+                      content: const Text(
+                        'Tus hábitos se guardarán solo en este dispositivo. '
+                        'No podrás sincronizarlos ni acceder desde otros dispositivos.\n\n'
+                        '¿Deseas continuar?',
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Cancelar'),
+                        ),
+                        FilledButton(
+                          onPressed: () {
+                            Navigator.pop(dialogContext);
+                            context
+                                .read<AuthBloc>()
+                                .add(AuthGuestSessionRequested());
+                          },
+                          child: const Text('Continuar'),
+                        ),
+                      ],
+                    ),
+                  );
                 },
                 child: const Text('Continuar sin cuenta'),
               ),

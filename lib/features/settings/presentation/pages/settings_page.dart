@@ -14,10 +14,15 @@ class SettingsPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración'), elevation: 0),
       body: BlocListener<SettingsBloc, SettingsState>(
+        listenWhen: (previous, current) {
+          // Solo reprogramar cuando la configuración realmente cambia,
+          // no en la carga inicial de la página.
+          if (current is! SettingsLoaded) return false;
+          if (previous is! SettingsLoaded) return false;
+          return previous.settings != current.settings;
+        },
         listener: (context, state) {
           if (state is SettingsLoaded) {
-            // Cuando cambia la configuración, reprogramar notificaciones
-            // Usamos un try-catch por si el Bloc no está en el contexto (aunque debería)
             try {
               context.read<HabitBloc>().add(RescheduleNotifications());
             } catch (_) {}

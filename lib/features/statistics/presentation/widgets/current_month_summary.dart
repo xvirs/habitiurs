@@ -40,7 +40,7 @@ class CurrentMonthSummary extends StatelessWidget {
 
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: statistics.weeks.map((week) => _buildWeekItem(week)).toList(),
+      children: statistics.weeks.map((week) => _buildWeekItem(context, week)).toList(),
     );
   }
 
@@ -76,14 +76,15 @@ class CurrentMonthSummary extends StatelessWidget {
     );
   }
 
-  Widget _buildWeekItem(WeeklyStatistics week) {
+  Widget _buildWeekItem(BuildContext context, WeeklyStatistics week) {
+    final theme = Theme.of(context);
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.02),
@@ -100,7 +101,7 @@ class CurrentMonthSummary extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),

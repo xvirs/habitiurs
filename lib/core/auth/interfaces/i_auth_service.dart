@@ -16,6 +16,9 @@ abstract class IAuthService {
   /// Cerrar sesión
   Future<AuthResult<void>> signOut();
   
+  /// Cargar el guest ID persistido (llamar una vez al inicializar)
+  Future<void> initGuestSession();
+
   /// Crear usuario invitado temporal
   User createGuestUser();
   

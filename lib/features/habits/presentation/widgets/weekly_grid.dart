@@ -24,34 +24,6 @@ class WeeklyGrid extends StatelessWidget {
   });
 
   @override
-  bool operator ==(Object other) {
-    if (identical(this, other)) return true;
-    return other is WeeklyGrid &&
-        _listEquals(other.habits, habits) &&
-        _listEquals(other.weekEntries, weekEntries) &&
-        other.weekStart == weekStart &&
-        other.isLoading == isLoading;
-  }
-
-  @override
-  int get hashCode {
-    return Object.hash(
-      Object.hashAll(habits),
-      Object.hashAll(weekEntries),
-      weekStart,
-      isLoading,
-    );
-  }
-
-  bool _listEquals<T>(List<T> a, List<T> b) {
-    if (a.length != b.length) return false;
-    for (int i = 0; i < a.length; i++) {
-      if (a[i] != b[i]) return false;
-    }
-    return true;
-  }
-
-  @override
   Widget build(BuildContext context) {
     final weekDates = AppDateUtils.getWeekDates(weekStart);
 

@@ -42,7 +42,7 @@ class YearlyStatisticsList extends StatelessWidget {
     // o asegurar que shrinkWrap esté activo y physics sea NeverScrollableScrollPhysics
     return Column(
       mainAxisSize: MainAxisSize.min,
-      children: statistics.map((month) => _buildMonthItem(month)).toList(),
+      children: statistics.map((month) => _buildMonthItem(context, month)).toList(),
     );
   }
 
@@ -78,7 +78,8 @@ class YearlyStatisticsList extends StatelessWidget {
     );
   }
 
-  Widget _buildMonthItem(MonthlyStatistics stats) {
+  Widget _buildMonthItem(BuildContext context, MonthlyStatistics stats) {
+    final theme = Theme.of(context);
     final completionRate = stats.completionRate;
     final color =
         completionRate >= 70
@@ -91,9 +92,9 @@ class YearlyStatisticsList extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: theme.colorScheme.surfaceContainerHighest,
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.grey[100]!),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.01),
@@ -111,7 +112,7 @@ class YearlyStatisticsList extends StatelessWidget {
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
-                color: Colors.grey[800],
+                color: theme.colorScheme.onSurface,
               ),
             ),
           ),

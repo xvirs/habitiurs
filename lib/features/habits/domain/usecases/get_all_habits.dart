@@ -7,6 +7,8 @@ class GetAllHabits {
   GetAllHabits(this.repository);
 
   Future<List<Habit>> call() async {
-    return await repository.getAllHabits();
+    final habits = await repository.getAllHabits();
+    print('📋 [GetAllHabits] ${habits.length} hábito(s) activo(s) obtenidos');
+    return habits;
   }
 }

@@ -9,6 +9,9 @@ class GetWeekEntries {
 
   Future<List<HabitEntry>> call(DateTime date) async {
     final startOfWeek = AppDateUtils.getStartOfWeek(date);
-    return await repository.getHabitEntriesForWeek(startOfWeek);
+    print('🔄 [GetWeekEntries] Semana desde: ${startOfWeek.toIso8601String().split('T')[0]}');
+    final entries = await repository.getHabitEntriesForWeek(startOfWeek);
+    print('📅 [GetWeekEntries] ${entries.length} entrada(s) obtenida(s)');
+    return entries;
   }
 }

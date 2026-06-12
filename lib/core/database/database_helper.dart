@@ -65,7 +65,6 @@ class SqliteDatabaseHelper implements DatabaseHelper {
     await db.execute(DatabaseConstants.createHabitEntriesTable);
   }
 
-  @override
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
       await _migrateToVersion2(db);
@@ -76,10 +75,18 @@ class SqliteDatabaseHelper implements DatabaseHelper {
     if (oldVersion < 4) {
       print('🔄 [Database] Migrando a versión 4: Añadiendo columna last_modified a habit_entries.');
       try {
-        await db.execute(DatabaseConstants.addLastModifiedColumnToHabitEntries);
-        print('✅ [Database] Columna last_modified añadida exitosamente.');
+        // Las migraciones v2/v3 recrean la tabla desde createTempHabitEntriesTable,
+        // que ya incluye last_modified. Solo añadir si la columna no existe.
+        final tableInfo = await db.rawQuery("PRAGMA table_info(habit_entries)");
+        final hasLastModified = tableInfo.any((col) => col['name'] == 'last_modified');
+        if (!hasLastModified) {
+          await db.execute(DatabaseConstants.addLastModifiedColumnToHabitEntries);
+          print('✅ [Database] Columna last_modified añadida exitosamente.');
+        } else {
+          print('ℹ️ [Database] Columna last_modified ya existía (creada por migración v2/v3), omitiendo ALTER TABLE.');
+        }
       } catch (e) {
-        print('❌ [Database] Error añadiendo last_modified. Intentando recrear tabla: $e');
+        print('❌ [Database] Error en migración v4: $e');
         rethrow;
       }
     }

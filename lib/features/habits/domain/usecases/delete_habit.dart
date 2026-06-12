@@ -16,6 +16,6 @@ class DeleteHabit {
       throw Exception('Usuario no autenticado para eliminar hábitos remotamente.');
     }
     // Llama al repositorio para eliminar el hábito, pasando el userId.
-    await repository.deleteHabit(habitId, userId!!);
+    await repository.deleteHabit(habitId, userId);
   }
 }

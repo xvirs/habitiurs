@@ -11,11 +11,8 @@ import 'package:habitiurs/features/auth/domain/usecases/login_with_google.dart';
 import 'package:habitiurs/features/auth/domain/usecases/logout_user.dart';
 // Importa los eventos de carga de datos de los otros Blocs
 import '../../../habits/presentation/bloc/habit_event.dart';
-import '../../../habits/presentation/bloc/habit_bloc.dart';
 import '../../../statistics/presentation/bloc/statistics_event.dart';
-import '../../../statistics/presentation/bloc/statistics_bloc.dart';
 import '../../../ai_assistant/presentation/bloc/ai_assistant_event.dart';
-import '../../../ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 
 import 'auth_event.dart';
 import 'auth_state.dart';
@@ -27,6 +24,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final CheckAuthStatus checkAuthStatus;
 
   final _initialSyncCompletedController = StreamController<void>.broadcast();
+  bool _initialDataLoaded = false;
+  bool _syncCompleted = false;
+  bool _syncStarted = false;
+  bool get isSyncCompleted => _syncCompleted;
 
   AuthBloc({
     required this.loginWithGoogle,
@@ -88,7 +89,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     print(
       '🔄 AuthBloc: AuthLoginWithGoogleRequested - Iniciando login con Google.',
     );
-    emit(AuthLoading());
+    emit(AuthLoading(message: 'Iniciando sesión...'));
     final result = await loginWithGoogle.call();
     if (result is AuthSuccess<User>) {
       print('✅ AuthBloc: Login con Google exitoso para: ${result.data.email}');
@@ -118,11 +119,24 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     Emitter<AuthState> emit,
   ) async {
     print('🔄 AuthBloc: AuthLogoutRequested - Iniciando cierre de sesión.');
-    emit(AuthLoading());
+    emit(AuthLoading(message: 'Cerrando sesión...'));
     try {
+      // Sincronizar datos a Firebase ANTES de cerrar sesión y borrar la BD local.
+      // Garantiza que las entradas marcadas (completed/skipped) no se pierdan
+      // si el fire-and-forget sync posterior a cada acción no había terminado.
+      final syncManager = InjectionContainer().syncManager;
+      print('🔄 AuthBloc: Sincronizando datos antes de cerrar sesión...');
+      await syncManager.syncAll().catchError((e) {
+        print('⚠️ AuthBloc: Sync previo al logout no completado (sin internet o error): $e');
+        return false;
+      });
+
       final result = await logoutUser.call();
       if (result is AuthSuccess<void>) {
         print('✅ AuthBloc: Cierre de sesión exitoso.');
+        _initialDataLoaded = false;
+        _syncCompleted = false;
+        _syncStarted = false;
         _stopFullSync();
 
         final databaseHelper = InjectionContainer().databaseHelper;
@@ -169,8 +183,10 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     print('✅ AuthBloc: Sesión de invitado creada.');
   }
 
-  // NUEVO MÉTODO: Para disparar la carga de datos inicial de los otros Blocs
+  // Dispara la carga inicial de datos una sola vez por sesión
   void _loadInitialAppData() {
+    if (_initialDataLoaded) return;
+    _initialDataLoaded = true;
     print('🔄 AuthBloc: Disparando eventos de carga inicial para HabitBloc, StatisticsBloc, AIAssistantBloc.');
     final container = InjectionContainer();
     container.habitBloc.add(LoadHabits());
@@ -179,6 +195,13 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   }
 
   void _startFullSync() {
+    // Guard: evita doble sync cuando authStateChanges y loginWithGoogle completan casi al mismo tiempo
+    if (_syncStarted) {
+      print('⚠️ AuthBloc: _startFullSync() ignorado (sync ya iniciado).');
+      return;
+    }
+    _syncStarted = true;
+
     final syncManager = InjectionContainer().syncManager;
     print(
       '🔄 AuthBloc: Iniciando sincronización completa a través de SyncManager.',
@@ -190,10 +213,19 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
           print(
             '✅ AuthBloc: Sincronización completa (inicio de sesión): $success',
           );
+          _syncCompleted = true;
           _initialSyncCompletedController.add(null);
+          if (success) {
+            print('🔄 AuthBloc: Recargando datos de UI tras sync inicial...');
+            final container = InjectionContainer();
+            container.habitBloc.add(RefreshData());
+            container.statisticsBloc.add(LoadStatistics());
+          }
         })
         .catchError((e) {
           print('❌ AuthBloc: Error en sincronización inicial: $e');
+          _syncCompleted = true;
+          _initialSyncCompletedController.add(null);
         });
   }
 
@@ -208,7 +240,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   @override
   Future<void> close() {
     print('🧹 AuthBloc: Cerrando y limpiando recursos.');
-    //_initialSyncCompletedController.close();
+    _initialSyncCompletedController.close();
     return super.close();
   }
 }

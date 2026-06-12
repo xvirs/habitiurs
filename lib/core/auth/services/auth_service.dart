@@ -1,7 +1,9 @@
 import 'dart:async';
+import 'dart:io';
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:habitiurs/core/auth/models/user_preferences.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../interfaces/i_auth_service.dart';
 import '../models/user.dart';
 import '../models/auth_result.dart';
@@ -12,6 +14,8 @@ class AuthService implements IAuthService {
   firebase.FirebaseAuth? _firebaseAuth;
   GoogleSignIn? _googleSignIn;
   bool _initialized = false;
+  String? _persistedGuestId;
+  static const _guestIdKey = 'habitiurs_guest_id';
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
   
@@ -218,9 +222,20 @@ class AuthService implements IAuthService {
 
   @override
   User createGuestUser() {
-    final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final guestUser = User(
-      id: 'guest_$timestamp',
+    final String guestId;
+    if (_persistedGuestId != null) {
+      guestId = _persistedGuestId!;
+      print('✅ [AuthService] Reutilizando guest ID existente: $guestId');
+    } else {
+      guestId = 'guest_${DateTime.now().millisecondsSinceEpoch}';
+      _persistedGuestId = guestId;
+      SharedPreferences.getInstance().then(
+        (prefs) => prefs.setString(_guestIdKey, guestId),
+      );
+      print('✅ [AuthService] Nuevo guest ID creado y persistido: $guestId');
+    }
+    return User(
+      id: guestId,
       email: 'guest@habitiurs.local',
       displayName: 'Usuario invitado',
       createdAt: DateTime.now(),
@@ -231,22 +246,33 @@ class AuthService implements IAuthService {
         settings: {'created_as_guest': true},
       ),
     );
-    
-    print('✅ [AuthService] Usuario invitado creado: ${guestUser.id}');
-    return guestUser;
   }
 
   @override
   Future<bool> hasInternetConnection() async {
     try {
       if (_firebaseAuth == null) return false;
-      
-      await _firebaseAuth!.currentUser?.reload();
-      return true;
+      final currentUser = _firebaseAuth!.currentUser;
+      if (currentUser != null) {
+        // Usuario autenticado: reload verifica conectividad con Firebase
+        await currentUser.reload();
+        return true;
+      }
+      // Modo invitado: DNS lookup para verificar conectividad real
+      final result = await InternetAddress.lookup('google.com')
+          .timeout(const Duration(seconds: 5));
+      return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (e) {
       print('❌ [AuthService] Sin conexión: $e');
       return false;
     }
+  }
+
+  @override
+  Future<void> initGuestSession() async {
+    final prefs = await SharedPreferences.getInstance();
+    _persistedGuestId = prefs.getString(_guestIdKey);
+    print('🔄 [AuthService] Guest ID cargado: ${_persistedGuestId ?? "ninguno, se creará al primer uso"}');
   }
 
   @override

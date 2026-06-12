@@ -1,6 +1,7 @@
 // lib/features/settings/presentation/bloc/settings_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/notifications/notification_service.dart';
+import '../../domain/entities/app_settings.dart';
 import '../../domain/usecases/get_settings.dart';
 import '../../domain/usecases/update_settings.dart';
 import 'settings_event.dart';
@@ -115,11 +116,10 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   ) async {
     try {
       emit(const SettingsLoading());
-      // Resetear en repositorio (borrará SharedPreferences)
-      // El getSettings devolverá valores por defecto
-      final settings = await getSettings();
-      emit(SettingsLoaded(settings));
-      print('🔄 [SettingsBloc] Configuración reseteada');
+      final defaults = AppSettings.defaults();
+      await updateSettings(defaults); // Persistir valores por defecto
+      emit(SettingsLoaded(defaults));
+      print('🔄 [SettingsBloc] Configuración reseteada a valores por defecto');
     } catch (e) {
       emit(SettingsError('Error al resetear configuración: ${e.toString()}'));
     }
