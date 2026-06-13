@@ -7,6 +7,7 @@ import 'statistics_event.dart';
 import 'statistics_state.dart';
 
 import '../../../../core/sync/repositories/sync_repository.dart'; // ADDED
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
   final GetCurrentMonthStatistics getCurrentMonthStatistics;
@@ -28,7 +29,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     LoadStatistics event,
     Emitter<StatisticsState> emit,
   ) async {
-    print('🔄 [StatisticsBloc] Cargando estadísticas...');
+    appLog('🔄 [StatisticsBloc] Cargando estadísticas...');
     emit(StatisticsLoading());
     try {
       final results = await Future.wait([
@@ -36,7 +37,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         getCurrentYearStatistics(),
         getHistoricalData(),
       ]);
-      print('✅ [StatisticsBloc] Estadísticas cargadas correctamente');
+      appLog('✅ [StatisticsBloc] Estadísticas cargadas correctamente');
       emit(
         StatisticsLoaded(
           currentMonth: results[0] as MonthlyStatistics,
@@ -46,7 +47,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         ),
       );
     } catch (e) {
-      print('❌ [StatisticsBloc] Error al cargar estadísticas: $e');
+      appLog('❌ [StatisticsBloc] Error al cargar estadísticas: $e');
       emit(StatisticsError('Error al cargar estadísticas: ${e.toString()}'));
     }
   }
@@ -55,7 +56,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
     RefreshStatistics event,
     Emitter<StatisticsState> emit,
   ) async {
-    print('🔄 [StatisticsBloc] Actualizando estadísticas con sync...');
+    appLog('🔄 [StatisticsBloc] Actualizando estadísticas con sync...');
     final currentState = state;
     try {
       if (currentState is StatisticsLoaded) {
@@ -71,7 +72,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         getCurrentYearStatistics(),
         getHistoricalData(),
       ]);
-      print('✅ [StatisticsBloc] Estadísticas actualizadas tras sync');
+      appLog('✅ [StatisticsBloc] Estadísticas actualizadas tras sync');
       emit(
         StatisticsLoaded(
           currentMonth: results[0] as MonthlyStatistics,
@@ -81,7 +82,7 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
         ),
       );
     } catch (e) {
-      print('❌ [StatisticsBloc] Error al actualizar estadísticas: $e');
+      appLog('❌ [StatisticsBloc] Error al actualizar estadísticas: $e');
       if (currentState is StatisticsLoaded) {
         emit(
           currentState.copyWith(

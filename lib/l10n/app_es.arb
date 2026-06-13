@@ -1,0 +1,19 @@
+{
+  "@@locale": "es",
+  "appTitle": "Habitiurs",
+  "tabAiAssistant": "Asistente IA",
+  "tabHabits": "Hábitos",
+  "tabStatistics": "Estadísticas",
+  "settingsTitle": "Configuración",
+  "newHabit": "Nuevo hábito",
+  "editHabit": "Editar hábito",
+  "archivedHabits": "Hábitos archivados",
+  "deleteAccount": "Eliminar cuenta",
+  "privacyPolicy": "Política de privacidad",
+  "termsOfService": "Términos y condiciones",
+  "cancel": "Cancelar",
+  "save": "Guardar",
+  "delete": "Eliminar",
+  "restore": "Restaurar",
+  "archive": "Archivar"
+}

@@ -2,6 +2,7 @@ import 'package:habitiurs/core/ai/models/ai_response_model.dart';
 import '../models/ai_request_model.dart';
 import '../services/gemini_service.dart';
 import '../services/ai_fallback_service.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class AIRepository {
   final GeminiService _geminiService;
@@ -27,7 +28,7 @@ class AIRepository {
         } catch (e) {
           // Log solo si es un error crítico (no rate limit)
           if (!e.toString().contains('Límite de API')) {
-            print('⚠️ [AIRepository] Gemini API error: $e');
+            appLog('⚠️ [AIRepository] Gemini API error: $e');
           }
           return await _fallbackService.generateFallbackResponse(request);
         }
@@ -35,7 +36,7 @@ class AIRepository {
         return await _fallbackService.generateFallbackResponse(request);
       }
     } catch (e) {
-      print('❌ [AIRepository] Critical error: $e');
+      appLog('❌ [AIRepository] Critical error: $e');
       return await _fallbackService.generateFallbackResponse(request);
     }
   }

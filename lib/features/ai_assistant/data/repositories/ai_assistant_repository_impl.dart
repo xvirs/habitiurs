@@ -10,6 +10,7 @@ import '../../domain/entities/app_guide.dart';
 import '../../domain/repositories/ai_assistant_repository.dart';
 import '../../domain/services/ai_prompt_service.dart';
 import '../datasources/offline_content_datasource.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class AIAssistantRepositoryImpl implements AIAssistantRepository {
   final OfflineContentDatasource _offlineContentDatasource;
@@ -41,10 +42,10 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
 
   @override
   Future<AIResponse> getAIRecommendation() async {
-    print('🤖 [AIAssistant] Generando contexto de usuario...');
+    appLog('🤖 [AIAssistant] Generando contexto de usuario...');
     try {
       final userContext = await _generateUserContext();
-      print('🤖 [AIAssistant] Contexto listo — hábitos: ${(userContext['habit_names'] as List?)?.length ?? 0}, racha actual: ${userContext['current_streak']}, días rastreados: ${userContext['total_days_tracked']}');
+      appLog('🤖 [AIAssistant] Contexto listo — hábitos: ${(userContext['habit_names'] as List?)?.length ?? 0}, racha actual: ${userContext['current_streak']}, días rastreados: ${userContext['total_days_tracked']}');
 
       final aiContext = AIContextBuilder.buildPersonalRecommendationContext(
         habitNames: userContext['habit_names'] ?? [],

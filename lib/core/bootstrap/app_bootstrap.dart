@@ -7,22 +7,23 @@ import '../di/injection_container.dart';
 import '../notifications/notification_service.dart';
 import '../../firebase_options.dart';
 import 'app_state.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class AppBootstrap {
   Future<AppState> initialize() async {
     try {
-      print('🚀 [Bootstrap] Iniciando aplicación...');
+      appLog('🚀 [Bootstrap] Iniciando aplicación...');
 
       await _initializeFirebase();
       await _initializeDependencies();
       await _initializeNotifications();
 
-      print('✅ [Bootstrap] Inicialización exitosa');
+      appLog('✅ [Bootstrap] Inicialización exitosa');
       return AppState.success();
       
     } catch (e, stackTrace) {
-      print('❌ [Bootstrap] Error crítico: $e');
-      print('Stack trace: $stackTrace');
+      appLog('❌ [Bootstrap] Error crítico: $e');
+      appLog('Stack trace: $stackTrace');
       
       return AppState.error(
         title: 'Error de inicialización',
@@ -39,9 +40,9 @@ class AppBootstrap {
         options: DefaultFirebaseOptions.currentPlatform,
       );
       await _activateAppCheck();
-      print('✅ [Bootstrap] Firebase inicializado');
+      appLog('✅ [Bootstrap] Firebase inicializado');
     } catch (e) {
-      print('⚠️ [Bootstrap] Firebase falló: $e');
+      appLog('⚠️ [Bootstrap] Firebase falló: $e');
       // Continuar sin Firebase - modo offline
     }
   }
@@ -55,9 +56,9 @@ class AppBootstrap {
             ? AppleProvider.debug
             : AppleProvider.appAttestWithDeviceCheckFallback,
       );
-      print('✅ [Bootstrap] App Check activado');
+      appLog('✅ [Bootstrap] App Check activado');
     } catch (e) {
-      print('⚠️ [Bootstrap] App Check falló: $e');
+      appLog('⚠️ [Bootstrap] App Check falló: $e');
       // Continuar sin App Check - las llamadas a IA pueden fallar
     }
   }
@@ -66,9 +67,9 @@ class AppBootstrap {
     try {
       final container = InjectionContainer();
       await container.init();
-      print('✅ [Bootstrap] Dependencias inicializadas');
+      appLog('✅ [Bootstrap] Dependencias inicializadas');
     } catch (e) {
-      print('⚠️ [Bootstrap] DI falló: $e');
+      appLog('⚠️ [Bootstrap] DI falló: $e');
       // Continuar con servicios básicos
     }
   }
@@ -76,9 +77,9 @@ class AppBootstrap {
   Future<void> _initializeNotifications() async {
     try {
       await NotificationService().initialize();
-      print('✅ [Bootstrap] Notificaciones inicializadas');
+      appLog('✅ [Bootstrap] Notificaciones inicializadas');
     } catch (e) {
-      print('⚠️ [Bootstrap] Notificaciones fallaron: $e');
+      appLog('⚠️ [Bootstrap] Notificaciones fallaron: $e');
       // Continuar sin notificaciones
     }
   }

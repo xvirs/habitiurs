@@ -10,6 +10,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   
   # UI y navegación
   cupertino_icons: ^1.0.8
@@ -33,7 +35,7 @@ dependencies:
   connectivity_plus: ^5.0.2
   
   # Utilidades
-  intl: ^0.18.1
+  intl: ^0.20.2
 
   # Notificaciones locales
   flutter_local_notifications: ^17.2.3
@@ -47,6 +49,8 @@ dependencies:
   flutter_timezone: ^5.0.1
   firebase_ai: ^3.12.2
   firebase_app_check: ^0.4.4+2
+  package_info_plus: ^9.0.1
+  url_launcher: ^6.3.2
 
 dev_dependencies:
   flutter_test:
@@ -56,6 +60,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  generate: true
 
 flutter_icons:
   android: true

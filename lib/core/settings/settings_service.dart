@@ -1,5 +1,6 @@
 // lib/core/settings/settings_service.dart
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class SettingsService {
   static final SettingsService _instance = SettingsService._internal();
@@ -20,7 +21,7 @@ class SettingsService {
 
   Future<void> initialize() async {
     _prefs = await SharedPreferences.getInstance();
-    print('✅ [SettingsService] Inicializado');
+    appLog('✅ [SettingsService] Inicializado');
   }
 
   // Getters
@@ -39,19 +40,19 @@ class SettingsService {
   // Setters
   Future<void> setNotificationsEnabled(bool enabled) async {
     await _prefs?.setBool(_notificationsEnabledKey, enabled);
-    print('💾 [SettingsService] Notificaciones ${enabled ? 'habilitadas' : 'deshabilitadas'}');
+    appLog('💾 [SettingsService] Notificaciones ${enabled ? 'habilitadas' : 'deshabilitadas'}');
   }
 
   Future<void> setNotificationTime(int hour, int minute) async {
     await _prefs?.setInt(_notificationHourKey, hour);
     await _prefs?.setInt(_notificationMinuteKey, minute);
-    print('💾 [SettingsService] Hora de notificación: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
+    appLog('💾 [SettingsService] Hora de notificación: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
   }
 
   // Resetear a valores por defecto
   Future<void> resetToDefaults() async {
     await setNotificationsEnabled(_defaultNotificationsEnabled);
     await setNotificationTime(_defaultNotificationHour, _defaultNotificationMinute);
-    print('🔄 [SettingsService] Configuración reseteada a valores por defecto');
+    appLog('🔄 [SettingsService] Configuración reseteada a valores por defecto');
   }
 }

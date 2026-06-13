@@ -5,6 +5,7 @@ import '../../domain/usecases/get_app_guides.dart';
 import '../../domain/usecases/get_educational_content.dart';
 import 'ai_assistant_event.dart';
 import 'ai_assistant_state.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
   final GetEducationalContent _getEducationalContent;
@@ -27,13 +28,13 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
     LoadAIAssistantData event,
     Emitter<AIAssistantState> emit,
   ) async {
-    print('🔄 [AIAssistantBloc] Cargando contenido del asistente IA...');
+    appLog('🔄 [AIAssistantBloc] Cargando contenido del asistente IA...');
     emit(AIAssistantLoading());
 
     try {
       final educationalContent = await _getEducationalContent();
       final appGuides = await _getAppGuides();
-      print('✅ [AIAssistantBloc] Contenido educativo (${educationalContent.length}) y guías (${appGuides.length}) cargados');
+      appLog('✅ [AIAssistantBloc] Contenido educativo (${educationalContent.length}) y guías (${appGuides.length}) cargados');
 
       emit(AIAssistantLoaded(
         educationalContent: educationalContent,
@@ -41,10 +42,10 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
         isRecommendationLoading: true,
       ));
 
-      print('🤖 [AIAssistantBloc] Solicitando recomendación personalizada a IA...');
+      appLog('🤖 [AIAssistantBloc] Solicitando recomendación personalizada a IA...');
       try {
         final aiResponse = await _getAIRecommendation();
-        print('✅ [AIAssistantBloc] Recomendación obtenida — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}');
+        appLog('✅ [AIAssistantBloc] Recomendación obtenida — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}');
 
         emit(AIAssistantLoaded(
           educationalContent: educationalContent,
@@ -54,7 +55,7 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
           hasInternetConnection: aiResponse.isFromAI,
         ));
       } catch (e) {
-        print('⚠️ [AIAssistantBloc] No se pudo obtener recomendación IA: $e');
+        appLog('⚠️ [AIAssistantBloc] No se pudo obtener recomendación IA: $e');
         emit(AIAssistantLoaded(
           educationalContent: educationalContent,
           appGuides: appGuides,
@@ -63,7 +64,7 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
         ));
       }
     } catch (e) {
-      print('❌ [AIAssistantBloc] Error al cargar contenido del asistente: $e');
+      appLog('❌ [AIAssistantBloc] Error al cargar contenido del asistente: $e');
       emit(AIAssistantError('Error al cargar contenido del asistente'));
     }
   }
@@ -74,12 +75,12 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
   ) async {
     if (state is AIAssistantLoaded) {
       final currentState = state as AIAssistantLoaded;
-      print('🔄 [AIAssistantBloc] Actualizando recomendación IA...');
+      appLog('🔄 [AIAssistantBloc] Actualizando recomendación IA...');
       emit(currentState.copyWith(isRecommendationLoading: true));
 
       try {
         final aiResponse = await _getAIRecommendation();
-        print('✅ [AIAssistantBloc] Recomendación actualizada — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}');
+        appLog('✅ [AIAssistantBloc] Recomendación actualizada — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}');
 
         emit(currentState.copyWith(
           currentRecommendation: aiResponse,
@@ -87,7 +88,7 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
           hasInternetConnection: aiResponse.isFromAI,
         ));
       } catch (e) {
-        print('❌ [AIAssistantBloc] Error al actualizar recomendación: $e');
+        appLog('❌ [AIAssistantBloc] Error al actualizar recomendación: $e');
         emit(currentState.copyWith(
           isRecommendationLoading: false,
           hasInternetConnection: false,
