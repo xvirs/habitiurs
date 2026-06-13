@@ -1,6 +1,7 @@
 import '../repositories/habit_repository.dart';
 import '../../../../shared/enums/habit_status.dart';
 import '../../../../shared/utils/date_utils.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class UpdatePastHabitEntry {
   final HabitRepository repository;
@@ -13,12 +14,12 @@ class UpdatePastHabitEntry {
     final dateStr = date.toIso8601String().split('T')[0];
 
     if (isToday || isFuture) {
-      print('❌ [UpdatePastHabitEntry] Fecha inválida para edición histórica: $dateStr');
+      appLog('❌ [UpdatePastHabitEntry] Fecha inválida para edición histórica: $dateStr');
       throw Exception('Solo se puede modificar el estado de días pasados');
     }
 
-    print('🔄 [UpdatePastHabitEntry] Editando día pasado — habitId: $habitId, fecha: $dateStr → ${newStatus.name}');
+    appLog('🔄 [UpdatePastHabitEntry] Editando día pasado — habitId: $habitId, fecha: $dateStr → ${newStatus.name}');
     await repository.updateHabitEntryStatus(habitId, date, newStatus);
-    print('✅ [UpdatePastHabitEntry] Entrada actualizada: habitId=$habitId, $dateStr → ${newStatus.name}');
+    appLog('✅ [UpdatePastHabitEntry] Entrada actualizada: habitId=$habitId, $dateStr → ${newStatus.name}');
   }
 }

@@ -1,6 +1,7 @@
 import '../repositories/habit_repository.dart';
 import '../../../../shared/enums/habit_status.dart';
 import '../../../../shared/utils/date_utils.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class ToggleHabitEntry {
   final HabitRepository repository;
@@ -12,7 +13,7 @@ class ToggleHabitEntry {
     final isToday = AppDateUtils.isSameDay(date, today);
 
     if (!isToday) {
-      print('⚠️ [ToggleHabitEntry] Ignorado: la fecha no es hoy (habitId: $habitId)');
+      appLog('⚠️ [ToggleHabitEntry] Ignorado: la fecha no es hoy (habitId: $habitId)');
       return;
     }
 
@@ -30,8 +31,8 @@ class ToggleHabitEntry {
         break;
     }
 
-    print('🔄 [ToggleHabitEntry] Hábito $habitId: ${currentStatus.name} → ${nextStatus.name}');
+    appLog('🔄 [ToggleHabitEntry] Hábito $habitId: ${currentStatus.name} → ${nextStatus.name}');
     await repository.updateHabitEntryStatus(habitId, date, nextStatus);
-    print('✅ [ToggleHabitEntry] Estado actualizado: habitId=$habitId → ${nextStatus.name}');
+    appLog('✅ [ToggleHabitEntry] Estado actualizado: habitId=$habitId → ${nextStatus.name}');
   }
 }

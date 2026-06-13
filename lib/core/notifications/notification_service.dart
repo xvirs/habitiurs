@@ -4,6 +4,7 @@ import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -25,9 +26,9 @@ class NotificationService {
     try {
       final timezoneInfo = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
-      print('✅ [NotificationService] Timezone configurado: ${timezoneInfo.identifier}');
+      appLog('✅ [NotificationService] Timezone configurado: ${timezoneInfo.identifier}');
     } catch (e) {
-      print('❌ [NotificationService] Error configurando timezone: $e');
+      appLog('❌ [NotificationService] Error configurando timezone: $e');
       // Fallback a UTC si falla
     }
 
@@ -88,7 +89,7 @@ class NotificationService {
   /// Callback cuando se toca una notificación
   void _onNotificationTapped(NotificationResponse response) {
     // Aquí puedes navegar a una pantalla específica si es necesario
-    print('Notificación tocada: ${response.payload}');
+    appLog('Notificación tocada: ${response.payload}');
   }
 
   /// Programa la notificación diaria
@@ -172,7 +173,7 @@ class NotificationService {
       );
     } on PlatformException catch (e) {
       if (e.code != 'exact_alarms_not_permitted') rethrow;
-      print('⚠️ Sin permiso de alarmas exactas, programando en modo inexacto');
+      appLog('⚠️ Sin permiso de alarmas exactas, programando en modo inexacto');
       await _notifications.zonedSchedule(
         0,
         title,
@@ -188,11 +189,11 @@ class NotificationService {
 
     final timeStr =
         '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
-    print('✅ Notificación programada para las $timeStr: $title');
-    print(
+    appLog('✅ Notificación programada para las $timeStr: $title');
+    appLog(
       '   📅 Fecha exacta programada: $scheduledDate (Zona horaria: ${scheduledDate.location})',
     );
-    print('   ⌚ Hora actual referencia: $now');
+    appLog('   ⌚ Hora actual referencia: $now');
   }
 
   /// Construye el cuerpo del mensaje según la cantidad de hábitos
@@ -221,7 +222,7 @@ class NotificationService {
       await initialize();
     }
     await _notifications.cancelAll();
-    print('🔕 [NotificationService] Todas las notificaciones canceladas');
+    appLog('🔕 [NotificationService] Todas las notificaciones canceladas');
   }
 
   /// Cancela una notificación específica
@@ -230,7 +231,104 @@ class NotificationService {
       await initialize();
     }
     await _notifications.cancel(id);
-    print('🔕 [NotificationService] Notificación $id cancelada');
+    appLog('🔕 [NotificationService] Notificación $id cancelada');
+  }
+
+  // ─── Recordatorios por hábito ──────────────────────────────────────────
+  // Ids reservados: 1000 + habitId * 10 + weekday (1=lun … 7=dom).
+  // El id 0 sigue siendo el resumen diario global.
+
+  static int _habitReminderId(int habitId, int weekday) =>
+      1000 + habitId * 10 + weekday;
+
+  /// Programa el recordatorio propio de un hábito en sus días programados.
+  Future<void> scheduleHabitReminder({
+    required int habitId,
+    required String habitName,
+    required String reminderTime, // 'HH:mm'
+    required List<int> weekdays,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+
+    await cancelHabitReminder(habitId);
+
+    final parts = reminderTime.split(':');
+    final hour = int.tryParse(parts[0]) ?? 9;
+    final minute = parts.length > 1 ? (int.tryParse(parts[1]) ?? 0) : 0;
+
+    const androidDetails = AndroidNotificationDetails(
+      'habit_reminder',
+      'Recordatorios de hábitos',
+      channelDescription: 'Recordatorio individual de cada hábito',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    for (final weekday in weekdays) {
+      final scheduledDate = _nextInstanceOfWeekdayTime(weekday, hour, minute);
+      try {
+        await _notifications.zonedSchedule(
+          _habitReminderId(habitId, weekday),
+          habitName,
+          'Es momento de cumplir tu hábito. ¡Tú puedes!',
+          scheduledDate,
+          details,
+          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      } on PlatformException catch (e) {
+        if (e.code != 'exact_alarms_not_permitted') rethrow;
+        await _notifications.zonedSchedule(
+          _habitReminderId(habitId, weekday),
+          habitName,
+          'Es momento de cumplir tu hábito. ¡Tú puedes!',
+          scheduledDate,
+          details,
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          uiLocalNotificationDateInterpretation:
+              UILocalNotificationDateInterpretation.absoluteTime,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
+      }
+    }
+    appLog(
+      '⏰ [NotificationService] Recordatorio de hábito $habitId programado '
+      '($reminderTime, días: $weekdays)',
+    );
+  }
+
+  /// Cancela todos los recordatorios propios de un hábito.
+  Future<void> cancelHabitReminder(int habitId) async {
+    if (!_initialized) {
+      await initialize();
+    }
+    for (var weekday = 1; weekday <= 7; weekday++) {
+      await _notifications.cancel(_habitReminderId(habitId, weekday));
+    }
+  }
+
+  tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, int hour, int minute) {
+    final now = tz.TZDateTime.now(tz.local);
+    var scheduled =
+        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    while (scheduled.weekday != weekday || scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+    return scheduled;
   }
 
   /// Muestra una notificación inmediata (para testing)

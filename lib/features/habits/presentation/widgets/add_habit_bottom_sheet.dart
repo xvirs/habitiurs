@@ -3,19 +3,49 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_evaluation_cubit.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_evaluation_state.dart';
 import '../../../../core/di/injection_container.dart';
+import '../../domain/entities/habit.dart';
+import '../../domain/entities/habit_appearance.dart';
+
+/// Resultado del formulario de hábito (creación o edición).
+class HabitFormResult {
+  final String name;
+  final int colorValue;
+  final String iconKey;
+  final List<int> weekdays;
+  final String? reminderTime;
+
+  const HabitFormResult({
+    required this.name,
+    required this.colorValue,
+    required this.iconKey,
+    required this.weekdays,
+    this.reminderTime,
+  });
+}
 
 class AddHabitBottomSheet extends StatefulWidget {
-  final Function(String) onAdd;
+  final Function(HabitFormResult) onSubmit;
+
+  /// Si no es null, el sheet edita este hábito en vez de crear uno nuevo.
+  final Habit? initial;
+  final VoidCallback? onArchive;
 
   const AddHabitBottomSheet({
     super.key,
-    required this.onAdd,
+    required this.onSubmit,
+    this.initial,
+    this.onArchive,
   });
 
   @override
   State<AddHabitBottomSheet> createState() => _AddHabitBottomSheetState();
 
-  static void show(BuildContext context, {required Function(String) onAdd}) {
+  static void show(
+    BuildContext context, {
+    required Function(HabitFormResult) onSubmit,
+    Habit? initial,
+    VoidCallback? onArchive,
+  }) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -25,7 +55,11 @@ class AddHabitBottomSheet extends StatefulWidget {
       builder: (context) => BlocProvider<HabitEvaluationCubit>(
         create: (ctx) => InjectionContainer().habitEvaluationCubit,
         child: _AdaptiveBottomSheet(
-          child: AddHabitBottomSheet(onAdd: onAdd),
+          child: AddHabitBottomSheet(
+            onSubmit: onSubmit,
+            initial: initial,
+            onArchive: onArchive,
+          ),
         ),
       ),
     );
@@ -43,6 +77,13 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   static const Duration _animationDuration = Duration(milliseconds: 250);
   static const int _minHabitLength = 3;
 
+  late int _selectedColor;
+  late String _selectedIcon;
+  late Set<int> _selectedWeekdays;
+  TimeOfDay? _reminderTime;
+
+  bool get _isEditing => widget.initial != null;
+
   @override
   void initState() {
     super.initState();
@@ -52,10 +93,30 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   }
 
   void _initializeControllers() {
-    _controller = TextEditingController();
+    final initial = widget.initial;
+    _controller = TextEditingController(text: initial?.name ?? '');
     _formKey = GlobalKey<FormState>();
     _focusNode = FocusNode();
+    _selectedColor = initial?.colorValue ?? Habit.defaultColor;
+    _selectedIcon = initial?.iconKey ?? Habit.defaultIcon;
+    _selectedWeekdays = Set<int>.from(initial?.weekdays ?? Habit.allWeekdays);
+    _reminderTime = _parseReminder(initial?.reminderTime);
   }
+
+  static TimeOfDay? _parseReminder(String? value) {
+    if (value == null) return null;
+    final parts = value.split(':');
+    if (parts.length != 2) return null;
+    final hour = int.tryParse(parts[0]);
+    final minute = int.tryParse(parts[1]);
+    if (hour == null || minute == null) return null;
+    return TimeOfDay(hour: hour, minute: minute);
+  }
+
+  String? get _reminderAsString => _reminderTime == null
+      ? null
+      : '${_reminderTime!.hour.toString().padLeft(2, '0')}:'
+          '${_reminderTime!.minute.toString().padLeft(2, '0')}';
 
   void _setupAnimation() {
     _animationController = AnimationController(
@@ -115,12 +176,31 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   void _addHabit() {
     if (_formKey.currentState?.validate() ?? false) {
       _focusNode.unfocus();
-      widget.onAdd(_controller.text.trim());
+      final days = _selectedWeekdays.toList()..sort();
+      widget.onSubmit(HabitFormResult(
+        name: _controller.text.trim(),
+        colorValue: _selectedColor,
+        iconKey: _selectedIcon,
+        weekdays: days.isEmpty ? Habit.allWeekdays : days,
+        reminderTime: _reminderAsString,
+      ));
       Navigator.of(context).pop();
     }
   }
 
-  bool get _canAddHabit => _controller.text.trim().length >= _minHabitLength;
+  Future<void> _pickReminderTime() async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: _reminderTime ?? const TimeOfDay(hour: 9, minute: 0),
+    );
+    if (picked != null) {
+      setState(() => _reminderTime = picked);
+    }
+  }
+
+  bool get _canAddHabit =>
+      _controller.text.trim().length >= _minHabitLength &&
+      _selectedWeekdays.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -164,6 +244,25 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
             onAddHabit: _addHabit,
             onTextChanged: (value) {},
             canAddHabit: _canAddHabit,
+            isEditing: _isEditing,
+            onArchive: widget.onArchive,
+            customization: _CustomizationSection(
+              selectedColor: _selectedColor,
+              selectedIcon: _selectedIcon,
+              selectedWeekdays: _selectedWeekdays,
+              reminderTime: _reminderTime,
+              onColorChanged: (c) => setState(() => _selectedColor = c),
+              onIconChanged: (i) => setState(() => _selectedIcon = i),
+              onWeekdayToggled: (d) => setState(() {
+                if (_selectedWeekdays.contains(d)) {
+                  _selectedWeekdays.remove(d);
+                } else {
+                  _selectedWeekdays.add(d);
+                }
+              }),
+              onPickReminder: _pickReminderTime,
+              onClearReminder: () => setState(() => _reminderTime = null),
+            ),
           );
         },
       ),
@@ -220,6 +319,9 @@ class _BottomSheetContent extends StatelessWidget {
   final VoidCallback onAddHabit;
   final ValueChanged<String> onTextChanged;
   final bool canAddHabit;
+  final bool isEditing;
+  final VoidCallback? onArchive;
+  final Widget customization;
 
   const _BottomSheetContent({
     required this.hasKeyboard,
@@ -235,51 +337,75 @@ class _BottomSheetContent extends StatelessWidget {
     required this.onAddHabit,
     required this.onTextChanged,
     required this.canAddHabit,
+    required this.isEditing,
+    required this.onArchive,
+    required this.customization,
   });
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: EdgeInsets.fromLTRB(
-        20,
-        hasKeyboard ? 20 : 18,
-        20,
-        hasKeyboard ? 20 : 12,
-      ),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
       child: Form(
         key: formKey,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            _Header(hasKeyboard: hasKeyboard),
-            SizedBox(height: hasKeyboard ? 16 : 14),
-            _InfoSection(
-              hasKeyboard: hasKeyboard,
-              showEvaluation: showEvaluation,
-              isEvaluating: isEvaluating,
-              evaluationText: evaluationText,
-              fadeAnimation: fadeAnimation,
-              onClose: onHideEvaluation,
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _Header(hasKeyboard: hasKeyboard, isEditing: isEditing),
+                    const SizedBox(height: 12),
+                    if (!isEditing) ...[
+                      _InfoSection(
+                        hasKeyboard: hasKeyboard,
+                        showEvaluation: showEvaluation,
+                        isEvaluating: isEvaluating,
+                        evaluationText: evaluationText,
+                        fadeAnimation: fadeAnimation,
+                        onClose: onHideEvaluation,
+                      ),
+                      const SizedBox(height: 12),
+                    ],
+                    _HabitTextField(
+                      controller: controller,
+                      focusNode: focusNode,
+                      hasKeyboard: hasKeyboard,
+                      onChanged: onTextChanged,
+                      onSubmitted: canAddHabit ? onAddHabit : null,
+                      onClear: onHideEvaluation,
+                    ),
+                    const SizedBox(height: 10),
+                    if (!isEditing)
+                      _EvaluateButton(
+                        hasKeyboard: hasKeyboard,
+                        canEvaluate: canAddHabit && !isEvaluating,
+                        onPressed: onEvaluate,
+                      ),
+                    const SizedBox(height: 12),
+                    customization,
+                    if (isEditing && onArchive != null) ...[
+                      const SizedBox(height: 8),
+                      TextButton.icon(
+                        onPressed: () {
+                          Navigator.of(context).pop();
+                          onArchive!();
+                        },
+                        icon: const Icon(Icons.archive_outlined, size: 18),
+                        label: const Text('Archivar hábito'),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
             ),
-            SizedBox(height: hasKeyboard ? 16 : 12),
-            _HabitTextField(
-              controller: controller,
-              focusNode: focusNode,
-              hasKeyboard: hasKeyboard,
-              onChanged: onTextChanged,
-              onSubmitted: canAddHabit ? onAddHabit : null,
-              onClear: onHideEvaluation,
-            ),
-            SizedBox(height: hasKeyboard ? 14 : 10),
-            _EvaluateButton(
-              hasKeyboard: hasKeyboard,
-              canEvaluate: canAddHabit && !isEvaluating,
-              onPressed: onEvaluate,
-            ),
-            SizedBox(height: hasKeyboard ? 16 : 12),
+            const SizedBox(height: 8),
             _ActionButtons(
               hasKeyboard: hasKeyboard,
               canAddHabit: canAddHabit,
+              isEditing: isEditing,
               onCancel: () => Navigator.of(context).pop(),
               onAdd: onAddHabit,
             ),
@@ -290,10 +416,279 @@ class _BottomSheetContent extends StatelessWidget {
   }
 }
 
+class _CustomizationSection extends StatelessWidget {
+  final int selectedColor;
+  final String selectedIcon;
+  final Set<int> selectedWeekdays;
+  final TimeOfDay? reminderTime;
+  final ValueChanged<int> onColorChanged;
+  final ValueChanged<String> onIconChanged;
+  final ValueChanged<int> onWeekdayToggled;
+  final VoidCallback onPickReminder;
+  final VoidCallback onClearReminder;
+
+  const _CustomizationSection({
+    required this.selectedColor,
+    required this.selectedIcon,
+    required this.selectedWeekdays,
+    required this.reminderTime,
+    required this.onColorChanged,
+    required this.onIconChanged,
+    required this.onWeekdayToggled,
+    required this.onPickReminder,
+    required this.onClearReminder,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionLabel(theme, 'Días de la semana'),
+        const SizedBox(height: 8),
+        _WeekdaySelector(
+          selected: selectedWeekdays,
+          accentColor: Color(selectedColor),
+          onToggled: onWeekdayToggled,
+        ),
+        const SizedBox(height: 14),
+        _sectionLabel(theme, 'Color'),
+        const SizedBox(height: 8),
+        _ColorPicker(selected: selectedColor, onChanged: onColorChanged),
+        const SizedBox(height: 14),
+        _sectionLabel(theme, 'Icono'),
+        const SizedBox(height: 8),
+        _IconPicker(
+          selected: selectedIcon,
+          accentColor: Color(selectedColor),
+          onChanged: onIconChanged,
+        ),
+        const SizedBox(height: 14),
+        _ReminderRow(
+          reminderTime: reminderTime,
+          onPick: onPickReminder,
+          onClear: onClearReminder,
+        ),
+      ],
+    );
+  }
+
+  Widget _sectionLabel(ThemeData theme, String text) {
+    return Text(
+      text,
+      style: theme.textTheme.bodySmall?.copyWith(
+        fontWeight: FontWeight.w600,
+        color: theme.colorScheme.onSurfaceVariant,
+      ),
+    );
+  }
+}
+
+class _WeekdaySelector extends StatelessWidget {
+  final Set<int> selected;
+  final Color accentColor;
+  final ValueChanged<int> onToggled;
+
+  static const _labels = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
+
+  const _WeekdaySelector({
+    required this.selected,
+    required this.accentColor,
+    required this.onToggled,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(7, (i) {
+        final day = i + 1;
+        final isSelected = selected.contains(day);
+        return GestureDetector(
+          onTap: () => onToggled(day),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 150),
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: isSelected ? accentColor : Colors.transparent,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: isSelected
+                    ? accentColor
+                    : theme.colorScheme.outlineVariant,
+              ),
+            ),
+            child: Center(
+              child: Text(
+                _labels[i],
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: isSelected
+                      ? Colors.white
+                      : theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
+          ),
+        );
+      }),
+    );
+  }
+}
+
+class _ColorPicker extends StatelessWidget {
+  final int selected;
+  final ValueChanged<int> onChanged;
+
+  const _ColorPicker({required this.selected, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 36,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: HabitAppearance.colors.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final colorValue = HabitAppearance.colors[index];
+          final isSelected = colorValue == selected;
+          return GestureDetector(
+            onTap: () => onChanged(colorValue),
+            child: Container(
+              width: 32,
+              height: 32,
+              decoration: BoxDecoration(
+                color: Color(colorValue),
+                shape: BoxShape.circle,
+              ),
+              child: isSelected
+                  ? const Icon(Icons.check, color: Colors.white, size: 18)
+                  : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _IconPicker extends StatelessWidget {
+  final String selected;
+  final Color accentColor;
+  final ValueChanged<String> onChanged;
+
+  const _IconPicker({
+    required this.selected,
+    required this.accentColor,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final keys = HabitAppearance.icons.keys.toList();
+
+    return SizedBox(
+      height: 40,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: keys.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          final key = keys[index];
+          final isSelected = key == selected;
+          return GestureDetector(
+            onTap: () => onChanged(key),
+            child: Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                color: isSelected
+                    ? accentColor.withValues(alpha: 0.15)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: isSelected
+                      ? accentColor
+                      : theme.colorScheme.outlineVariant,
+                ),
+              ),
+              child: Icon(
+                HabitAppearance.icons[key],
+                size: 20,
+                color: isSelected
+                    ? accentColor
+                    : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class _ReminderRow extends StatelessWidget {
+  final TimeOfDay? reminderTime;
+  final VoidCallback onPick;
+  final VoidCallback onClear;
+
+  const _ReminderRow({
+    required this.reminderTime,
+    required this.onPick,
+    required this.onClear,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final hasReminder = reminderTime != null;
+
+    return Row(
+      children: [
+        Icon(
+          hasReminder
+              ? Icons.notifications_active_outlined
+              : Icons.notifications_off_outlined,
+          size: 20,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Text(
+            hasReminder
+                ? 'Recordatorio a las ${reminderTime!.format(context)}'
+                : 'Sin recordatorio propio',
+            style: theme.textTheme.bodyMedium,
+          ),
+        ),
+        if (hasReminder)
+          IconButton(
+            icon: const Icon(Icons.close, size: 18),
+            onPressed: onClear,
+            tooltip: 'Quitar recordatorio',
+          ),
+        TextButton(
+          onPressed: onPick,
+          child: Text(hasReminder ? 'Cambiar' : 'Añadir'),
+        ),
+      ],
+    );
+  }
+}
+
 class _Header extends StatelessWidget {
   final bool hasKeyboard;
+  final bool isEditing;
 
-  const _Header({required this.hasKeyboard});
+  const _Header({required this.hasKeyboard, this.isEditing = false});
 
   @override
   Widget build(BuildContext context) {
@@ -303,7 +698,11 @@ class _Header extends StatelessWidget {
       children: [
         _HeaderIcon(hasKeyboard: hasKeyboard, theme: theme),
         const SizedBox(width: 12),
-        _HeaderText(hasKeyboard: hasKeyboard, theme: theme),
+        _HeaderText(
+          hasKeyboard: hasKeyboard,
+          theme: theme,
+          isEditing: isEditing,
+        ),
       ],
     );
   }
@@ -336,8 +735,13 @@ class _HeaderIcon extends StatelessWidget {
 class _HeaderText extends StatelessWidget {
   final bool hasKeyboard;
   final ThemeData theme;
+  final bool isEditing;
 
-  const _HeaderText({required this.hasKeyboard, required this.theme});
+  const _HeaderText({
+    required this.hasKeyboard,
+    required this.theme,
+    this.isEditing = false,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -346,13 +750,12 @@ class _HeaderText extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Nueva Tarea Diaria', // Título ajustado
+            isEditing ? 'Editar hábito' : 'Nuevo hábito',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
               fontSize: hasKeyboard ? 17 : 18,
             ),
           ),
-          // Texto eliminado según solicitud
         ],
       ),
     );
@@ -681,12 +1084,14 @@ class _EvaluateButton extends StatelessWidget {
 class _ActionButtons extends StatelessWidget {
   final bool hasKeyboard;
   final bool canAddHabit;
+  final bool isEditing;
   final VoidCallback onCancel;
   final VoidCallback onAdd;
 
   const _ActionButtons({
     required this.hasKeyboard,
     required this.canAddHabit,
+    this.isEditing = false,
     required this.onCancel,
     required this.onAdd,
   });
@@ -733,13 +1138,13 @@ class _ActionButtons extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.add,
+                    isEditing ? Icons.check : Icons.add,
                     size: 18,
                     color: canAddHabit ? Colors.white : Colors.grey[500],
                   ),
                   const SizedBox(width: 8),
                   Text(
-                    'Crear Tarea', // Texto del botón ajustado
+                    isEditing ? 'Guardar' : 'Crear hábito',
                     style: TextStyle(
                       color: canAddHabit ? Colors.white : Colors.grey[500],
                       fontSize: 15,
@@ -767,8 +1172,8 @@ class _AdaptiveBottomSheet extends StatelessWidget {
     final screenHeight = MediaQuery.of(context).size.height;
 
     final height = keyboardHeight > 0
-        ? screenHeight * 0.89
-        : screenHeight * 0.47;
+        ? screenHeight * 0.92
+        : screenHeight * 0.78;
 
     return SizedBox(
       height: height,

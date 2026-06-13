@@ -1,5 +1,6 @@
 import '../entities/habit.dart';
 import '../repositories/habit_repository.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class GetAllHabits {
   final HabitRepository repository;
@@ -8,7 +9,7 @@ class GetAllHabits {
 
   Future<List<Habit>> call() async {
     final habits = await repository.getAllHabits();
-    print('📋 [GetAllHabits] ${habits.length} hábito(s) activo(s) obtenidos');
+    appLog('📋 [GetAllHabits] ${habits.length} hábito(s) activo(s) obtenidos');
     return habits;
   }
 }

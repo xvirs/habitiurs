@@ -4,6 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:habitiurs/core/auth/models/user_preferences.dart';
 import '../../auth/models/user.dart';
 import '../models/sync_models.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class FirebaseService {
   final FirebaseFirestore _firestore;
@@ -62,6 +63,10 @@ class FirebaseService {
           'name': habit['name'],
           'created_at': habit['created_at'],
           'is_active': habit['is_active'],
+          'color': habit['color'],
+          'icon': habit['icon'],
+          'weekdays': habit['weekdays'],
+          'reminder_time': habit['reminder_time'],
           'user_id': userId,
           'last_sync': FieldValue.serverTimestamp(),
           'device_sync_time': DateTime.now().toIso8601String(),
@@ -69,7 +74,7 @@ class FirebaseService {
       }
 
       await batch.commit();
-      print('✅ [Firebase] ${habits.length} hábitos sincronizados con merge');
+      appLog('✅ [Firebase] ${habits.length} hábitos sincronizados con merge');
     } catch (e) {
       throw FirebaseException('Error sincronizando hábitos: $e');
     }
@@ -91,15 +96,46 @@ class FirebaseService {
           'name': data['name'],
           'created_at': data['created_at'],
           'is_active': data['is_active'],
+          'color': data['color'],
+          'icon': data['icon'],
+          'weekdays': data['weekdays'],
+          'reminder_time': data['reminder_time'],
           'last_sync': data['last_sync'],
           'firestore_id': doc.id,
         };
       }).toList();
 
-      print('☁️ [Firebase] Descargados ${habits.length} hábitos para usuario $userId');
+      appLog('☁️ [Firebase] Descargados ${habits.length} hábitos para usuario $userId');
       return habits;
     } catch (e) {
       throw FirebaseException('Error obteniendo hábitos: $e');
+    }
+  }
+
+  /// Borra TODOS los datos del usuario en Firestore: hábitos, entradas y
+  /// el documento del usuario. Usado por el flujo de eliminación de cuenta.
+  Future<void> deleteAllUserData(String userId) async {
+    try {
+      final userRef = _firestore.collection(_usersCollection).doc(userId);
+
+      for (final collection in [_habitsCollection, _habitEntriesCollection]) {
+        // Borrado por lotes (límite de 500 operaciones por batch)
+        while (true) {
+          final snapshot =
+              await userRef.collection(collection).limit(400).get();
+          if (snapshot.docs.isEmpty) break;
+          final batch = _firestore.batch();
+          for (final doc in snapshot.docs) {
+            batch.delete(doc.reference);
+          }
+          await batch.commit();
+        }
+      }
+
+      await userRef.delete();
+      appLog('🗑️ [Firebase] Datos del usuario $userId eliminados de Firestore');
+    } catch (e) {
+      throw FirebaseException('Error eliminando datos del usuario: $e');
     }
   }
 
@@ -111,7 +147,7 @@ class FirebaseService {
           .collection(_habitsCollection)
           .doc(habitId.toString())
           .update({'is_active': 0, 'last_sync': FieldValue.serverTimestamp()});
-      print('✅ [Firebase] Hábito marcado como inactivo en Firestore: $habitId');
+      appLog('✅ [Firebase] Hábito marcado como inactivo en Firestore: $habitId');
     } catch (e) {
       throw FirebaseException('Error marcando hábito como inactivo en Firestore: $e');
     }
@@ -140,16 +176,16 @@ class FirebaseService {
       for (final doc in entriesToDeleteSnapshot.docs) {
         batch.delete(doc.reference);
       }
-      print('DEBUG: Preparadas ${entriesToDeleteSnapshot.docs.length} entradas para eliminación en Firebase.');
+      appLog('DEBUG: Preparadas ${entriesToDeleteSnapshot.docs.length} entradas para eliminación en Firebase.');
 
       // 2. Eliminar el documento del hábito principal
       final habitDocRef = userHabitsRef.doc(habitId.toString());
       batch.delete(habitDocRef);
-      print('DEBUG: Hábito $habitId preparado para eliminación en Firebase.');
+      appLog('DEBUG: Hábito $habitId preparado para eliminación en Firebase.');
 
       // 3. Ejecutar el batch
       await batch.commit();
-      print('✅ [Firebase] Hábito $habitId y sus entradas relacionadas eliminados físicamente de Firestore.');
+      appLog('✅ [Firebase] Hábito $habitId y sus entradas relacionadas eliminados físicamente de Firestore.');
     } catch (e) {
       throw FirebaseException('Error eliminando hábito $habitId y sus entradas en Firestore: $e');
     }
@@ -191,7 +227,7 @@ class FirebaseService {
         }
 
         await chunkBatch.commit();
-        print('✅ [Firebase] Chunk ${(i / chunkSize).floor() + 1} sincronizado (${chunk.length} entradas)');
+        appLog('✅ [Firebase] Chunk ${(i / chunkSize).floor() + 1} sincronizado (${chunk.length} entradas)');
       }
     } catch (e) {
       throw FirebaseException('Error sincronizando entradas: $e');
@@ -227,7 +263,7 @@ class FirebaseService {
         };
       }).toList();
 
-      print('☁️ [Firebase] Descargadas ${entries.length} entradas para usuario $userId (desde ${since?.toString().split(' ')[0] ?? 'inicio'})');
+      appLog('☁️ [Firebase] Descargadas ${entries.length} entradas para usuario $userId (desde ${since?.toString().split(' ')[0] ?? 'inicio'})');
       return entries;
     } catch (e) {
       throw FirebaseException('Error obteniendo entradas: $e');
@@ -253,7 +289,7 @@ class FirebaseService {
       
       return null;
     } catch (e) {
-      print('⚠️ [Firebase] Error obteniendo último timestamp: $e');
+      appLog('⚠️ [Firebase] Error obteniendo último timestamp: $e');
       return null;
     }
   }
@@ -266,7 +302,7 @@ class FirebaseService {
       
       return remoteLastSync.isAfter(localLastSync);
     } catch (e) {
-      print('⚠️ [Firebase] Error verificando conflictos: $e');
+      appLog('⚠️ [Firebase] Error verificando conflictos: $e');
       return false;
     }
   }
@@ -279,7 +315,7 @@ class FirebaseService {
           .doc(operation.id)
           .set(operation.toJson());
     } catch (e) {
-      print('⚠️ Error logging sync operation: $e');
+      appLog('⚠️ Error logging sync operation: $e');
     }
   }
 

@@ -1,6 +1,6 @@
 class DatabaseConstants {
   static const String databaseName = 'habitiurs.db';
-  static const int databaseVersion = 5; // <--- ¡INCREMENTADO A LA VERSIÓN 5!
+  static const int databaseVersion = 6;
 
   static const String habitsTable = 'habits';
   static const String habitEntriesTable = 'habit_entries';
@@ -10,9 +10,21 @@ class DatabaseConstants {
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT NOT NULL,
       created_at TEXT NOT NULL,
-      is_active INTEGER NOT NULL DEFAULT 1
+      is_active INTEGER NOT NULL DEFAULT 1,
+      color INTEGER,
+      icon TEXT,
+      weekdays TEXT,
+      reminder_time TEXT
     )
   ''';
+
+  /// Migración v6: personalización de hábitos
+  static const List<String> addHabitCustomizationColumns = [
+    'ALTER TABLE $habitsTable ADD COLUMN color INTEGER',
+    'ALTER TABLE $habitsTable ADD COLUMN icon TEXT',
+    'ALTER TABLE $habitsTable ADD COLUMN weekdays TEXT',
+    'ALTER TABLE $habitsTable ADD COLUMN reminder_time TEXT',
+  ];
 
   static const String createHabitEntriesTable = '''
     CREATE TABLE $habitEntriesTable (

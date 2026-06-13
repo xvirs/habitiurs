@@ -27,6 +27,7 @@ import '../../features/habits/domain/usecases/get_all_habits.dart';
 import '../../features/habits/domain/usecases/get_week_entries.dart';
 import '../../features/habits/domain/usecases/toggle_habit_entry.dart';
 import '../../features/habits/domain/usecases/update_past_habit_entry.dart';
+import '../../features/habits/domain/usecases/update_habit.dart';
 import '../../features/habits/presentation/bloc/habit_bloc.dart';
 import '../../features/habits/presentation/bloc/habit_evaluation_cubit.dart';
 
@@ -95,6 +96,7 @@ class InjectionContainer {
   late final GetWeekEntries _getWeekEntries;
   late final ToggleHabitEntry _toggleHabitEntry;
   late final UpdatePastHabitEntry _updatePastHabitEntry;
+  late final UpdateHabit _updateHabit;
   late final DeleteHabit _deleteHabit; // Se declara el use case de eliminación
 
   // Statistics Use Cases
@@ -225,6 +227,7 @@ class InjectionContainer {
       getWeekEntries: _getWeekEntries,
       toggleHabitEntry: _toggleHabitEntry,
       updatePastHabitEntry: _updatePastHabitEntry,
+      updateHabit: _updateHabit,
       deleteHabit: _deleteHabit,
     );
     _statisticsBloc = StatisticsBloc(
@@ -255,6 +258,7 @@ class InjectionContainer {
   void _initializeHabitsUseCases() {
     _getAllHabits = GetAllHabits(_habitRepository);
     _createHabit = CreateHabit(_habitRepository);
+    _updateHabit = UpdateHabit(_habitRepository);
     _getWeekEntries = GetWeekEntries(_habitRepository);
     _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
     _updatePastHabitEntry = UpdatePastHabitEntry(_habitRepository);

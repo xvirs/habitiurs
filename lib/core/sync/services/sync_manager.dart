@@ -9,9 +9,11 @@ import '../models/sync_models.dart';
 import '../../../features/habits/data/datasources/habit_local_datasource.dart';
 import '../../../features/statistics/data/datasources/statistics_local_datasource.dart';
 import '../../../features/habits/data/models/habit_model.dart';
+import '../../../features/habits/domain/entities/habit.dart';
 import '../../../features/habits/data/models/habit_entry_model.dart';
 import '../../../shared/enums/habit_status.dart';
 import '../../../shared/utils/date_utils.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class SyncManager {
   final FirebaseService _firebaseService;
@@ -71,18 +73,18 @@ class SyncManager {
         // 2. Si no hay sync en progreso, intentar sync con nube
         if (!_isSyncing) {
           syncAll().catchError((e) {
-            print('⚠️ [SyncManager] Error en auto-sync: $e');
+            appLog('⚠️ [SyncManager] Error en auto-sync: $e');
             return false;
           });
         }
       }
     });
-    print('▶️ [SyncManager] Auto-sync inicializado o reanudado.');
+    appLog('▶️ [SyncManager] Auto-sync inicializado o reanudado.');
   }
 
   Future<void> _consolidateHabitHistory() async {
     try {
-      print(
+      appLog(
         '🔄 [SyncManager] Consolidando entradas "skipped" para días pasados (LOCAL)...',
       );
       final allHabits = await _habitDataSource.getAllHabits(
@@ -106,6 +108,11 @@ class SyncManager {
         // Iteramos desde la creación del hábito hasta ayer
         DateTime currentDate = AppDateUtils.getStartOfDay(habit.createdAt);
         while (currentDate.isBefore(today)) {
+          // Los días no programados para este hábito no cuentan como omitidos
+          if (!habit.isScheduledOn(currentDate)) {
+            currentDate = currentDate.add(const Duration(days: 1));
+            continue;
+          }
           if (!existingDatesForHabit.contains(currentDate)) {
             // No existe entrada para este hábito en esta fecha pasada
             final newSkippedEntry = HabitEntryModel(
@@ -117,7 +124,7 @@ class SyncManager {
             );
             await _habitDataSource.insertHabitEntry(newSkippedEntry);
             skippedEntriesConsolidated++;
-            print(
+            appLog(
               '➕ [SyncManager] Consolidada entrada "skipped" para Hábito ${habit.id} en ${currentDate.toIso8601String().split('T')[0]}',
             );
           }
@@ -125,36 +132,36 @@ class SyncManager {
         }
       }
       if (skippedEntriesConsolidated > 0) {
-        print(
+        appLog(
           '✅ [SyncManager] Consolidación de "skipped" completada. ${skippedEntriesConsolidated} entradas añadidas localmente.',
         );
       }
     } catch (e) {
-      print('❌ [SyncManager] Error en consolidación de historial local: $e');
+      appLog('❌ [SyncManager] Error en consolidación de historial local: $e');
     }
   }
 
   Future<bool> syncAll() async {
     final user = _authService.currentUser;
     if (user == null) {
-      print('⚠️ [SyncManager] No hay usuario logueado');
+      appLog('⚠️ [SyncManager] No hay usuario logueado');
       return false;
     }
 
     if (user.isGuest) {
-      print('⚠️ [SyncManager] Usuario invitado - sync no disponible');
+      appLog('⚠️ [SyncManager] Usuario invitado - sync no disponible');
       return false;
     }
 
     if (_isSyncing) {
-      print('⚠️ [SyncManager] Ya hay sincronización en progreso');
+      appLog('⚠️ [SyncManager] Ya hay sincronización en progreso');
       return false;
     }
 
     try {
       _setIsSyncing(true);
       _syncStatusController.add(SyncStatus.syncing);
-      print(
+      appLog(
         '🔄 [SyncManager] Iniciando sincronización completa para usuario: ${user.email}',
       );
 
@@ -185,10 +192,10 @@ class SyncManager {
       _setLastSyncTime(DateTime.now());
       _syncStatusController.add(SyncStatus.completed);
 
-      print('✅ [SyncManager] Sincronización completada exitosamente');
+      appLog('✅ [SyncManager] Sincronización completada exitosamente');
       return true;
     } catch (e) {
-      print('❌ [SyncManager] Error: $e');
+      appLog('❌ [SyncManager] Error: $e');
       _syncStatusController.add(SyncStatus.failed);
       rethrow; // Se relanza la excepción para que el repositorio la capture
     } finally {
@@ -200,7 +207,7 @@ class SyncManager {
     try {
       final updatedUser = user.copyWith(lastLogin: DateTime.now());
       await _firebaseService.createOrUpdateUser(updatedUser);
-      print('✅ [SyncManager] Usuario sincronizado: ${user.email}');
+      appLog('✅ [SyncManager] Usuario sincronizado: ${user.email}');
     } catch (e) {
       throw Exception('Error sincronizando usuario: $e');
     }
@@ -208,33 +215,24 @@ class SyncManager {
 
   Future<void> _syncHabitsWithBidirectionalMerge(String userId) async {
     try {
-      print('🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE HÁBITOS ===');
+      appLog('🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE HÁBITOS ===');
       final localHabits = await _habitDataSource.getAllHabits(
         includeInactive: true,
       );
-      print(
+      appLog(
         '📱 [SyncManager] Hábitos locales encontrados: ${localHabits.length}',
       );
       if (localHabits.isNotEmpty) {
         final habitsData =
-            localHabits
-                .map(
-                  (habit) => {
-                    'id': habit.id,
-                    'name': habit.name,
-                    'created_at': habit.createdAt.toIso8601String(),
-                    'is_active': habit.isActive ? 1 : 0,
-                  },
-                )
-                .toList();
+            localHabits.map((habit) => habit.toFirestoreMap()).toList();
         await _firebaseService.syncHabits(userId, habitsData);
-        print(
+        appLog(
           '⬆️ [SyncManager] ${habitsData.length} hábitos subidos a Firebase',
         );
       }
 
       final remoteHabits = await _firebaseService.getHabits(userId);
-      print(
+      appLog(
         '☁️ [SyncManager] Hábitos remotos encontrados: ${remoteHabits.length}',
       );
 
@@ -251,9 +249,14 @@ class SyncManager {
             DateTime.now().toIso8601String();
         final remoteIsActive = (remoteHabit['is_active'] as int? ?? 1) == 1;
         if (remoteId == null || remoteName.isEmpty) {
-          print('⚠️ [SyncManager] Hábito remoto inválido, saltando...');
+          appLog('⚠️ [SyncManager] Hábito remoto inválido, saltando...');
           continue;
         }
+
+        final remoteColor = remoteHabit['color'] as int?;
+        final remoteIcon = remoteHabit['icon'] as String?;
+        final remoteWeekdays = HabitModel.parseWeekdays(remoteHabit['weekdays']);
+        final remoteReminder = remoteHabit['reminder_time'] as String?;
 
         final localHabit = localHabitsMap[remoteId];
         if (localHabit == null) {
@@ -264,19 +267,23 @@ class SyncManager {
                 name: remoteName,
                 createdAt: DateTime.parse(remoteCreatedAt),
                 isActive: remoteIsActive,
+                colorValue: remoteColor ?? Habit.defaultColor,
+                iconKey: remoteIcon ?? Habit.defaultIcon,
+                weekdays: remoteWeekdays,
+                reminderTime: remoteReminder,
               );
               await _habitDataSource.insertHabitWithId(newHabit);
               newHabitsAdded++;
-              print(
+              appLog(
                 '➕ [SyncManager] Nuevo hábito agregado desde remoto: "$remoteName" (ID: $remoteId)',
               );
             } catch (e) {
-              print(
+              appLog(
                 '❌ [SyncManager] Error agregando hábito remoto "$remoteName": $e',
               );
             }
           } else {
-            print(
+            appLog(
               'ℹ️ [SyncManager] Hábito remoto $remoteId está inactivo, no se agrega localmente.',
             );
           }
@@ -285,18 +292,18 @@ class SyncManager {
           HabitModel updatedHabit = localHabit;
 
           if (localHabit.name != remoteName) {
-            print(
+            appLog(
               '🔀 [SyncManager] Conflicto de nombre en hábito ID $remoteId: Local="${localHabit.name}" vs Remoto="$remoteName"',
             );
-            updatedHabit = updatedHabit.copyWith(name: remoteName);
+            updatedHabit = updatedHabit.copyWithModel(name: remoteName);
             needsUpdate = true;
           }
 
           if (localHabit.isActive != remoteIsActive) {
-            print(
+            appLog(
               '🔀 [SyncManager] Conflicto de estado (activo/inactivo) en hábito ID $remoteId: Local=${localHabit.isActive} vs Remoto=$remoteIsActive',
             );
-            updatedHabit = updatedHabit.copyWith(isActive: remoteIsActive);
+            updatedHabit = updatedHabit.copyWithModel(isActive: remoteIsActive);
             needsUpdate = true;
           }
 
@@ -304,11 +311,11 @@ class SyncManager {
             try {
               await _habitDataSource.updateHabit(updatedHabit);
               conflictsResolved++;
-              print(
+              appLog(
                 '🔄 [SyncManager] Conflicto resuelto para hábito "$remoteName" (ID: $remoteId)',
               );
             } catch (e) {
-              print(
+              appLog(
                 '❌ [SyncManager] Error resolviendo conflicto para hábito ID $remoteId: $e',
               );
             }
@@ -316,12 +323,12 @@ class SyncManager {
         }
       }
 
-      print('✅ [SyncManager] Hábitos sincronizados exitosamente:');
-      print('   📱 Local: ${localHabits.length}');
-      print('   ☁️ Remoto: ${remoteHabits.length}');
-      print('   ➕ Nuevos agregados: $newHabitsAdded');
-      print('   🔄 Conflicto de hábitos resueltos: $conflictsResolved');
-      print(
+      appLog('✅ [SyncManager] Hábitos sincronizados exitosamente:');
+      appLog('   📱 Local: ${localHabits.length}');
+      appLog('   ☁️ Remoto: ${remoteHabits.length}');
+      appLog('   ➕ Nuevos agregados: $newHabitsAdded');
+      appLog('   🔄 Conflicto de hábitos resueltos: $conflictsResolved');
+      appLog(
         '   ℹ️ Hábitos remotos inactivos ignorados o actualizados localmente.',
       );
     } catch (e) {
@@ -331,7 +338,7 @@ class SyncManager {
 
   Future<void> _syncHabitEntriesWithBidirectionalMerge(String userId) async {
     try {
-      print(
+      appLog(
         '🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE ENTRADAS ===',
       );
 
@@ -352,7 +359,7 @@ class SyncManager {
           '${entry.habitId}_${entry.date.toIso8601String().split('T')[0]}':
               entry,
       };
-      print(
+      appLog(
         '📱 [SyncManager] Entradas locales reales encontradas: ${localEntriesMap.length}',
       );
 
@@ -372,7 +379,7 @@ class SyncManager {
                 .toList();
 
         await _firebaseService.syncHabitEntries(userId, entriesData);
-        print(
+        appLog(
           '⬆️ [SyncManager] ${entriesData.length} entradas subidas a Firebase',
         );
       }
@@ -384,7 +391,7 @@ class SyncManager {
           DateTime.now().subtract(const Duration(days: 365)),
         ),
       );
-      print(
+      appLog(
         '☁️ [SyncManager] Entradas remotas encontradas: ${remoteEntries.length}',
       );
 
@@ -400,7 +407,7 @@ class SyncManager {
         if (remoteHabitId == null ||
             remoteDateStr == null ||
             remoteStatusInt == null) {
-          print('⚠️ [SyncManager] Entrada remota inválida, saltando...');
+          appLog('⚠️ [SyncManager] Entrada remota inválida, saltando...');
           continue;
         }
 
@@ -428,14 +435,14 @@ class SyncManager {
                 );
                 await _habitDataSource.insertHabitEntry(newEntry);
                 newEntriesAdded++;
-                print(
+                appLog(
                   '➕ [SyncManager] Nueva entrada agregada desde remoto: Hábito $remoteHabitId - ${remoteDateStr} - ${remoteStatus.name}',
                 );
               } catch (e) {
-                print('❌ [SyncManager] Error agregando entrada remota: $e');
+                appLog('❌ [SyncManager] Error agregando entrada remota: $e');
               }
             } else {
-              print(
+              appLog(
                 'ℹ️ [SyncManager] Entrada remota $entryKey con estado ${remoteStatus.name} o sin timestamp, no se agrega localmente.',
               );
             }
@@ -445,7 +452,7 @@ class SyncManager {
               if (localLastModified == null ||
                   (remoteLastModified != null &&
                       remoteLastModified.isAfter(localLastModified))) {
-                print(
+                appLog(
                   '🔀 [SyncManager] Conflicto de estado resuelto por timestamp más reciente (remoto gana): Hábito $remoteHabitId - $remoteDateStr. Local:${existingLocalEntry.status.name} (${localLastModified?.toIso8601String() ?? 'null'}) vs Remoto:${remoteStatus.name} (${remoteLastModified?.toIso8601String() ?? 'null'})',
                 );
                 final updatedEntry = existingLocalEntry.copyWith(
@@ -455,7 +462,7 @@ class SyncManager {
                 await _habitDataSource.updateHabitEntry(updatedEntry);
                 conflictsResolved++;
               } else {
-                print(
+                appLog(
                   '🔀 [SyncManager] Conflicto de estado resuelto por timestamp más reciente (local gana): Hábito $remoteHabitId - $remoteDateStr. Local:${existingLocalEntry.status.name} (${localLastModified?.toIso8601String() ?? 'null'}) vs Remoto:${remoteStatus.name} (${remoteLastModified?.toIso8601String() ?? 'null'})',
                 );
               }
@@ -473,15 +480,15 @@ class SyncManager {
             }
           }
         } catch (e) {
-          print('❌ [SyncManager] Error procesando entrada remota: $e');
+          appLog('❌ [SyncManager] Error procesando entrada remota: $e');
         }
       }
 
-      print('✅ [SyncManager] Entradas sincronizadas exitosamente:');
-      print('   📱 Local: ${localEntriesMap.length}');
-      print('   ☁️ Remoto: ${remoteEntries.length}');
-      print('   ➕ Nuevas agregadas: $newEntriesAdded');
-      print('   🔄 Conflictos resueltos: $conflictsResolved');
+      appLog('✅ [SyncManager] Entradas sincronizadas exitosamente:');
+      appLog('   📱 Local: ${localEntriesMap.length}');
+      appLog('   ☁️ Remoto: ${remoteEntries.length}');
+      appLog('   ➕ Nuevas agregadas: $newEntriesAdded');
+      appLog('   🔄 Conflictos resueltos: $conflictsResolved');
     } catch (e) {
       throw Exception('Error en sincronización bidireccional de entradas: $e');
     }
@@ -498,10 +505,10 @@ class SyncManager {
       await _syncHabitsWithBidirectionalMerge(user.id);
 
       _syncStatusController.add(SyncStatus.completed);
-      print('✅ [SyncManager] Solo hábitos sincronizados');
+      appLog('✅ [SyncManager] Solo hábitos sincronizados');
       return true;
     } catch (e) {
-      print('❌ [SyncManager] Error en sync de hábitos: $e');
+      appLog('❌ [SyncManager] Error en sync de hábitos: $e');
       _syncStatusController.add(SyncStatus.failed);
       return false;
     } finally {
@@ -521,10 +528,10 @@ class SyncManager {
       await _syncHabitEntriesWithBidirectionalMerge(user.id);
 
       _syncStatusController.add(SyncStatus.completed);
-      print('✅ [SyncManager] Solo entradas sincronizadas');
+      appLog('✅ [SyncManager] Solo entradas sincronizadas');
       return true;
     } catch (e) {
-      print('❌ [SyncManager] Error en sync de entradas: $e');
+      appLog('❌ [SyncManager] Error en sync de entradas: $e');
       _syncStatusController.add(SyncStatus.failed);
       return false;
     } finally {
@@ -533,27 +540,27 @@ class SyncManager {
   }
 
   Future<void> requestSync() async {
-    print('🔄 [SyncManager] Sincronización solicitada manualmente');
+    appLog('🔄 [SyncManager] Sincronización solicitada manualmente');
     await syncAll();
   }
 
   // Métodos para pausar y reanudar el auto-sync, controlados por el temporizador aquí
   void pauseAutoSync() {
     _autoSyncTimer?.cancel();
-    print('⏸️ [SyncManager] Auto-sync pausado');
+    appLog('⏸️ [SyncManager] Auto-sync pausado');
   }
 
   void resumeAutoSync() {
     _initializeAutoSync(); // Re-inicializa el temporizador
-    print('▶️ [SyncManager] Auto-sync reanudado');
+    appLog('▶️ [SyncManager] Auto-sync reanudado');
   }
 
   void _logSyncError(String step, Object e) {
     final msg = e.toString();
     if (msg.contains('RESOURCE_EXHAUSTED') || msg.contains('Quota exceeded')) {
-      print('🚫 [SyncManager] $step fallido — cuota de Firestore agotada (se renueva en 24 h): $e');
+      appLog('🚫 [SyncManager] $step fallido — cuota de Firestore agotada (se renueva en 24 h): $e');
     } else {
-      print('⚠️ [SyncManager] $step fallido, continuando: $e');
+      appLog('⚠️ [SyncManager] $step fallido, continuando: $e');
     }
   }
 
@@ -572,6 +579,6 @@ class SyncManager {
     await _syncStatusController.close();
     await _lastSyncController.close();
     await _isSyncingController.close();
-    print('🧹 [SyncManager] Sync Manager limpiado');
+    appLog('🧹 [SyncManager] Sync Manager limpiado');
   }
 }

@@ -1,12 +1,14 @@
 // lib/features/habits/presentation/bloc/habit_bloc.dart
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
+import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../domain/usecases/get_all_habits.dart';
 import '../../domain/usecases/create_habit.dart';
 import '../../domain/usecases/get_week_entries.dart';
 import '../../domain/usecases/toggle_habit_entry.dart';
 import '../../domain/usecases/update_past_habit_entry.dart';
+import '../../domain/usecases/update_habit.dart';
 import '../../domain/usecases/delete_habit.dart';
 import '../../domain/services/habit_validation_service.dart';
 import '../../../../shared/enums/habit_status.dart';
@@ -14,6 +16,7 @@ import '../../../../core/di/injection_container.dart';
 import '../../../../core/notifications/notification_service.dart';
 import 'habit_event.dart';
 import 'habit_state.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class HabitBloc extends Bloc<HabitEvent, HabitState> {
   final GetAllHabits _getAllHabits;
@@ -21,6 +24,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   final GetWeekEntries _getWeekEntries;
   final ToggleHabitEntry _toggleHabitEntry;
   final UpdatePastHabitEntry _updatePastHabitEntry;
+  final UpdateHabit _updateHabit;
   final DeleteHabit _deleteHabit;
 
   HabitBloc({
@@ -29,16 +33,20 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     required GetWeekEntries getWeekEntries,
     required ToggleHabitEntry toggleHabitEntry,
     required UpdatePastHabitEntry updatePastHabitEntry,
+    required UpdateHabit updateHabit,
     required DeleteHabit deleteHabit,
   }) : _getAllHabits = getAllHabits,
        _createHabit = createHabit,
        _getWeekEntries = getWeekEntries,
        _toggleHabitEntry = toggleHabitEntry,
        _updatePastHabitEntry = updatePastHabitEntry,
+       _updateHabit = updateHabit,
        _deleteHabit = deleteHabit,
        super(HabitInitial()) {
     on<LoadHabits>(_onLoadHabits);
     on<CreateHabitEvent>(_onCreateHabit);
+    on<UpdateHabitEvent>(_onUpdateHabit);
+    on<SetHabitArchivedEvent>(_onSetHabitArchived);
     on<ToggleHabitEntryEvent>(_onToggleHabitEntry);
     on<UpdatePastHabitEntryEvent>(_onUpdatePastHabitEntry);
     on<DeleteHabitEvent>(_onDeleteHabit);
@@ -71,11 +79,68 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     Emitter<HabitState> emit,
   ) async {
     try {
-      await _createHabit(event.name);
+      final habit = Habit(
+        name: event.name,
+        createdAt: DateTime.now(),
+        colorValue: event.colorValue,
+        iconKey: event.iconKey,
+        weekdays: event.weekdays,
+        reminderTime: event.reminderTime,
+      );
+      final id = await _createHabit(habit);
+      await _syncHabitReminder(habit.copyWith(id: id));
       await _loadAndEmitData(emit);
       _syncInBackground('create_habit');
     } catch (e) {
       emit(HabitError('Error creando hábito: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onUpdateHabit(
+    UpdateHabitEvent event,
+    Emitter<HabitState> emit,
+  ) async {
+    try {
+      await _updateHabit(event.habit);
+      await _syncHabitReminder(event.habit);
+      await _loadAndEmitData(emit);
+      _syncInBackground('update_habit');
+    } catch (e) {
+      emit(HabitError('Error actualizando hábito: ${e.toString()}'));
+    }
+  }
+
+  Future<void> _onSetHabitArchived(
+    SetHabitArchivedEvent event,
+    Emitter<HabitState> emit,
+  ) async {
+    try {
+      final updated = event.habit.copyWith(isActive: !event.archived);
+      await _updateHabit(updated);
+      await _syncHabitReminder(updated);
+      await _loadAndEmitData(emit);
+      _syncInBackground('update_habit');
+    } catch (e) {
+      emit(HabitError('Error archivando hábito: ${e.toString()}'));
+    }
+  }
+
+  /// Programa o cancela el recordatorio propio del hábito según su estado.
+  Future<void> _syncHabitReminder(Habit habit) async {
+    if (habit.id == null) return;
+    try {
+      if (habit.isActive && habit.reminderTime != null) {
+        await NotificationService().scheduleHabitReminder(
+          habitId: habit.id!,
+          habitName: habit.name,
+          reminderTime: habit.reminderTime!,
+          weekdays: habit.weekdays,
+        );
+      } else {
+        await NotificationService().cancelHabitReminder(habit.id!);
+      }
+    } catch (e) {
+      appLog('⚠️ [HabitBloc] Error programando recordatorio de hábito: $e');
     }
   }
 
@@ -115,6 +180,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   ) async {
     try {
       await _deleteHabit(event.habitId);
+      await NotificationService().cancelHabitReminder(event.habitId);
       await _loadAndEmitData(emit);
       _syncInBackground('delete_habit');
     } catch (e) {
@@ -211,14 +277,14 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
 
     // Log warnings si hay
     for (final warning in validationResult.warnings) {
-      print('⚠️ [HabitBloc] Validation warning: $warning');
+      appLog('⚠️ [HabitBloc] Validation warning: $warning');
     }
 
     // Si hay errores críticos, emitir error
     if (!validationResult.isValid) {
       final errorMsg =
           'Errores de validación: ${validationResult.issues.join(', ')}';
-      print('❌ [HabitBloc] Validation errors: $errorMsg');
+      appLog('❌ [HabitBloc] Validation errors: $errorMsg');
       emit(HabitError(errorMsg));
       return;
     }
@@ -249,7 +315,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
         entriesMap[key] = entry;
       } else {
         // Log de deduplicación para debugging
-        print(
+        appLog(
           '⚠️ [HabitBloc] Entrada duplicada evitada: habitId=${entry.habitId}, date=${AppDateUtils.formatToYYYYMMDD(entry.date)}',
         );
       }
@@ -279,7 +345,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   /// Programa la notificación diaria con los hábitos pendientes
   void _scheduleDailyNotification(List habits, List entries) {
     _performNotificationScheduling(habits, entries).catchError((error) {
-      print('⚠️ [HabitBloc] Error programando notificación: $error');
+      appLog('⚠️ [HabitBloc] Error programando notificación: $error');
     });
   }
 
@@ -302,6 +368,8 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       final pendingHabits = <Map<String, String>>[];
 
       for (final habit in habits) {
+        // Solo cuentan los hábitos programados para hoy
+        if (habit is Habit && !habit.isScheduledOn(today)) continue;
         // Buscar la entrada de hoy para este hábito
         final todayEntry =
             entries.where((e) {
@@ -333,7 +401,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       }
     } catch (e) {
       // Silent fail - no queremos que las notificaciones rompan la app
-      print('⚠️ [HabitBloc] Error programando notificación: $e');
+      appLog('⚠️ [HabitBloc] Error programando notificación: $e');
     }
   }
 }

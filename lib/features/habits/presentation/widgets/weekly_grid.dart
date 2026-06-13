@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/entities/habit.dart';
+import '../../domain/entities/habit_appearance.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../../../shared/enums/habit_status.dart';
 import '../bloc/habit_bloc.dart';
@@ -272,17 +273,12 @@ class _HabitRow extends StatelessWidget {
   Widget build(BuildContext context) {
     return Row(
       children: [
-        _HabitNumber(
-          number: index + 1,
-          color: Theme.of(context).colorScheme.primary,
-        ),
+        _HabitBadge(habit: habit),
         const SizedBox(width: 4),
         ...weekDates.map(
           (date) => Expanded(
             child: _StatusCell(
-              habitId: habit.id!,
-              habitName: habit.name,
-              createdAt: habit.createdAt, // Pass creation date
+              habit: habit,
               date: date,
               weekEntries: weekEntries,
             ),
@@ -293,11 +289,10 @@ class _HabitRow extends StatelessWidget {
   }
 }
 
-class _HabitNumber extends StatelessWidget {
-  final int number;
-  final Color color;
+class _HabitBadge extends StatelessWidget {
+  final Habit habit;
 
-  const _HabitNumber({required this.number, required this.color});
+  const _HabitBadge({required this.habit});
 
   @override
   Widget build(BuildContext context) {
@@ -305,17 +300,14 @@ class _HabitNumber extends StatelessWidget {
       width: 24,
       height: 24,
       decoration: BoxDecoration(
-        color: color,
+        color: Color(habit.colorValue),
         borderRadius: BorderRadius.circular(4),
       ),
       child: Center(
-        child: Text(
-          '$number',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
+        child: Icon(
+          HabitAppearance.iconFor(habit.iconKey),
+          color: Colors.white,
+          size: 14,
         ),
       ),
     );
@@ -323,26 +315,43 @@ class _HabitNumber extends StatelessWidget {
 }
 
 class _StatusCell extends StatelessWidget {
-  final int habitId;
-  final String habitName;
-  final DateTime?
-  createdAt; // Accepted nullable just in case, but domain should have it
+  final Habit habit;
   final DateTime date;
   final List<HabitEntry> weekEntries;
 
   const _StatusCell({
-    required this.habitId,
-    required this.habitName,
-    required this.createdAt,
+    required this.habit,
     required this.date,
     required this.weekEntries,
   });
+
+  int get habitId => habit.id!;
+  String get habitName => habit.name;
+  DateTime? get createdAt => habit.createdAt;
 
   // Cache para mejorar rendimiento
   static final Map<String, HabitEntry?> _entryCache = {};
 
   @override
   Widget build(BuildContext context) {
+    // Día no programado para este hábito: celda atenuada, sin interacción
+    if (!habit.isScheduledOn(date)) {
+      return Container(
+        margin: const EdgeInsets.symmetric(horizontal: 1),
+        decoration: BoxDecoration(
+          color: Colors.grey[100],
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child: Center(
+          child: Container(
+            width: 6,
+            height: 2,
+            color: Colors.grey[300],
+          ),
+        ),
+      );
+    }
+
     final entry = _findEntry();
     final status = _getDisplayStatus(entry);
     final isToday = AppDateUtils.isToday(date);

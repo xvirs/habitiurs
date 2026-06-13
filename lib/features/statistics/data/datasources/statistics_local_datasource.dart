@@ -1,6 +1,8 @@
 import '../../../../core/database/database_helper.dart';
 import '../../../../shared/enums/habit_status.dart';
+import '../../../habits/data/models/habit_model.dart';
 import '../models/statistics_model.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 abstract class StatisticsLocalDatasource {
   Future<MonthlyStatisticsModel> getCurrentMonthStatistics();
@@ -17,14 +19,14 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
   @override
   Future<MonthlyStatisticsModel> getCurrentMonthStatistics() async {
     final now = DateTime.now();
-    print('📊 [Statistics] Cargando estadísticas mes ${now.month}/${now.year}');
+    appLog('📊 [Statistics] Cargando estadísticas mes ${now.month}/${now.year}');
     return await getMonthStatistics(now.year, now.month);
   }
 
   @override
   Future<List<MonthlyStatisticsModel>> getCurrentYearStatistics() async {
     final now = DateTime.now();
-    print('📊 [Statistics] Cargando estadísticas del año ${now.year}');
+    appLog('📊 [Statistics] Cargando estadísticas del año ${now.year}');
     final List<MonthlyStatisticsModel> yearStatistics = [];
     for (int month = 1; month <= 12; month++) {
       final monthStats = await getMonthStatistics(now.year, month);
@@ -32,13 +34,13 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
         yearStatistics.add(monthStats);
       }
     }
-    print('📊 [Statistics] Año ${now.year}: ${yearStatistics.length} mes(es) con datos');
+    appLog('📊 [Statistics] Año ${now.year}: ${yearStatistics.length} mes(es) con datos');
     return yearStatistics;
   }
 
   @override
   Future<List<HistoricalDataPointModel>> getHistoricalData() async {
-    print('📊 [Statistics] Cargando datos históricos...');
+    appLog('📊 [Statistics] Cargando datos históricos...');
     final db = await databaseHelper.database;
     const query = '''
       SELECT
@@ -56,7 +58,7 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
       HabitStatus.completed.index,
       HabitStatus.skipped.index,
     ]);
-    print('📊 [Statistics] ${result.length} punto(s) histórico(s) obtenidos');
+    appLog('📊 [Statistics] ${result.length} punto(s) histórico(s) obtenidos');
     return result.map((map) {
       final dateStr = map['date'] as String;
       final parts = dateStr.split('-');
@@ -79,7 +81,8 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
 
     // 1. Obtener "Total Esperado" (Opportunities) calculado teóricamente
     // Basado en cuándo se creó cada hábito.
-    final habitsResult = await db.query('habits');
+    final habitsResult =
+        await db.query('habits', where: 'is_active = ?', whereArgs: [1]);
     int calculatedTotalHabits = 0;
 
     // Límite superior para contar "oportunidades": Hasta hoy o fin de mes, lo que pase antes.
@@ -112,11 +115,10 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
         continue;
       }
 
-      // Días de diferencia + 1 (inclusivo)
-      final days = calculationEnd.difference(effectiveStart).inDays + 1;
-      if (days > 0) {
-        calculatedTotalHabits += days;
-      }
+      // Contar solo los días programados según la frecuencia del hábito
+      final weekdays = HabitModel.parseWeekdays(habitMap['weekdays']);
+      calculatedTotalHabits +=
+          _countScheduledDays(effectiveStart, calculationEnd, weekdays);
     }
 
     // 2. Obtener conteos reales de la BD (solo Completed importa mucho ahora)
@@ -219,11 +221,9 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
 
           if (effectiveStart.isAfter(calculationDutyEnd)) continue;
 
-          final days = calculationDutyEnd.difference(effectiveStart).inDays + 1;
-
-          if (days > 0) {
-            calculatedWeekTotal += days;
-          }
+          final weekdays = HabitModel.parseWeekdays(habitMap['weekdays']);
+          calculatedWeekTotal +=
+              _countScheduledDays(effectiveStart, calculationDutyEnd, weekdays);
         }
       }
 
@@ -260,5 +260,18 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
       weekNumber++;
     }
     return weeks;
+  }
+
+  /// Cuenta los días entre [start] y [end] (inclusive) cuyos días de la
+  /// semana están en [weekdays] (ISO 1=lunes … 7=domingo).
+  int _countScheduledDays(DateTime start, DateTime end, List<int> weekdays) {
+    int count = 0;
+    var current = DateTime(start.year, start.month, start.day);
+    final last = DateTime(end.year, end.month, end.day);
+    while (!current.isAfter(last)) {
+      if (weekdays.contains(current.weekday)) count++;
+      current = current.add(const Duration(days: 1));
+    }
+    return count;
   }
 }

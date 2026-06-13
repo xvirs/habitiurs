@@ -6,15 +6,8 @@ class CreateHabit {
 
   CreateHabit(this.repository);
 
-  Future<int> call(String name) async {
-    print('🔄 [CreateHabit] Creando hábito: "$name"');
-    final habit = Habit(
-      name: name,
-      createdAt: DateTime.now(),
-      isActive: true,
-    );
+  Future<int> call(Habit habit) async {
     final id = await repository.createHabit(habit);
-    print('✅ [CreateHabit] Hábito creado con ID: $id — "$name"');
     return id;
   }
 }

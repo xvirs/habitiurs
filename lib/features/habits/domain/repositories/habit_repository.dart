@@ -5,6 +5,7 @@ import '../../../../shared/enums/habit_status.dart'; // Asegúrate de importar e
 
 abstract class HabitRepository {
   Future<List<Habit>> getAllHabits();
+  Future<List<Habit>> getArchivedHabits();
   Future<int> createHabit(Habit habit);
   Future<void> updateHabit(Habit habit);
   // Se ha actualizado la firma para requerir el userId para la eliminación remota.

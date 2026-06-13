@@ -8,6 +8,7 @@ import '../models/habit_entry_model.dart';
 import '../../../../shared/enums/habit_status.dart';
 import '../../../../shared/utils/date_utils.dart';
 import '../../../../core/sync/repositories/sync_repository.dart'; // Asegúrate de importar SyncRepository
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class HabitRepositoryImpl implements HabitRepository {
   final HabitLocalDataSource localDataSource;
@@ -18,16 +19,22 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<List<Habit>> getAllHabits() async {
     final habits = await localDataSource.getAllHabits(includeInactive: false);
-    print('📋 [HabitRepository] ${habits.length} hábito(s) activo(s) cargados de BD local');
+    appLog('📋 [HabitRepository] ${habits.length} hábito(s) activo(s) cargados de BD local');
     return habits;
   }
 
   @override
+  Future<List<Habit>> getArchivedHabits() async {
+    final habits = await localDataSource.getAllHabits(includeInactive: true);
+    return habits.where((h) => !h.isActive).toList();
+  }
+
+  @override
   Future<int> createHabit(Habit habit) async {
-    print('🔄 [HabitRepository] Insertando hábito: "${habit.name}"');
+    appLog('🔄 [HabitRepository] Insertando hábito: "${habit.name}"');
     final habitModel = HabitModel.fromEntity(habit);
     final id = await localDataSource.insertHabit(habitModel);
-    print('✅ [HabitRepository] Hábito insertado con ID: $id');
+    appLog('✅ [HabitRepository] Hábito insertado con ID: $id');
     return id;
   }
 
@@ -41,15 +48,15 @@ class HabitRepositoryImpl implements HabitRepository {
   Future<void> deleteHabit(int id, String userId) async {
     // 1. Eliminar localmente — operación principal, debe completarse siempre
     await localDataSource.deleteHabit(id);
-    print('✅ [HabitRepository] Hábito $id eliminado localmente.');
+    appLog('✅ [HabitRepository] Hábito $id eliminado localmente.');
 
     // 2. Eliminar remotamente de forma best-effort (no bloquea, no lanza)
     // Guests y usuarios offline no tienen acceso a Firestore — es correcto ignorar el error.
     // En el próximo syncAll los cambios locales se propagan.
     _syncRepository.deleteHabitRemotely(userId, id).then((_) {
-      print('✅ [HabitRepository] Hábito $id eliminado remotamente.');
+      appLog('✅ [HabitRepository] Hábito $id eliminado remotamente.');
     }).catchError((e) {
-      print(
+      appLog(
         '⚠️ [HabitRepository] Eliminación remota de hábito $id no completada (se reintentará): $e',
       );
     });
@@ -84,7 +91,7 @@ class HabitRepositoryImpl implements HabitRepository {
     );
 
     final dateStr = normalizedDate.toIso8601String().split('T')[0];
-    print('🔄 [HabitRepository] Actualizando entrada — habitId: $habitId, fecha: $dateStr, estado: ${status.name}');
+    appLog('🔄 [HabitRepository] Actualizando entrada — habitId: $habitId, fecha: $dateStr, estado: ${status.name}');
 
     if (existingEntry != null) {
       final updatedEntry = HabitEntryModel(
@@ -95,7 +102,7 @@ class HabitRepositoryImpl implements HabitRepository {
         lastModified: DateTime.now(),
       );
       await localDataSource.updateHabitEntry(updatedEntry);
-      print('✅ [HabitRepository] Entrada actualizada — habitId: $habitId, $dateStr → ${status.name}');
+      appLog('✅ [HabitRepository] Entrada actualizada — habitId: $habitId, $dateStr → ${status.name}');
     } else {
       // Solo crear entrada si el estado es diferente a pending
       if (status != HabitStatus.pending) {
@@ -106,9 +113,9 @@ class HabitRepositoryImpl implements HabitRepository {
           lastModified: DateTime.now(),
         );
         await localDataSource.insertHabitEntry(newEntry);
-        print('✅ [HabitRepository] Entrada creada — habitId: $habitId, $dateStr → ${status.name}');
+        appLog('✅ [HabitRepository] Entrada creada — habitId: $habitId, $dateStr → ${status.name}');
       } else {
-        print('ℹ️ [HabitRepository] Sin entrada creada — estado pending no requiere registro (habitId: $habitId, $dateStr)');
+        appLog('ℹ️ [HabitRepository] Sin entrada creada — estado pending no requiere registro (habitId: $habitId, $dateStr)');
       }
     }
 
@@ -117,7 +124,7 @@ class HabitRepositoryImpl implements HabitRepository {
     // We don't await the result to avoid blocking UI, but we trigger it.
     _syncRepository.syncEntriesOnly().then((success) {
       if (!success)
-        print(
+        appLog(
           '⚠️ [HabitRepo] Immediate sync after update failed, will retry later.',
         );
     });

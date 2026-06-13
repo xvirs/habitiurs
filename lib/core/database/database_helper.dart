@@ -2,6 +2,7 @@
 import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
 import '../constants/database_constants.dart'; //
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 abstract class DatabaseHelper {
   Future<Database> get database;
@@ -39,10 +40,10 @@ class SqliteDatabaseHelper implements DatabaseHelper {
     }
     final path = join(await getDatabasesPath(), DatabaseConstants.databaseName);
     await deleteDatabase(path); // Eliminar el archivo de la base de datos
-    print('🗑️ [DatabaseHelper] Base de datos local borrada completamente.');
+    appLog('🗑️ [DatabaseHelper] Base de datos local borrada completamente.');
     // Re-inicializar la base de datos para que esté lista para un nuevo uso
     _database = await _initDatabase();
-    print('✅ [DatabaseHelper] Base de datos re-inicializada después de borrar.');
+    appLog('✅ [DatabaseHelper] Base de datos re-inicializada después de borrar.');
   }
 
 
@@ -73,7 +74,7 @@ class SqliteDatabaseHelper implements DatabaseHelper {
       await _migrateToVersion3(db);
     }
     if (oldVersion < 4) {
-      print('🔄 [Database] Migrando a versión 4: Añadiendo columna last_modified a habit_entries.');
+      appLog('🔄 [Database] Migrando a versión 4: Añadiendo columna last_modified a habit_entries.');
       try {
         // Las migraciones v2/v3 recrean la tabla desde createTempHabitEntriesTable,
         // que ya incluye last_modified. Solo añadir si la columna no existe.
@@ -81,15 +82,31 @@ class SqliteDatabaseHelper implements DatabaseHelper {
         final hasLastModified = tableInfo.any((col) => col['name'] == 'last_modified');
         if (!hasLastModified) {
           await db.execute(DatabaseConstants.addLastModifiedColumnToHabitEntries);
-          print('✅ [Database] Columna last_modified añadida exitosamente.');
+          appLog('✅ [Database] Columna last_modified añadida exitosamente.');
         } else {
-          print('ℹ️ [Database] Columna last_modified ya existía (creada por migración v2/v3), omitiendo ALTER TABLE.');
+          appLog('ℹ️ [Database] Columna last_modified ya existía (creada por migración v2/v3), omitiendo ALTER TABLE.');
         }
       } catch (e) {
-        print('❌ [Database] Error en migración v4: $e');
+        appLog('❌ [Database] Error en migración v4: $e');
         rethrow;
       }
     }
+    if (oldVersion < 6) {
+      await _migrateToVersion6(db);
+    }
+  }
+
+  Future<void> _migrateToVersion6(Database db) async {
+    appLog('🔄 [Database] Migrando a versión 6: personalización de hábitos.');
+    final tableInfo = await db.rawQuery("PRAGMA table_info(habits)");
+    final existing = tableInfo.map((col) => col['name']).toSet();
+    for (final statement in DatabaseConstants.addHabitCustomizationColumns) {
+      final columnName = statement.split('ADD COLUMN ')[1].split(' ')[0];
+      if (!existing.contains(columnName)) {
+        await db.execute(statement);
+      }
+    }
+    appLog('✅ [Database] Migración a versión 6 completada.');
   }
 
   Future<void> _migrateToVersion2(Database db) async {
@@ -101,7 +118,7 @@ class SqliteDatabaseHelper implements DatabaseHelper {
         await _migrateCompletedToStatus(db);
       }
     } catch (e) {
-      print('❌ [Database] Error en migración v2: $e. Recreando tabla habit_entries.');
+      appLog('❌ [Database] Error en migración v2: $e. Recreando tabla habit_entries.');
       await _recreateHabitEntriesTable(db);
     }
   }
@@ -115,19 +132,19 @@ class SqliteDatabaseHelper implements DatabaseHelper {
       );
       
       if (statusColumn['type'] == 'TEXT') {
-        print('🔄 [Database] Migrando a versión 3: Convirtiendo status de TEXT a INTEGER.');
+        appLog('🔄 [Database] Migrando a versión 3: Convirtiendo status de TEXT a INTEGER.');
         await db.execute(DatabaseConstants.migrateStatusToInteger);
         await db.execute(DatabaseConstants.createTempHabitEntriesTable);
         await db.execute(DatabaseConstants.copyHabitEntriesData);
         await db.execute('DROP TABLE habit_entries');
         await db.execute('ALTER TABLE habit_entries_new RENAME TO habit_entries');
-        print('✅ [Database] Migración a versión 3 completada.');
+        appLog('✅ [Database] Migración a versión 3 completada.');
       } else {
-        print('ℹ️ [Database] Migración a versión 3 no necesaria o ya aplicada (status no es TEXT).');
+        appLog('ℹ️ [Database] Migración a versión 3 no necesaria o ya aplicada (status no es TEXT).');
       }
 
     } catch (e) {
-      print('❌ [Database] Error en migración v3: $e. Recreando tabla habit_entries.');
+      appLog('❌ [Database] Error en migración v3: $e. Recreando tabla habit_entries.');
       await _recreateHabitEntriesTable(db);
     }
   }
@@ -150,7 +167,7 @@ class SqliteDatabaseHelper implements DatabaseHelper {
   }
 
   Future<void> _recreateHabitEntriesTable(Database db) async {
-    print('⚠️ [Database] Recreando tabla habit_entries (posible pérdida de datos si no hay respaldo).');
+    appLog('⚠️ [Database] Recreando tabla habit_entries (posible pérdida de datos si no hay respaldo).');
     await db.execute('DROP TABLE IF EXISTS habit_entries');
     await db.execute(DatabaseConstants.createHabitEntriesTable);
   }

@@ -1,6 +1,7 @@
 // lib/features/habits/presentation/widgets/habit_tile.dart
 import 'package:flutter/material.dart';
 import '../../domain/entities/habit.dart';
+import '../../domain/entities/habit_appearance.dart';
 import '../../../../shared/enums/habit_status.dart';
 import 'habit_status_styles.dart';
 
@@ -8,6 +9,7 @@ import 'habit_status_styles.dart';
 typedef OnHabitToggleCallback =
     void Function(int habitId, HabitStatus currentStatus);
 typedef OnHabitDeleteCallback = void Function(int habitId, String habitName);
+typedef OnHabitEditCallback = void Function(Habit habit);
 
 class HabitTile extends StatelessWidget {
   final Habit habit;
@@ -16,6 +18,7 @@ class HabitTile extends StatelessWidget {
   final OnHabitToggleCallback onToggle;
   final OnHabitDeleteCallback
   onDelete; // Mantenemos por compatibilidad pero no se usa
+  final OnHabitEditCallback? onEdit;
 
   const HabitTile({
     super.key,
@@ -24,6 +27,7 @@ class HabitTile extends StatelessWidget {
     required this.status,
     required this.onToggle,
     required this.onDelete,
+    this.onEdit,
   });
 
   @override
@@ -32,13 +36,14 @@ class HabitTile extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: () => onToggle(habit.id!, status),
+        onLongPress: onEdit == null ? null : () => onEdit!(habit),
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.all(12),
           decoration: HabitStatusStyles.buildTileDecoration(status),
           child: Row(
             children: [
-              _HabitNumber(number: index + 1), // Sin onLongPress
+              _HabitBadge(habit: habit),
               const SizedBox(width: 12),
               Expanded(child: _HabitName(name: habit.name, status: status)),
               _StatusToggle(status: status),
@@ -50,28 +55,25 @@ class HabitTile extends StatelessWidget {
   }
 }
 
-class _HabitNumber extends StatelessWidget {
-  final int number;
+class _HabitBadge extends StatelessWidget {
+  final Habit habit;
 
-  const _HabitNumber({required this.number});
+  const _HabitBadge({required this.habit});
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 24,
-      height: 24,
+      width: 28,
+      height: 28,
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
-        borderRadius: BorderRadius.circular(4),
+        color: Color(habit.colorValue),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Center(
-        child: Text(
-          '$number',
-          style: const TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 12,
-          ),
+        child: Icon(
+          HabitAppearance.iconFor(habit.iconKey),
+          color: Colors.white,
+          size: 16,
         ),
       ),
     );

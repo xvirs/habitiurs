@@ -9,6 +9,7 @@ class DailyHabitsList extends StatelessWidget {
   final Map<int, HabitStatus> todayEntriesMap;
   final void Function(int, HabitStatus) onToggle;
   final void Function(int, String) onDelete;
+  final void Function(Habit)? onEdit;
   final VoidCallback onAdd;
   final bool isLoading;
 
@@ -18,6 +19,7 @@ class DailyHabitsList extends StatelessWidget {
     required this.todayEntriesMap,
     required this.onToggle,
     required this.onDelete,
+    this.onEdit,
     required this.onAdd,
     this.isLoading = false,
   });
@@ -44,6 +46,7 @@ class DailyHabitsList extends StatelessWidget {
       todayEntriesMap: todayEntriesMap,
       onToggle: onToggle,
       onDelete: onDelete,
+      onEdit: onEdit,
     );
   }
 }
@@ -79,12 +82,14 @@ class _HabitsListView extends StatelessWidget {
   final Map<int, HabitStatus> todayEntriesMap;
   final void Function(int, HabitStatus) onToggle;
   final void Function(int, String) onDelete;
+  final void Function(Habit)? onEdit;
 
   const _HabitsListView({
     required this.habits,
     required this.todayEntriesMap,
     required this.onToggle,
     required this.onDelete,
+    this.onEdit,
   });
 
   @override
@@ -106,6 +111,7 @@ class _HabitsListView extends StatelessWidget {
             status: status,
             onToggle: onToggle,
             onDelete: onDelete,
+            onEdit: onEdit,
           );
         },
       ),
@@ -119,6 +125,7 @@ class _SwipeableHabitTile extends StatefulWidget {
   final HabitStatus status;
   final void Function(int, HabitStatus) onToggle;
   final void Function(int, String) onDelete;
+  final void Function(Habit)? onEdit;
 
   const _SwipeableHabitTile({
     super.key,
@@ -127,6 +134,7 @@ class _SwipeableHabitTile extends StatefulWidget {
     required this.status,
     required this.onToggle,
     required this.onDelete,
+    this.onEdit,
   });
 
   @override
@@ -182,6 +190,7 @@ class _SwipeableHabitTileState extends State<_SwipeableHabitTile> {
           widget.onToggle(habitId, currentStatus);
         },
         onDelete: (_, __) {}, // No longer usado
+        onEdit: widget.onEdit,
       ),
     );
   }

@@ -3,6 +3,7 @@ import '../entities/habit.dart';
 import '../entities/habit_entry.dart';
 import '../../../../shared/enums/habit_status.dart';
 import '../../../../shared/utils/date_utils.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class HabitValidationService {
   /// Valida que un hábito tenga datos consistentes
@@ -123,7 +124,7 @@ class HabitValidationService {
         // Skip si ya existe una entrada
         if (existingEntriesMap.containsKey(key)) {
           // Log para debugging: entrada ya existe
-          print('✓ [ValidationService] Entrada existente: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}');
+          appLog('✓ [ValidationService] Entrada existente: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}');
           continue;
         }
 
@@ -133,9 +134,12 @@ class HabitValidationService {
         // Skip si es día futuro
         if (normalizedDate.isAfter(today)) continue;
 
+        // Skip si el hábito no está programado para este día de la semana
+        if (!habit.isScheduledOn(normalizedDate)) continue;
+
         // Para días pasados sin entrada, crear entrada con estado skipped
         if (normalizedDate.isBefore(today)) {
-          print('⚠️ [ValidationService] Generando entrada SKIPPED: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}');
+          appLog('⚠️ [ValidationService] Generando entrada SKIPPED: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}');
           missingEntries.add(HabitEntry(
             habitId: habit.id!,
             date: normalizedDate,

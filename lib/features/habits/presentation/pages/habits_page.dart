@@ -1,8 +1,8 @@
 // lib/features/habits/presentation/pages/habits_page.dart
 import 'package:habitiurs/core/service/vibration_service.dart';
-import 'package:habitiurs/core/utils/widget_updater.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/features/habits/domain/entities/habit.dart';
 import 'package:habitiurs/features/habits/domain/entities/habit_entry.dart';
 import 'package:habitiurs/features/habits/presentation/widgets/delete_confirmation_dialog.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
@@ -13,6 +13,7 @@ import '../widgets/weekly_grid.dart';
 import '../widgets/daily_habits_list.dart';
 import '../widgets/add_habit_bottom_sheet.dart';
 import '../../../../shared/enums/habit_status.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class HabitsPage extends StatefulWidget {
   const HabitsPage({super.key});
@@ -57,7 +58,7 @@ class HabitsPageState extends State<HabitsPage>
 
       // Verificar si cambió el día desde la última carga
       if (!AppDateUtils.isSameDay(now, _lastLoadDate)) {
-        print('🔄 [HabitsPage] Día cambió de ${AppDateUtils.formatToYYYYMMDD(_lastLoadDate)} a ${AppDateUtils.formatToYYYYMMDD(now)} - Recargando hábitos');
+        appLog('🔄 [HabitsPage] Día cambió de ${AppDateUtils.formatToYYYYMMDD(_lastLoadDate)} a ${AppDateUtils.formatToYYYYMMDD(now)} - Recargando hábitos');
         _lastLoadDate = now;
 
         if (mounted) {
@@ -130,6 +131,7 @@ class HabitsPageState extends State<HabitsPage>
           todayEntriesMap: _getTodayEntriesMap(state.weekEntries),
           onToggle: _handleToggle,
           onDelete: _handleDelete,
+          onEdit: _handleEdit,
           onAdd: _handleAdd,
         ),
       ),
@@ -165,7 +167,6 @@ class HabitsPageState extends State<HabitsPage>
         currentStatus: currentStatus,
       ),
     );
-    WidgetUpdater.refreshWeeklyHabitsWidget();
   }
 
   void _handleDelete(int habitId, String habitName) {
@@ -175,7 +176,6 @@ class HabitsPageState extends State<HabitsPage>
       habitName: habitName,
       onConfirm: () {
         context.read<HabitBloc>().add(DeleteHabitEvent(habitId));
-        WidgetUpdater.refreshWeeklyHabitsWidget();
         
         // Vibración de confirmación después de eliminar
         VibrationService.success();
@@ -195,20 +195,58 @@ class HabitsPageState extends State<HabitsPage>
     VibrationService.medium(); // Vibración al abrir el bottom sheet
     AddHabitBottomSheet.show(
       context,
-      onAdd: (habitName) {
-        context.read<HabitBloc>().add(CreateHabitEvent(habitName));
-        WidgetUpdater.refreshWeeklyHabitsWidget();
-        
-        // Vibración de éxito al crear
+      onSubmit: (result) {
+        context.read<HabitBloc>().add(
+              CreateHabitEvent(
+                result.name,
+                colorValue: result.colorValue,
+                iconKey: result.iconKey,
+                weekdays: result.weekdays,
+                reminderTime: result.reminderTime,
+              ),
+            );
+
         VibrationService.success();
-        
-        // Feedback al usuario
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Hábito "$habitName" creado'),
+            content: Text('Hábito "${result.name}" creado'),
             duration: const Duration(seconds: 2),
           ),
         );
+      },
+    );
+  }
+
+  void _handleEdit(Habit habit) {
+    VibrationService.medium();
+    AddHabitBottomSheet.show(
+      context,
+      initial: habit,
+      onArchive: () {
+        context.read<HabitBloc>().add(SetHabitArchivedEvent(habit, true));
+        VibrationService.success();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Hábito "${habit.name}" archivado'),
+            duration: const Duration(seconds: 2),
+          ),
+        );
+      },
+      onSubmit: (result) {
+        context.read<HabitBloc>().add(
+              UpdateHabitEvent(
+                habit.copyWith(
+                  name: result.name,
+                  colorValue: result.colorValue,
+                  iconKey: result.iconKey,
+                  weekdays: result.weekdays,
+                  reminderTime: result.reminderTime,
+                  clearReminder: result.reminderTime == null,
+                ),
+              ),
+            );
+        VibrationService.success();
       },
     );
   }
@@ -309,6 +347,7 @@ class _LoadedView extends StatelessWidget {
   final Map<int, HabitStatus> todayEntriesMap;
   final void Function(int, HabitStatus) onToggle;
   final void Function(int, String) onDelete;
+  final void Function(Habit) onEdit;
   final VoidCallback onAdd;
 
   const _LoadedView({
@@ -316,11 +355,17 @@ class _LoadedView extends StatelessWidget {
     required this.todayEntriesMap,
     required this.onToggle,
     required this.onDelete,
+    required this.onEdit,
     required this.onAdd,
   });
 
   @override
   Widget build(BuildContext context) {
+    // En la lista de hoy solo aparecen los hábitos programados para hoy
+    final todayHabits = state.habits
+        .where((h) => h.isScheduledOn(DateTime.now()))
+        .toList();
+
     return Column(
       children: [
         Expanded(
@@ -341,10 +386,11 @@ class _LoadedView extends StatelessWidget {
         Expanded(
           flex: 1,
           child: DailyHabitsList(
-            habits: state.habits,
+            habits: todayHabits,
             todayEntriesMap: todayEntriesMap,
             onToggle: onToggle,
             onDelete: onDelete,
+            onEdit: onEdit,
             onAdd: onAdd,
             isLoading: state.isRefreshing,
           ),
