@@ -66,15 +66,11 @@ class AddHabitBottomSheet extends StatefulWidget {
   }
 }
 
-class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
-    with SingleTickerProviderStateMixin {
+class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
   late final TextEditingController _controller;
   late final GlobalKey<FormState> _formKey;
   late final FocusNode _focusNode;
-  late final AnimationController _animationController;
-  late final Animation<double> _fadeAnimation;
 
-  static const Duration _animationDuration = Duration(milliseconds: 250);
   static const int _minHabitLength = 3;
 
   late int _selectedColor;
@@ -88,7 +84,6 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
   void initState() {
     super.initState();
     _initializeControllers();
-    _setupAnimation();
     _controller.addListener(_onTextChangedListener);
   }
 
@@ -118,26 +113,11 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
       : '${_reminderTime!.hour.toString().padLeft(2, '0')}:'
           '${_reminderTime!.minute.toString().padLeft(2, '0')}';
 
-  void _setupAnimation() {
-    _animationController = AnimationController(
-      duration: _animationDuration,
-      vsync: this,
-    );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-  }
-
   @override
   void dispose() {
     _controller.removeListener(_onTextChangedListener);
     _controller.dispose();
     _focusNode.dispose();
-    _animationController.dispose();
     super.dispose();
   }
 
@@ -202,51 +182,49 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
       _controller.text.trim().length >= _minHabitLength &&
       _selectedWeekdays.isNotEmpty;
 
+  /// Cierra el teclado sin enviar el formulario (al tocar fuera o "listo").
+  void _dismissKeyboard() => FocusScope.of(context).unfocus();
+
   @override
   Widget build(BuildContext context) {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final hasKeyboard = keyboardHeight > 0;
 
     return _BottomSheetContainer(
-      child: BlocConsumer<HabitEvaluationCubit, HabitEvaluationState>(
-        listener: (context, state) {
-          if (state is HabitEvaluationSuccess) {
-            _animationController.forward();
-          } else if (state is HabitEvaluationError ||
-              state is HabitEvaluationInitial ||
-              state is HabitEvaluationHidden) {
-            _animationController.reverse();
-          } else if (state is HabitEvaluationLoading) {
-            _animationController.forward();
-          }
-        },
-        builder: (context, state) {
-          bool showEvaluationSection = state is HabitEvaluationSuccess ||
-              state is HabitEvaluationLoading ||
-              state is HabitEvaluationError;
-          bool isEvaluating = state is HabitEvaluationLoading;
-          String evaluationText = '';
-          if (state is HabitEvaluationSuccess) evaluationText = state.evaluationText;
-          if (state is HabitEvaluationError) evaluationText = state.message;
-          if (state is HabitEvaluationLoading) evaluationText = 'Analizando...';
+      child: GestureDetector(
+        // Tocar cualquier zona vacía del sheet cierra el teclado.
+        onTap: _dismissKeyboard,
+        behavior: HitTestBehavior.translucent,
+        child: BlocBuilder<HabitEvaluationCubit, HabitEvaluationState>(
+          builder: (context, state) {
+            bool showEvaluationSection = state is HabitEvaluationSuccess ||
+                state is HabitEvaluationLoading ||
+                state is HabitEvaluationError;
+            bool isEvaluating = state is HabitEvaluationLoading;
+            String evaluationText = '';
+            if (state is HabitEvaluationSuccess) {
+              evaluationText = state.evaluationText;
+            }
+            if (state is HabitEvaluationError) evaluationText = state.message;
+            if (state is HabitEvaluationLoading) evaluationText = 'Analizando...';
 
-          return _BottomSheetContent(
-            hasKeyboard: hasKeyboard,
-            formKey: _formKey,
-            controller: _controller,
-            focusNode: _focusNode,
-            isEvaluating: isEvaluating,
-            showEvaluation: showEvaluationSection,
-            evaluationText: evaluationText,
-            fadeAnimation: _fadeAnimation,
-            onEvaluate: _evaluateHabit,
-            onHideEvaluation: _hideEvaluation,
-            onAddHabit: _addHabit,
-            onTextChanged: (value) {},
-            canAddHabit: _canAddHabit,
-            isEditing: _isEditing,
-            onArchive: widget.onArchive,
-            customization: _CustomizationSection(
+            return _BottomSheetContent(
+              hasKeyboard: hasKeyboard,
+              formKey: _formKey,
+              controller: _controller,
+              focusNode: _focusNode,
+              isEvaluating: isEvaluating,
+              showEvaluation: showEvaluationSection,
+              evaluationText: evaluationText,
+              onEvaluate: _evaluateHabit,
+              onHideEvaluation: _hideEvaluation,
+              onAddHabit: _addHabit,
+              onDismissKeyboard: _dismissKeyboard,
+              onTextChanged: (value) {},
+              canAddHabit: _canAddHabit,
+              isEditing: _isEditing,
+              onArchive: widget.onArchive,
+              customization: _CustomizationSection(
               selectedColor: _selectedColor,
               selectedIcon: _selectedIcon,
               selectedWeekdays: _selectedWeekdays,
@@ -262,9 +240,10 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet>
               }),
               onPickReminder: _pickReminderTime,
               onClearReminder: () => setState(() => _reminderTime = null),
-            ),
-          );
-        },
+              ),
+            );
+          },
+        ),
       ),
     );
   }
@@ -313,10 +292,10 @@ class _BottomSheetContent extends StatelessWidget {
   final bool isEvaluating;
   final bool showEvaluation;
   final String evaluationText;
-  final Animation<double> fadeAnimation;
   final VoidCallback onEvaluate;
   final VoidCallback onHideEvaluation;
   final VoidCallback onAddHabit;
+  final VoidCallback onDismissKeyboard;
   final ValueChanged<String> onTextChanged;
   final bool canAddHabit;
   final bool isEditing;
@@ -331,10 +310,10 @@ class _BottomSheetContent extends StatelessWidget {
     required this.isEvaluating,
     required this.showEvaluation,
     required this.evaluationText,
-    required this.fadeAnimation,
     required this.onEvaluate,
     required this.onHideEvaluation,
     required this.onAddHabit,
+    required this.onDismissKeyboard,
     required this.onTextChanged,
     required this.canAddHabit,
     required this.isEditing,
@@ -344,8 +323,10 @@ class _BottomSheetContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Respeta la barra de navegación / gestos del sistema en el borde inferior.
+    final bottomSafe = MediaQuery.of(context).viewPadding.bottom;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+      padding: EdgeInsets.fromLTRB(20, 12, 20, 12 + bottomSafe),
       child: Form(
         key: formKey,
         child: Column(
@@ -364,7 +345,6 @@ class _BottomSheetContent extends StatelessWidget {
                         showEvaluation: showEvaluation,
                         isEvaluating: isEvaluating,
                         evaluationText: evaluationText,
-                        fadeAnimation: fadeAnimation,
                         onClose: onHideEvaluation,
                       ),
                       const SizedBox(height: 12),
@@ -374,7 +354,8 @@ class _BottomSheetContent extends StatelessWidget {
                       focusNode: focusNode,
                       hasKeyboard: hasKeyboard,
                       onChanged: onTextChanged,
-                      onSubmitted: canAddHabit ? onAddHabit : null,
+                      // "Listo" en el teclado solo lo cierra; NO crea el hábito.
+                      onSubmitted: onDismissKeyboard,
                       onClear: onHideEvaluation,
                     ),
                     const SizedBox(height: 10),
@@ -767,7 +748,6 @@ class _InfoSection extends StatelessWidget {
   final bool showEvaluation;
   final bool isEvaluating;
   final String evaluationText;
-  final Animation<double> fadeAnimation;
   final VoidCallback onClose;
 
   const _InfoSection({
@@ -775,28 +755,33 @@ class _InfoSection extends StatelessWidget {
     required this.showEvaluation,
     required this.isEvaluating,
     required this.evaluationText,
-    required this.fadeAnimation,
     required this.onClose,
   });
 
   @override
   Widget build(BuildContext context) {
-    return showEvaluation
-        ? _EvaluationCard(
-            hasKeyboard: hasKeyboard,
-            isEvaluating: isEvaluating,
-            evaluationText: evaluationText,
-            fadeAnimation: fadeAnimation,
-            onClose: onClose,
-          )
-        : _TipsCard(hasKeyboard: hasKeyboard);
+    // AnimatedSwitcher da una transición suave y determinista entre tips y
+    // resultado, sin depender de un AnimationController externo (que a veces
+    // dejaba la tarjeta en opacidad 0).
+    return AnimatedSwitcher(
+      duration: const Duration(milliseconds: 200),
+      child: showEvaluation
+          ? _EvaluationCard(
+              key: const ValueKey('eval'),
+              hasKeyboard: hasKeyboard,
+              isEvaluating: isEvaluating,
+              evaluationText: evaluationText,
+              onClose: onClose,
+            )
+          : _TipsCard(key: const ValueKey('tips'), hasKeyboard: hasKeyboard),
+    );
   }
 }
 
 class _TipsCard extends StatelessWidget {
   final bool hasKeyboard;
 
-  const _TipsCard({required this.hasKeyboard});
+  const _TipsCard({super.key, required this.hasKeyboard});
 
   @override
   Widget build(BuildContext context) {
@@ -871,39 +856,36 @@ class _EvaluationCard extends StatelessWidget {
   final bool hasKeyboard;
   final bool isEvaluating;
   final String evaluationText;
-  final Animation<double> fadeAnimation;
   final VoidCallback onClose;
 
   const _EvaluationCard({
+    super.key,
     required this.hasKeyboard,
     required this.isEvaluating,
     required this.evaluationText,
-    required this.fadeAnimation,
     required this.onClose,
   });
 
   @override
   Widget build(BuildContext context) {
-    return FadeTransition(
-      opacity: fadeAnimation,
-      child: Container(
-        padding: EdgeInsets.all(hasKeyboard ? 14 : 12),
-        decoration: BoxDecoration(
-          color: Colors.green[50],
-          borderRadius: BorderRadius.circular(hasKeyboard ? 12 : 10),
-          border: Border.all(color: Colors.green[100]!, width: 1),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            _buildEvaluationHeader(),
-            if (!isEvaluating) ...[
-              SizedBox(height: hasKeyboard ? 8 : 6),
-              _buildEvaluationContent(evaluationText, hasKeyboard),
-            ],
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(hasKeyboard ? 14 : 12),
+      decoration: BoxDecoration(
+        color: Colors.green[50],
+        borderRadius: BorderRadius.circular(hasKeyboard ? 12 : 10),
+        border: Border.all(color: Colors.green[100]!, width: 1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          _buildEvaluationHeader(),
+          if (!isEvaluating) ...[
+            SizedBox(height: hasKeyboard ? 8 : 6),
+            _buildEvaluationContent(evaluationText, hasKeyboard),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -976,7 +958,7 @@ class _HabitTextField extends StatelessWidget {
   final FocusNode focusNode;
   final bool hasKeyboard;
   final ValueChanged<String> onChanged;
-  final VoidCallback? onSubmitted;
+  final VoidCallback onSubmitted;
   final VoidCallback onClear;
 
   const _HabitTextField({
@@ -1025,7 +1007,7 @@ class _HabitTextField extends StatelessWidget {
           ),
           validator: _HabitValidator.validate,
           textInputAction: TextInputAction.done,
-          onFieldSubmitted: (_) => onSubmitted?.call(),
+          onFieldSubmitted: (_) => onSubmitted(),
           onChanged: onChanged,
           maxLength: 60,
           buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
