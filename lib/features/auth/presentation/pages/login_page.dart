@@ -13,32 +13,45 @@ class LoginPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              const Spacer(),
-              
-              // Logo y título
-              _buildHeader(context),
-              
-              const Spacer(),
-              
-              // Features highlights
-              _buildFeaturesList(context),
-              
-              const SizedBox(height: 32),
-              
-              // Login buttons
-              _buildAuthButtons(context),
-              
-              const SizedBox(height: 16),
-              
-              _buildTermsText(context),
-              
-              const SizedBox(height: 32),
-            ],
-          ),
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            // Scrolleable para pantallas pequeñas / teclado, manteniendo
+            // el layout expandido en pantallas normales.
+            return SingleChildScrollView(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                child: IntrinsicHeight(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const Spacer(),
+
+                        // Logo y título
+                        _buildHeader(context),
+
+                        const Spacer(),
+
+                        // Features highlights
+                        _buildFeaturesList(context),
+
+                        const SizedBox(height: 32),
+
+                        // Login buttons
+                        _buildAuthButtons(context),
+
+                        const SizedBox(height: 16),
+
+                        _buildTermsText(context),
+
+                        const SizedBox(height: 32),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
     );
@@ -178,6 +191,8 @@ class LoginPage extends StatelessWidget {
                       content: const Text(
                         'Tus hábitos se guardarán solo en este dispositivo. '
                         'No podrás sincronizarlos ni acceder desde otros dispositivos.\n\n'
+                        'Si más adelante inicias sesión con Google, tus hábitos '
+                        'se migrarán automáticamente a tu cuenta.\n\n'
                         '¿Deseas continuar?',
                       ),
                       actions: [

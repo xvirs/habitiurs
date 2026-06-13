@@ -5,6 +5,7 @@ import '../../../habits/presentation/pages/main_page.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -13,10 +14,10 @@ class AuthWrapper extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocConsumer<AuthBloc, AuthState>(
       listener: (context, state) {
-        print('### AuthWrapper Listener: Estado recibido: $state');
+        appLog('### AuthWrapper Listener: Estado recibido: $state');
       },
       builder: (context, state) {
-        print('### AuthWrapper Builder: Construyendo con estado: $state');
+        appLog('### AuthWrapper Builder: Construyendo con estado: $state');
         if (state is AuthInitial || state is AuthLoading) {
           final message = state is AuthLoading ? state.message : null;
           return _LoadingPage(message: message);

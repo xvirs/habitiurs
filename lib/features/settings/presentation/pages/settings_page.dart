@@ -1,10 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../../../../core/auth/models/auth_result.dart';
+import '../../../../core/auth/services/account_deletion_service.dart';
+import '../../../../core/constants/legal_constants.dart';
 import '../bloc/settings_bloc.dart';
 import '../bloc/settings_event.dart';
 import '../bloc/settings_state.dart';
+import '../../../auth/presentation/bloc/auth_bloc.dart';
+import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../habits/presentation/bloc/habit_bloc.dart';
 import '../../../habits/presentation/bloc/habit_event.dart';
+import '../../../habits/presentation/pages/archived_habits_page.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -84,18 +92,58 @@ class SettingsPage extends StatelessWidget {
 
                   const Divider(),
 
-                  // Sección de Información
-                  const _SectionHeader(title: 'Información'),
+                  // Sección de Hábitos
+                  const _SectionHeader(title: 'Hábitos'),
 
-                  const ListTile(
-                    leading: Icon(Icons.info_outline),
-                    title: Text('Versión'),
-                    subtitle: Text('1.0.0'),
+                  ListTile(
+                    leading: const Icon(Icons.archive_outlined),
+                    title: const Text('Hábitos archivados'),
+                    subtitle: const Text('Restaurar o eliminar hábitos'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => const ArchivedHabitsPage(),
+                        ),
+                      );
+                    },
                   ),
 
                   const Divider(),
 
-                  // Resetear configuración
+                  // Sección Legal
+                  const _SectionHeader(title: 'Legal'),
+
+                  ListTile(
+                    leading: const Icon(Icons.privacy_tip_outlined),
+                    title: const Text('Política de privacidad'),
+                    trailing: const Icon(Icons.open_in_new, size: 18),
+                    onTap: () => _openUrl(
+                      context,
+                      LegalConstants.privacyPolicyUrl,
+                    ),
+                  ),
+
+                  ListTile(
+                    leading: const Icon(Icons.description_outlined),
+                    title: const Text('Términos y condiciones'),
+                    trailing: const Icon(Icons.open_in_new, size: 18),
+                    onTap: () => _openUrl(
+                      context,
+                      LegalConstants.termsOfServiceUrl,
+                    ),
+                  ),
+
+                  const Divider(),
+
+                  // Sección de Información
+                  const _SectionHeader(title: 'Información'),
+
+                  const _VersionTile(),
+
+                  const Divider(),
+
+                  // Avanzado
                   const _SectionHeader(title: 'Avanzado'),
 
                   ListTile(
@@ -104,6 +152,25 @@ class SettingsPage extends StatelessWidget {
                     subtitle: const Text('Volver a valores por defecto'),
                     onTap: () => _showResetDialog(context),
                   ),
+
+                  ListTile(
+                    leading: Icon(
+                      Icons.delete_forever_outlined,
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                    title: Text(
+                      'Eliminar cuenta',
+                      style: TextStyle(
+                        color: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Borra tu cuenta y todos tus datos de forma permanente',
+                    ),
+                    onTap: () => _showDeleteAccountDialog(context),
+                  ),
+
+                  const SizedBox(height: 24),
                 ],
               );
             }
@@ -113,6 +180,16 @@ class SettingsPage extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _openUrl(BuildContext context, String url) async {
+    final uri = Uri.parse(url);
+    final ok = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!ok && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No se pudo abrir el enlace')),
+      );
+    }
   }
 
   Future<void> _showTimePicker(
@@ -163,6 +240,87 @@ class SettingsPage extends StatelessWidget {
     if (confirmed == true && context.mounted) {
       context.read<SettingsBloc>().add(const ResetSettings());
     }
+  }
+
+  Future<void> _showDeleteAccountDialog(BuildContext context) async {
+    final theme = Theme.of(context);
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Eliminar cuenta?'),
+        content: const Text(
+          'Esta acción es permanente y no se puede deshacer.\n\n'
+          'Se eliminarán tu cuenta, todos tus hábitos, tu historial '
+          'y tus datos sincronizados en la nube.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+            ),
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Eliminar para siempre'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !context.mounted) return;
+
+    final authBloc = context.read<AuthBloc>();
+
+    // Mostrar progreso mientras se borra
+    showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(child: CircularProgressIndicator()),
+    );
+
+    final result = await AccountDeletionService().deleteAccount();
+
+    if (!context.mounted) return;
+    Navigator.of(context).pop(); // Cerrar el indicador de progreso
+
+    if (result is AuthSuccess) {
+      // Volver a la raíz; el AuthBloc lleva a la pantalla de login
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      authBloc.add(AuthLogoutRequested());
+    } else if (result is AuthFailure) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudo eliminar la cuenta: ${result.exception.message}',
+          ),
+          duration: const Duration(seconds: 4),
+        ),
+      );
+    }
+  }
+}
+
+class _VersionTile extends StatelessWidget {
+  const _VersionTile();
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<PackageInfo>(
+      future: PackageInfo.fromPlatform(),
+      builder: (context, snapshot) {
+        final info = snapshot.data;
+        return ListTile(
+          leading: const Icon(Icons.info_outline),
+          title: const Text('Versión'),
+          subtitle: Text(
+            info == null ? '…' : '${info.version} (${info.buildNumber})',
+          ),
+        );
+      },
+    );
   }
 }
 

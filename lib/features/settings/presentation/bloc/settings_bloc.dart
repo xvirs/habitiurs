@@ -6,6 +6,7 @@ import '../../domain/usecases/get_settings.dart';
 import '../../domain/usecases/update_settings.dart';
 import 'settings_event.dart';
 import 'settings_state.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final GetSettings getSettings;
@@ -50,13 +51,13 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         // Actualizar notificaciones
         if (event.enabled) {
           // Las notificaciones se reprogramarán la próxima vez que se carguen los hábitos
-          print('✅ [SettingsBloc] Notificaciones habilitadas');
+          appLog('✅ [SettingsBloc] Notificaciones habilitadas');
         } else {
           try {
             await NotificationService().cancelNotification(0);
-            print('🔕 [SettingsBloc] Notificaciones deshabilitadas');
+            appLog('🔕 [SettingsBloc] Notificaciones deshabilitadas');
           } catch (notifError) {
-            print('⚠️ [SettingsBloc] Error cancelando notificación: $notifError');
+            appLog('⚠️ [SettingsBloc] Error cancelando notificación: $notifError');
             // Continuar de todas formas, el estado ya se guardó
           }
         }
@@ -64,7 +65,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         emit(SettingsLoaded(newSettings));
       }
     } catch (e) {
-      print('❌ [SettingsBloc] Error: $e');
+      appLog('❌ [SettingsBloc] Error: $e');
       // Mantener el estado actual en lugar de error para evitar crash
       if (state is SettingsLoaded) {
         emit(state as SettingsLoaded);
@@ -91,16 +92,16 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         // Cancelar notificación anterior y reprogramar con nueva hora
         try {
           await NotificationService().cancelNotification(0);
-          print('⏰ [SettingsBloc] Hora actualizada: ${event.hour}:${event.minute}');
+          appLog('⏰ [SettingsBloc] Hora actualizada: ${event.hour}:${event.minute}');
         } catch (notifError) {
-          print('⚠️ [SettingsBloc] Error cancelando notificación: $notifError');
+          appLog('⚠️ [SettingsBloc] Error cancelando notificación: $notifError');
           // Continuar de todas formas, se reprogramará en el próximo load de hábitos
         }
 
         emit(SettingsLoaded(newSettings));
       }
     } catch (e) {
-      print('❌ [SettingsBloc] Error actualizando hora: $e');
+      appLog('❌ [SettingsBloc] Error actualizando hora: $e');
       // Mantener el estado actual
       if (state is SettingsLoaded) {
         emit(state as SettingsLoaded);
@@ -119,7 +120,7 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       final defaults = AppSettings.defaults();
       await updateSettings(defaults); // Persistir valores por defecto
       emit(SettingsLoaded(defaults));
-      print('🔄 [SettingsBloc] Configuración reseteada a valores por defecto');
+      appLog('🔄 [SettingsBloc] Configuración reseteada a valores por defecto');
     } catch (e) {
       emit(SettingsError('Error al resetear configuración: ${e.toString()}'));
     }

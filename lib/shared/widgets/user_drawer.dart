@@ -271,10 +271,19 @@ class _UserDrawerState extends State<UserDrawer> {
     // Cargar configuración y navegar
     settingsBloc.add(const LoadSettings());
 
+    // La ruta pierde los providers del árbol principal: pasar los blocs
+    // necesarios explícitamente (AuthBloc para borrado de cuenta,
+    // HabitBloc para reprogramar notificaciones y archivados).
+    final authBloc = BlocProvider.of<AuthBloc>(context, listen: false);
+
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => BlocProvider.value(
-          value: settingsBloc,
+        builder: (context) => MultiBlocProvider(
+          providers: [
+            BlocProvider.value(value: settingsBloc),
+            BlocProvider.value(value: authBloc),
+            BlocProvider.value(value: InjectionContainer().habitBloc),
+          ],
           child: const SettingsPage(),
         ),
       ),

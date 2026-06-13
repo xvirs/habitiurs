@@ -4,6 +4,7 @@ import '../models/sync_models.dart';
 import '../services/firebase_service.dart';
 import '../services/sync_manager.dart';
 import '../../auth/interfaces/i_auth_service.dart';
+import 'package:habitiurs/core/utils/app_logger.dart';
 
 // La interfaz abstracta SyncRepository (sin cambios en esta sección específica)
 abstract class SyncRepository {
@@ -52,12 +53,12 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   Future<bool> syncAll() async {
     try {
-      print('🔄 [SyncRepo] Iniciando sincronización completa...');
+      appLog('🔄 [SyncRepo] Iniciando sincronización completa...');
       final result = await _syncManager.syncAll();
-      print('✅ [SyncRepo] Sincronización completa: ${result ? "exitosa" : "fallida"}');
+      appLog('✅ [SyncRepo] Sincronización completa: ${result ? "exitosa" : "fallida"}');
       return result;
     } catch (e) {
-      print('❌ [SyncRepo] Error en syncAll: $e');
+      appLog('❌ [SyncRepo] Error en syncAll: $e');
       return false;
     }
   }
@@ -65,12 +66,12 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   Future<bool> syncHabitsOnly() async {
     try {
-      print('🔄 [SyncRepo] Iniciando sync solo de hábitos...');
+      appLog('🔄 [SyncRepo] Iniciando sync solo de hábitos...');
       final result = await _syncManager.syncHabitsOnly();
-      print('✅ [SyncRepo] Sync de hábitos: ${result ? "exitoso" : "fallido"}');
+      appLog('✅ [SyncRepo] Sync de hábitos: ${result ? "exitoso" : "fallido"}');
       return result;
     } catch (e) {
-      print('❌ [SyncRepo] Error en syncHabitsOnly: $e');
+      appLog('❌ [SyncRepo] Error en syncHabitsOnly: $e');
       return false;
     }
   }
@@ -78,12 +79,12 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   Future<bool> syncEntriesOnly() async {
     try {
-      print('🔄 [SyncRepo] Iniciando sync solo de entradas...');
+      appLog('🔄 [SyncRepo] Iniciando sync solo de entradas...');
       final result = await _syncManager.syncEntriesOnly();
-      print('✅ [SyncRepo] Sync de entradas: ${result ? "exitoso" : "fallido"}');
+      appLog('✅ [SyncRepo] Sync de entradas: ${result ? "exitoso" : "fallido"}');
       return result;
     } catch (e) {
-      print('❌ [SyncRepo] Error en syncEntriesOnly: $e');
+      appLog('❌ [SyncRepo] Error en syncEntriesOnly: $e');
       return false;
     }
   }
@@ -91,11 +92,11 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   Future<void> requestSync() async {
     try {
-      print('🔄 [SyncRepo] Sync solicitado manualmente...');
+      appLog('🔄 [SyncRepo] Sync solicitado manualmente...');
       await _syncManager.requestSync(); // Delega la solicitud a SyncManager
-      print('✅ [SyncRepo] Sync manual completado');
+      appLog('✅ [SyncRepo] Sync manual completado');
     } catch (e) {
-      print('❌ [SyncRepo] Error en requestSync: $e');
+      appLog('❌ [SyncRepo] Error en requestSync: $e');
     }
   }
 
@@ -104,7 +105,7 @@ class SyncRepositoryImpl implements SyncRepository {
     try {
       return await _firebaseService.hasInternetConnection();
     } catch (e) {
-      print('❌ [SyncRepo] Error verificando conexión: $e');
+      appLog('❌ [SyncRepo] Error verificando conexión: $e');
       return false;
     }
   }
@@ -117,7 +118,7 @@ class SyncRepositoryImpl implements SyncRepository {
       
       return await _firebaseService.getLastSyncTimestamp(user.id, collectionType);
     } catch (e) {
-      print('❌ [SyncRepo] Error obteniendo último sync remoto: $e');
+      appLog('❌ [SyncRepo] Error obteniendo último sync remoto: $e');
       return null;
     }
   }
@@ -130,7 +131,7 @@ class SyncRepositoryImpl implements SyncRepository {
       
       return await _firebaseService.hasConflicts(user.id, collectionType, localLastSync);
     } catch (e) {
-      print('❌ [SyncRepo] Error verificando conflictos: $e');
+      appLog('❌ [SyncRepo] Error verificando conflictos: $e');
       return false;
     }
   }
@@ -140,9 +141,9 @@ class SyncRepositoryImpl implements SyncRepository {
     try {
       // Delega la eliminación física en Firestore al FirebaseService
       await _firebaseService.deleteHabitInFirestore(userId, habitId); 
-      print('✅ [SyncRepo] Hábito $habitId eliminado remotamente en Firebase a través de SyncRepo.');
+      appLog('✅ [SyncRepo] Hábito $habitId eliminado remotamente en Firebase a través de SyncRepo.');
     } catch (e) {
-      print('❌ [SyncRepo] Error eliminando hábito $habitId remotamente en SyncRepo: $e');
+      appLog('❌ [SyncRepo] Error eliminando hábito $habitId remotamente en SyncRepo: $e');
       rethrow; 
     }
   }
@@ -150,12 +151,12 @@ class SyncRepositoryImpl implements SyncRepository {
   @override
   void pauseAutoSync() {
     _syncManager.pauseAutoSync(); // Delega a SyncManager
-    print('⏸️ [SyncRepo] Auto-sync pausado');
+    appLog('⏸️ [SyncRepo] Auto-sync pausado');
   }
 
   @override
   void resumeAutoSync() {
     _syncManager.resumeAutoSync(); // Delega a SyncManager
-    print('▶️ [SyncRepo] Auto-sync reanudado');
+    appLog('▶️ [SyncRepo] Auto-sync reanudado');
   }
 }
