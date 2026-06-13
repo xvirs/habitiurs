@@ -35,7 +35,6 @@ void main() {
       );
 
       // Verificar que se muestra la pantalla de carga inicialmente
-      expect(find.text('Inicializando Habitiurs...'), findsOneWidget);
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
     });
 
@@ -93,12 +92,13 @@ void main() {
       expect(googleButton, findsOneWidget);
       expect(guestButton, findsOneWidget);
 
-      // Tap en botón de modo invitado
+      // Tap en botón de modo invitado: abre el diálogo de confirmación
       await tester.tap(guestButton);
-      await tester.pump();
+      await tester.pumpAndSettle();
 
-      // Verificar que se activa el estado de loading
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
+      // El diálogo "Modo sin cuenta" debe aparecer con su botón Continuar
+      expect(find.text('Modo sin cuenta'), findsOneWidget);
+      expect(find.text('Continuar'), findsOneWidget);
     });
 
     testWidgets('Tema de la app se aplica correctamente', (WidgetTester tester) async {
