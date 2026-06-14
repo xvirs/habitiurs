@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import '../models/ai_request_model.dart';
 
 class GeminiService {
-  static const String _modelName = 'gemini-2.0-flash';
+  // gemini-2.0-flash fue apagado el 2026-06-01; usamos el modelo vigente.
+  static const String _modelName = 'gemini-2.5-flash';
 
   // El modelo se crea de forma perezosa porque FirebaseAI requiere que
   // Firebase.initializeApp() ya se haya ejecutado.
