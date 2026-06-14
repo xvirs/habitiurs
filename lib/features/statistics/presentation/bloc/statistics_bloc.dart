@@ -23,6 +23,34 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
   }) : super(StatisticsInitial()) {
     on<LoadStatistics>(_onLoadStatistics);
     on<RefreshStatistics>(_onRefreshStatistics);
+    on<RefreshStatisticsQuiet>(_onRefreshStatisticsQuiet);
+  }
+
+  /// Relectura local silenciosa (misma lógica que RefreshData de Hábitos):
+  /// re-lee la BD local y re-emite sin sync de red ni indicador de carga.
+  Future<void> _onRefreshStatisticsQuiet(
+    RefreshStatisticsQuiet event,
+    Emitter<StatisticsState> emit,
+  ) async {
+    if (state is! StatisticsLoaded) return;
+    try {
+      final results = await Future.wait([
+        getCurrentMonthStatistics(),
+        getCurrentYearStatistics(),
+        getHistoricalData(),
+      ]);
+      emit(
+        StatisticsLoaded(
+          currentMonth: results[0] as MonthlyStatistics,
+          currentYear: results[1] as List<MonthlyStatistics>,
+          historicalData: results[2] as List<HistoricalDataPoint>,
+          isRefreshing: false,
+        ),
+      );
+    } catch (e) {
+      appLog('⚠️ [StatisticsBloc] Relectura silenciosa falló: $e');
+      // Se mantiene el estado actual; no se molesta al usuario.
+    }
   }
 
   Future<void> _onLoadStatistics(

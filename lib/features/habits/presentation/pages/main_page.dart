@@ -124,7 +124,7 @@ class _MainPageState extends State<MainPage> {
         context.read<HabitBloc>().add(RefreshData());
         break;
       case 2:
-        context.read<StatisticsBloc>().add(RefreshStatistics());
+        context.read<StatisticsBloc>().add(RefreshStatisticsQuiet());
         break;
     }
   }
