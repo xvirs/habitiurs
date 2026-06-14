@@ -52,6 +52,10 @@ dependencies:
   package_info_plus: ^9.0.1
   url_launcher: ^6.3.2
 
+  # Login con Apple (requerido por App Store si hay login social)
+  sign_in_with_apple: ^6.1.4
+  crypto: ^3.0.3
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

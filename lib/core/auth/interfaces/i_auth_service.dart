@@ -12,7 +12,10 @@ abstract class IAuthService {
   
   /// Iniciar sesión con Google
   Future<AuthResult<User>> signInWithGoogle();
-  
+
+  /// Iniciar sesión con Apple (solo iOS/macOS)
+  Future<AuthResult<User>> signInWithApple();
+
   /// Cerrar sesión
   Future<AuthResult<void>> signOut();
   

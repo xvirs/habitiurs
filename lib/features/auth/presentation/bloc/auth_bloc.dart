@@ -8,6 +8,7 @@ import 'package:habitiurs/core/di/injection_container.dart';
 import 'package:habitiurs/features/auth/domain/usecases/check_auth_status.dart';
 import 'package:habitiurs/features/auth/domain/usecases/create_guest_session.dart';
 import 'package:habitiurs/features/auth/domain/usecases/login_with_google.dart';
+import 'package:habitiurs/features/auth/domain/usecases/login_with_apple.dart';
 import 'package:habitiurs/features/auth/domain/usecases/logout_user.dart';
 // Importa los eventos de carga de datos de los otros Blocs
 import '../../../habits/presentation/bloc/habit_event.dart';
@@ -20,6 +21,7 @@ import 'package:habitiurs/core/utils/app_logger.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginWithGoogle loginWithGoogle;
+  final LoginWithApple loginWithApple;
   final LogoutUser logoutUser;
   final CreateGuestSession createGuestSession;
   final CheckAuthStatus checkAuthStatus;
@@ -32,12 +34,14 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
 
   AuthBloc({
     required this.loginWithGoogle,
+    required this.loginWithApple,
     required this.logoutUser,
     required this.createGuestSession,
     required this.checkAuthStatus,
   }) : super(AuthInitial()) {
     on<AuthInitializationRequested>(_onAuthInitializationRequested);
     on<AuthLoginWithGoogleRequested>(_onAuthLoginWithGoogleRequested);
+    on<AuthLoginWithAppleRequested>(_onAuthLoginWithAppleRequested);
     on<AuthLogoutRequested>(_onAuthLogoutRequested);
     on<AuthGuestSessionRequested>(_onAuthGuestSessionRequested);
   }
@@ -103,6 +107,33 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       );
       if (result.exception is LoginCancelledException) {
         appLog('ℹ️ AuthBloc: Login cancelado, volviendo a la página de login.');
+        emit(AuthUnauthenticated());
+      } else {
+        emit(
+          AuthError(
+            result.exception.message,
+            technicalDetails: result.exception.toString(),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _onAuthLoginWithAppleRequested(
+    AuthLoginWithAppleRequested event,
+    Emitter<AuthState> emit,
+  ) async {
+    appLog('🔄 AuthBloc: AuthLoginWithAppleRequested - Iniciando login con Apple.');
+    emit(AuthLoading(message: 'Iniciando sesión...'));
+    final result = await loginWithApple.call();
+    if (result is AuthSuccess<User>) {
+      appLog('✅ AuthBloc: Login con Apple exitoso para: ${result.data.email}');
+      _loadInitialAppData();
+      _startFullSync();
+      emit(AuthAuthenticated(result.data));
+    } else if (result is AuthFailure<User>) {
+      appLog('❌ AuthBloc: Fallo en el login con Apple: ${result.exception.message}');
+      if (result.exception is LoginCancelledException) {
         emit(AuthUnauthenticated());
       } else {
         emit(

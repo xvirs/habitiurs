@@ -12,6 +12,8 @@ class AuthInitializationRequested extends AuthEvent {}
 
 class AuthLoginWithGoogleRequested extends AuthEvent {}
 
+class AuthLoginWithAppleRequested extends AuthEvent {}
+
 class AuthLogoutRequested extends AuthEvent {}
 
 class AuthGuestSessionRequested extends AuthEvent {}

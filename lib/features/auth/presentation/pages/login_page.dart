@@ -1,4 +1,5 @@
 // lib/features/auth/presentation/pages/login_page.dart - ACTUALIZADO
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../shared/utils/responsive.dart';
@@ -186,6 +187,31 @@ class LoginPage extends StatelessWidget {
                 label: Text(isLoading ? 'Iniciando sesión...' : 'Continuar con Google'),
               ),
             ),
+
+            // Sign in with Apple: obligatorio en iOS si hay login social (Google).
+            if (Platform.isIOS) ...[
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: FilledButton.icon(
+                  style: FilledButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: isLoading
+                      ? null
+                      : () {
+                          context
+                              .read<AuthBloc>()
+                              .add(AuthLoginWithAppleRequested());
+                        },
+                  icon: const Icon(Icons.apple),
+                  label: const Text('Continuar con Apple'),
+                ),
+              ),
+            ],
+
             const SizedBox(height: 16),
             SizedBox(
               width: double.infinity,

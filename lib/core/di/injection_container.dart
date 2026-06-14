@@ -15,6 +15,7 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/domain/usecases/check_auth_status.dart';
 import '../../features/auth/domain/usecases/create_guest_session.dart';
 import '../../features/auth/domain/usecases/login_with_google.dart';
+import '../../features/auth/domain/usecases/login_with_apple.dart';
 import '../../features/auth/domain/usecases/logout_user.dart';
 
 // Habits
@@ -88,6 +89,7 @@ class InjectionContainer {
   late final CheckAuthStatus _checkAuthStatus;
   late final CreateGuestSession _createGuestSession;
   late final LoginWithGoogle _loginWithGoogle;
+  late final LoginWithApple _loginWithApple;
   late final LogoutUser _logoutUser;
 
   // Habits Use Cases
@@ -252,6 +254,7 @@ class InjectionContainer {
     _checkAuthStatus = CheckAuthStatus(_authService);
     _createGuestSession = CreateGuestSession(_authService);
     _loginWithGoogle = LoginWithGoogle(_authService);
+    _loginWithApple = LoginWithApple(_authService);
     _logoutUser = LogoutUser(_authService);
   }
 
@@ -292,6 +295,7 @@ class InjectionContainer {
     checkAuthStatus: _checkAuthStatus,
     createGuestSession: _createGuestSession,
     loginWithGoogle: _loginWithGoogle,
+    loginWithApple: _loginWithApple,
     logoutUser: _logoutUser,
   );
 

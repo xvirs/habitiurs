@@ -1,7 +1,11 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
+import 'package:crypto/crypto.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase;
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:habitiurs/core/auth/models/user_preferences.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../interfaces/i_auth_service.dart';
@@ -189,6 +193,102 @@ class AuthService implements IAuthService {
       appLog('❌ [AuthService] Error inesperado en login: $e');
       return AuthFailure(UnknownAuthException('Error inesperado: $e'));
     }
+  }
+
+  @override
+  Future<AuthResult<User>> signInWithApple() async {
+    if (!_initialized || _firebaseAuth == null) {
+      return const AuthFailure(
+        UnknownAuthException('Servicio de autenticación no inicializado'),
+      );
+    }
+
+    try {
+      appLog('🔄 [AuthService] Iniciando Sign in with Apple...');
+
+      // Apple requiere un nonce: enviamos el hash y luego el valor crudo a Firebase.
+      final rawNonce = _generateNonce();
+      final hashedNonce = _sha256ofString(rawNonce);
+
+      final appleCredential = await SignInWithApple.getAppleIDCredential(
+        scopes: [
+          AppleIDAuthorizationScopes.email,
+          AppleIDAuthorizationScopes.fullName,
+        ],
+        nonce: hashedNonce,
+      );
+
+      final idToken = appleCredential.identityToken;
+      if (idToken == null || idToken.isEmpty) {
+        return const AuthFailure(
+          UnknownAuthException('No se pudo obtener el token de Apple'),
+        );
+      }
+
+      final oauthCredential = firebase.OAuthProvider('apple.com').credential(
+        idToken: idToken,
+        rawNonce: rawNonce,
+      );
+
+      final result = await _firebaseAuth!
+          .signInWithCredential(oauthCredential)
+          .timeout(const Duration(seconds: 30));
+
+      if (result.user == null) {
+        return const AuthFailure(
+          UnknownAuthException('No se pudo obtener usuario tras el login'),
+        );
+      }
+
+      // Apple solo entrega el nombre en el PRIMER inicio de sesión. Si llega,
+      // lo guardamos en el perfil de Firebase.
+      final givenName = appleCredential.givenName;
+      final familyName = appleCredential.familyName;
+      if ((result.user!.displayName == null ||
+              result.user!.displayName!.isEmpty) &&
+          (givenName != null || familyName != null)) {
+        final fullName = [givenName, familyName]
+            .where((p) => p != null && p.isNotEmpty)
+            .join(' ');
+        if (fullName.isNotEmpty) {
+          await result.user!.updateDisplayName(fullName);
+          await result.user!.reload();
+        }
+      }
+
+      final user = _mapFirebaseUser(_firebaseAuth!.currentUser ?? result.user!);
+      appLog('✅ [AuthService] Login con Apple exitoso para: ${user.email}');
+      return AuthSuccess(user);
+    } on SignInWithAppleAuthorizationException catch (e) {
+      if (e.code == AuthorizationErrorCode.canceled) {
+        appLog('⚠️ [AuthService] Login con Apple cancelado');
+        return const AuthFailure(LoginCancelledException());
+      }
+      appLog('❌ [AuthService] Error de autorización Apple: ${e.code}');
+      return AuthFailure(UnknownAuthException('Error de Apple: ${e.message}'));
+    } on firebase.FirebaseAuthException catch (e) {
+      appLog('❌ [AuthService] Firebase Auth Error (Apple): ${e.code}');
+      return AuthFailure(_mapFirebaseAuthException(e));
+    } catch (e) {
+      appLog('❌ [AuthService] Error inesperado en login con Apple: $e');
+      return AuthFailure(UnknownAuthException('Error inesperado: $e'));
+    }
+  }
+
+  /// Genera un nonce criptográficamente seguro para Sign in with Apple.
+  String _generateNonce([int length = 32]) {
+    const charset =
+        '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._';
+    final random = Random.secure();
+    return List.generate(
+      length,
+      (_) => charset[random.nextInt(charset.length)],
+    ).join();
+  }
+
+  String _sha256ofString(String input) {
+    final bytes = utf8.encode(input);
+    return sha256.convert(bytes).toString();
   }
 
   @override
