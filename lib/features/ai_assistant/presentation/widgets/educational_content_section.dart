@@ -60,11 +60,16 @@ class _ContentCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       width: 280,
       margin: const EdgeInsets.only(right: 12),
-      child: Card(
-        elevation: 2,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      child: Material(
+        color: Colors.transparent,
         child: InkWell(
           onTap: () => _showContentDialog(context),
           borderRadius: BorderRadius.circular(12),
@@ -73,7 +78,7 @@ class _ContentCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _CardHeader(),
+                _CardHeader(context),
                 const SizedBox(height: 8),
                 _CardTitle(),
                 const SizedBox(height: 8),
@@ -88,7 +93,8 @@ class _ContentCard extends StatelessWidget {
     );
   }
 
-  Widget _CardHeader() {
+  Widget _CardHeader(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Container(
@@ -97,15 +103,14 @@ class _ContentCard extends StatelessWidget {
             vertical: 4,
           ),
           decoration: BoxDecoration(
-            color: Colors.blue[100],
-            borderRadius: BorderRadius.circular(12),
+            color: theme.colorScheme.primary.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(8),
           ),
           child: Text(
             article.category,
-            style: TextStyle(
-              fontSize: 10,
-              color: Colors.blue[800],
-              fontWeight: FontWeight.w500,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: theme.colorScheme.primary,
+              fontWeight: FontWeight.w600,
             ),
           ),
         ),

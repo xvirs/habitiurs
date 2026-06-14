@@ -129,12 +129,45 @@ class _RecommendationCard extends StatelessWidget {
         children: [
           _RecommendationHeader(timestamp: recommendation.timestamp),
           const SizedBox(height: 10),
-          Text(
-            recommendation.content,
-            style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
+          _MarkdownText(
+            text: recommendation.content,
+            baseStyle: theme.textTheme.bodyMedium!.copyWith(height: 1.5),
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Renderiza texto con **negritas** estilo markdown como spans reales,
+/// y respeta los saltos de línea. Evita mostrar los asteriscos crudos.
+class _MarkdownText extends StatelessWidget {
+  final String text;
+  final TextStyle baseStyle;
+
+  const _MarkdownText({required this.text, required this.baseStyle});
+
+  @override
+  Widget build(BuildContext context) {
+    final boldStyle = baseStyle.copyWith(fontWeight: FontWeight.bold);
+    final spans = <TextSpan>[];
+
+    // Divide por **...** conservando los delimitadores.
+    final pattern = RegExp(r'\*\*(.+?)\*\*');
+    int last = 0;
+    for (final match in pattern.allMatches(text)) {
+      if (match.start > last) {
+        spans.add(TextSpan(text: text.substring(last, match.start)));
+      }
+      spans.add(TextSpan(text: match.group(1), style: boldStyle));
+      last = match.end;
+    }
+    if (last < text.length) {
+      spans.add(TextSpan(text: text.substring(last)));
+    }
+
+    return RichText(
+      text: TextSpan(style: baseStyle, children: spans),
     );
   }
 }
