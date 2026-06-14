@@ -1,6 +1,7 @@
 // lib/features/ai_assistant/presentation/widgets/ai_recommendation_section.dart
 import 'package:flutter/material.dart';
 import '../../../../core/ai/models/ai_response_model.dart';
+import '../../../../shared/widgets/section_header.dart';
 
 class AIRecommendationSection extends StatelessWidget {
   final AIResponse? recommendation;
@@ -23,9 +24,10 @@ class AIRecommendationSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Header(isLoading: isLoading),
-            const SizedBox(height: 8),
-            const _ConnectionStatus(),
+            const SectionHeader(
+              icon: Icons.psychology_outlined,
+              title: 'Asistente IA',
+            ),
             const SizedBox(height: 16),
             _RecommendationContent(
               recommendation: recommendation,
@@ -34,59 +36,6 @@ class AIRecommendationSection extends StatelessWidget {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  final bool isLoading;
-
-  const _Header({required this.isLoading});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          Icons.psychology_outlined,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Text(
-            'Asistente IA Personalizado',
-            style: Theme.of(
-              context,
-            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ConnectionStatus extends StatelessWidget {
-  const _ConnectionStatus();
-
-  @override
-  Widget build(BuildContext context) {
-    // Siempre mostrar como conectado ya que el fallback es inteligente
-    return Row(
-      children: [
-        Icon(
-          Icons.psychology,
-          size: 16,
-          color: Colors.blue[600],
-        ),
-        const SizedBox(width: 4),
-        Text(
-          'Recomendación IA Personalizada',
-          style: TextStyle(
-            fontSize: 12,
-            color: Colors.blue[600],
-          ),
-        ),
-      ],
     );
   }
 }
@@ -168,25 +117,21 @@ class _RecommendationCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: theme.colorScheme.primaryContainer,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: theme.colorScheme.primary.withValues(alpha: 0.3),
-        ),
+        color: theme.colorScheme.primary.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _RecommendationHeader(
-            isFromAI: true, // Siempre mostrar como IA ya que es personalizado
-            timestamp: recommendation.timestamp,
-          ),
-          const SizedBox(height: 8),
+          _RecommendationHeader(timestamp: recommendation.timestamp),
+          const SizedBox(height: 10),
           Text(
             recommendation.content,
-            style: const TextStyle(fontSize: 13, height: 1.4),
+            style: theme.textTheme.bodyMedium?.copyWith(height: 1.45),
           ),
         ],
       ),
@@ -195,36 +140,34 @@ class _RecommendationCard extends StatelessWidget {
 }
 
 class _RecommendationHeader extends StatelessWidget {
-  final bool isFromAI;
   final DateTime timestamp;
 
-  const _RecommendationHeader({
-    required this.isFromAI,
-    required this.timestamp,
-  });
+  const _RecommendationHeader({required this.timestamp});
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Row(
       children: [
         Icon(
-          isFromAI ? Icons.auto_awesome : Icons.lightbulb_outline,
+          Icons.auto_awesome,
           size: 16,
-          color: isFromAI ? Colors.blue[600] : Colors.orange[600],
+          color: theme.colorScheme.primary,
         ),
-        const SizedBox(width: 4),
+        const SizedBox(width: 6),
         Text(
-          isFromAI ? 'Recomendación de IA' : 'Consejo general',
-          style: TextStyle(
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-            color: isFromAI ? Colors.blue[600] : Colors.orange[600],
+          'Recomendación de IA',
+          style: theme.textTheme.labelMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: theme.colorScheme.primary,
           ),
         ),
         const Spacer(),
         Text(
           _formatTime(timestamp),
-          style: TextStyle(fontSize: 10, color: Colors.grey[600]),
+          style: theme.textTheme.labelSmall?.copyWith(
+            color: theme.colorScheme.outline,
+          ),
         ),
       ],
     );

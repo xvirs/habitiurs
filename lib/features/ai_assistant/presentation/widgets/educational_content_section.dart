@@ -1,6 +1,7 @@
 // lib/features/ai_assistant/presentation/widgets/educational_content_section.dart
 import 'package:flutter/material.dart';
 import '../../domain/entities/educational_content.dart';
+import '../../../../shared/widgets/section_header.dart';
 
 class EducationalContentSection extends StatelessWidget {
   final List<EducationalContent> content;
@@ -19,33 +20,15 @@ class EducationalContentSection extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _Header(),
+            const SectionHeader(
+              icon: Icons.school_outlined,
+              title: 'Contenido Educativo',
+            ),
             const SizedBox(height: 16),
             _ContentList(content: content),
           ],
         ),
       ),
-    );
-  }
-}
-
-class _Header extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Icon(
-          Icons.school_outlined,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(width: 8),
-        Text(
-          'Contenido Educativo',
-          style: Theme.of(context).textTheme.titleLarge?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ],
     );
   }
 }
