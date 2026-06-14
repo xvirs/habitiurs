@@ -82,7 +82,7 @@ class _ContentCard extends StatelessWidget {
                 const SizedBox(height: 8),
                 _CardTitle(),
                 const SizedBox(height: 8),
-                _CardPreview(),
+                _CardPreview(context),
                 const Spacer(),
                 _CardFooter(context),
               ],
@@ -137,12 +137,12 @@ class _ContentCard extends StatelessWidget {
     );
   }
 
-  Widget _CardPreview() {
+  Widget _CardPreview(BuildContext context) {
     return Text(
       article.content,
       style: TextStyle(
         fontSize: 12,
-        color: Colors.grey[600],
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       maxLines: 4,
       overflow: TextOverflow.ellipsis,
@@ -152,11 +152,13 @@ class _ContentCard extends StatelessWidget {
   Widget _CardFooter(BuildContext context) {
     return Row(
       children: [
-        Icon(Icons.access_time, size: 14, color: Colors.grey[500]),
+        Icon(Icons.access_time, size: 14,
+            color: Theme.of(context).colorScheme.outline),
         const SizedBox(width: 4),
         Text(
           '${article.readTimeMinutes} min',
-          style: TextStyle(fontSize: 11, color: Colors.grey[500]),
+          style: TextStyle(
+              fontSize: 11, color: Theme.of(context).colorScheme.outline),
         ),
         const Spacer(),
         Text(

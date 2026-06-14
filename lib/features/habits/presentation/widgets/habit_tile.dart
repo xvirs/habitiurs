@@ -40,7 +40,7 @@ class HabitTile extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         child: Container(
           padding: const EdgeInsets.all(12),
-          decoration: HabitStatusStyles.buildTileDecoration(status),
+          decoration: HabitStatusStyles.buildTileDecoration(context, status),
           child: Row(
             children: [
               _HabitBadge(habit: habit),
@@ -94,7 +94,7 @@ class _HabitName extends StatelessWidget {
 
     return Text(
       name,
-      style: HabitStatusStyles.buildHabitNameStyle(status, baseStyle),
+      style: HabitStatusStyles.buildHabitNameStyle(context, status, baseStyle),
     );
   }
 }
@@ -109,8 +109,8 @@ class _StatusToggle extends StatelessWidget {
     return Container(
       width: 32,
       height: 32,
-      decoration: HabitStatusStyles.buildToggleDecoration(status),
-      child: Center(child: HabitStatusStyles.buildStatusIcon(status)),
+      decoration: HabitStatusStyles.buildToggleDecoration(context, status),
+      child: Center(child: HabitStatusStyles.buildStatusIcon(context, status)),
     );
   }
 }

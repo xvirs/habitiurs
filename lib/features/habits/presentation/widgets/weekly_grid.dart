@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_appearance.dart';
+import '../../../../shared/theme/app_theme.dart';
 import '../../domain/entities/habit_entry.dart';
 import '../../../../shared/enums/habit_status.dart';
 import '../bloc/habit_bloc.dart';
@@ -334,19 +335,20 @@ class _StatusCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     // Día no programado para este hábito: celda atenuada, sin interacción
     if (!habit.isScheduledOn(date)) {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 1),
         decoration: BoxDecoration(
-          color: Colors.grey[100],
+          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Center(
           child: Container(
             width: 6,
             height: 2,
-            color: Colors.grey[300],
+            color: theme.colorScheme.outlineVariant,
           ),
         ),
       );
@@ -362,7 +364,7 @@ class _StatusCell extends StatelessWidget {
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 1),
         decoration: BoxDecoration(
-          color: _getStatusColor(status),
+          color: _getStatusColor(context, status),
           border:
               isToday
                   ? Border.all(
@@ -457,11 +459,12 @@ class _StatusCell extends StatelessWidget {
     return HabitStatus.pending;
   }
 
-  Color _getStatusColor(HabitStatus status) {
+  Color _getStatusColor(BuildContext context, HabitStatus status) {
     return switch (status) {
-      HabitStatus.completed => Colors.green[500]!,
-      HabitStatus.skipped => Colors.red[400]!,
-      HabitStatus.pending => Colors.grey[200]!,
+      HabitStatus.completed => AppColors.completed(context),
+      HabitStatus.skipped => AppColors.skipped(context),
+      HabitStatus.pending =>
+        Theme.of(context).colorScheme.surfaceContainerHighest,
     };
   }
 }

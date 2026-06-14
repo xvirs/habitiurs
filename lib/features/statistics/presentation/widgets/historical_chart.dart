@@ -62,8 +62,8 @@ class HistoricalChart extends StatelessWidget {
               data,
               chartMaxValue,
               Directionality.of(context),
-              completedColor: StatColors.completed,
-              skippedColor: StatColors.skipped.withValues(alpha: 0.85),
+              completedColor: StatColors.completed(context),
+              skippedColor: StatColors.skipped(context).withValues(alpha: 0.85),
               lineColor: theme.colorScheme.primary,
               gridColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
               labelColor: theme.colorScheme.outline,
@@ -73,8 +73,8 @@ class HistoricalChart extends StatelessWidget {
         const SizedBox(height: 12),
         StatLegend(
           entries: [
-            StatLegendEntry(StatColors.completed, 'Completados'),
-            StatLegendEntry(StatColors.skipped, 'No realizados'),
+            StatLegendEntry(StatColors.completed(context), 'Completados'),
+            StatLegendEntry(StatColors.skipped(context), 'No realizados'),
             StatLegendEntry(
               theme.colorScheme.primary,
               '% Logro',

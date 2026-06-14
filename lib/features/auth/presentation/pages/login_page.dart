@@ -85,7 +85,7 @@ class LoginPage extends StatelessWidget {
         Text(
           'Construye hábitos duraderos con IA',
           style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           textAlign: TextAlign.center,
         ),
@@ -145,7 +145,7 @@ class LoginPage extends StatelessWidget {
                     Text(
                       feature['description'] as String,
                       style: TextStyle(
-                        color: Colors.grey[600],
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
                         fontSize: 14,
                       ),
                     ),
@@ -235,7 +235,7 @@ class LoginPage extends StatelessWidget {
       'Al continuar, aceptas nuestros términos y condiciones',
       style: TextStyle(
         fontSize: 12,
-        color: Colors.grey[500],
+        color: Theme.of(context).colorScheme.outline,
       ),
       textAlign: TextAlign.center,
     );

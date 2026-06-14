@@ -42,7 +42,7 @@ class ErrorScreen extends StatelessWidget {
                 error.message,
                 style: TextStyle(
                   fontSize: 16,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -88,7 +88,7 @@ class ErrorScreen extends StatelessWidget {
         'Ver detalles técnicos',
         style: TextStyle(
           fontSize: 14,
-          color: Colors.grey[700],
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
       ),
       children: [
@@ -107,7 +107,7 @@ class ErrorScreen extends StatelessWidget {
                 'Timestamp: ${error.timestamp}',
                 style: TextStyle(
                   fontSize: 10,
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 8),

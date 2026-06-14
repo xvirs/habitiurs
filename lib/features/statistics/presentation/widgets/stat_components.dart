@@ -2,11 +2,13 @@
 // Componentes compartidos de la página de estadísticas, alineados con el
 // lenguaje visual de las páginas de Hábitos y Asistente IA.
 import 'package:flutter/material.dart';
+import '../../../../shared/theme/app_theme.dart';
 
-/// Colores semánticos de estadísticas (mismos que la grilla semanal).
+/// Colores semánticos de estadísticas (mismos que la grilla semanal),
+/// adaptados a tema claro/oscuro.
 class StatColors {
-  static Color completed = Colors.green[600]!;
-  static Color skipped = Colors.red[400]!;
+  static Color completed(BuildContext context) => AppColors.completed(context);
+  static Color skipped(BuildContext context) => AppColors.skipped(context);
   static Color pending(BuildContext context) =>
       Theme.of(context).colorScheme.surfaceContainerHighest;
 }
@@ -41,13 +43,14 @@ class StatSegmentedBar extends StatelessWidget {
                   if (completed > 0)
                     Expanded(
                       flex: completed,
-                      child: Container(color: StatColors.completed),
+                      child: Container(color: StatColors.completed(context)),
                     ),
                   if (skipped > 0)
                     Expanded(
                       flex: skipped,
                       child: Container(
-                        color: StatColors.skipped.withValues(alpha: 0.85),
+                        color: StatColors.skipped(context)
+                            .withValues(alpha: 0.85),
                       ),
                     ),
                   if (pending > 0)
@@ -93,10 +96,10 @@ class StatRow extends StatelessWidget {
     final trailingColor = !hasData
         ? theme.colorScheme.outline
         : rate >= 70
-            ? StatColors.completed
+            ? StatColors.completed(context)
             : rate >= 40
-                ? Colors.orange[700]!
-                : StatColors.skipped;
+                ? AppColors.warning(context)
+                : StatColors.skipped(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -166,8 +169,8 @@ class StatLegend extends StatelessWidget {
 
     final items = entries ??
         [
-          StatLegendEntry(StatColors.completed, 'Completados'),
-          StatLegendEntry(StatColors.skipped, 'No realizados'),
+          StatLegendEntry(StatColors.completed(context), 'Completados'),
+          StatLegendEntry(StatColors.skipped(context), 'No realizados'),
           StatLegendEntry(theme.colorScheme.outlineVariant, 'Pendientes'),
         ];
 

@@ -5,6 +5,7 @@ import 'package:habitiurs/features/habits/presentation/bloc/habit_evaluation_sta
 import '../../../../core/di/injection_container.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_appearance.dart';
+import '../../../../shared/theme/app_theme.dart';
 
 /// Resultado del formulario de hábito (creación o edición).
 class HabitFormResult {
@@ -264,20 +265,20 @@ class _BottomSheetContainer extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildHandle(),
+          _buildHandle(context),
           Expanded(child: child),
         ],
       ),
     );
   }
 
-  Widget _buildHandle() {
+  Widget _buildHandle(BuildContext context) {
     return Container(
       margin: const EdgeInsets.only(top: 12),
       width: 40,
       height: 4,
       decoration: BoxDecoration(
-        color: Colors.grey[300],
+        color: Theme.of(context).colorScheme.outlineVariant,
         borderRadius: BorderRadius.circular(2),
       ),
     );
@@ -785,31 +786,35 @@ class _TipsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     return Container(
       padding: EdgeInsets.all(hasKeyboard ? 14 : 12),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: theme.colorScheme.primary.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(hasKeyboard ? 12 : 10),
-        border: Border.all(color: Colors.blue[100]!, width: 1),
+        border: Border.all(
+          color: theme.colorScheme.primary.withValues(alpha: 0.25),
+          width: 1,
+        ),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildTipsHeader(),
+          _buildTipsHeader(theme),
           SizedBox(height: hasKeyboard ? 8 : 6),
-          ..._TipsData.tips.map((tip) => _buildTipRow(tip)),
+          ..._TipsData.tips.map((tip) => _buildTipRow(theme, tip)),
         ],
       ),
     );
   }
 
-  Widget _buildTipsHeader() {
+  Widget _buildTipsHeader(ThemeData theme) {
     return Row(
       children: [
         Icon(
           Icons.tips_and_updates,
-          color: Colors.blue[600],
+          color: theme.colorScheme.primary,
           size: hasKeyboard ? 18 : 16,
         ),
         const SizedBox(width: 8),
@@ -817,7 +822,7 @@ class _TipsCard extends StatelessWidget {
           'Consejos para el éxito',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.blue[700],
+            color: theme.colorScheme.primary,
             fontSize: hasKeyboard ? 14 : 13,
           ),
         ),
@@ -825,7 +830,7 @@ class _TipsCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTipRow(_TipModel tip) {
+  Widget _buildTipRow(ThemeData theme, _TipModel tip) {
     return Padding(
       padding: EdgeInsets.only(bottom: hasKeyboard ? 4 : 3),
       child: Row(
@@ -841,7 +846,7 @@ class _TipsCard extends StatelessWidget {
               tip.text,
               style: TextStyle(
                 fontSize: hasKeyboard ? 12 : 11,
-                color: Colors.blue[700],
+                color: theme.colorScheme.onSurfaceVariant,
                 height: 1.2,
               ),
             ),
@@ -868,29 +873,30 @@ class _EvaluationCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final green = AppColors.completed(context);
     return Container(
       width: double.infinity,
       padding: EdgeInsets.all(hasKeyboard ? 14 : 12),
       decoration: BoxDecoration(
-        color: Colors.green[50],
+        color: green.withValues(alpha: 0.10),
         borderRadius: BorderRadius.circular(hasKeyboard ? 12 : 10),
-        border: Border.all(color: Colors.green[100]!, width: 1),
+        border: Border.all(color: green.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: MainAxisSize.min,
         children: [
-          _buildEvaluationHeader(),
+          _buildEvaluationHeader(context, green),
           if (!isEvaluating) ...[
             SizedBox(height: hasKeyboard ? 8 : 6),
-            _buildEvaluationContent(evaluationText, hasKeyboard),
+            _buildEvaluationContent(context, evaluationText, hasKeyboard),
           ],
         ],
       ),
     );
   }
 
-  Widget _buildEvaluationHeader() {
+  Widget _buildEvaluationHeader(BuildContext context, Color green) {
     return Row(
       children: [
         if (isEvaluating)
@@ -899,13 +905,13 @@ class _EvaluationCard extends StatelessWidget {
             height: hasKeyboard ? 18 : 16,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.green[600]!),
+              valueColor: AlwaysStoppedAnimation<Color>(green),
             ),
           )
         else
           Icon(
             Icons.auto_awesome,
-            color: Colors.green[600],
+            color: green,
             size: hasKeyboard ? 18 : 16,
           ),
         const SizedBox(width: 8),
@@ -913,7 +919,7 @@ class _EvaluationCard extends StatelessWidget {
           isEvaluating ? 'Analizando...' : 'Evaluación IA',
           style: TextStyle(
             fontWeight: FontWeight.w600,
-            color: Colors.green[700],
+            color: green,
             fontSize: hasKeyboard ? 14 : 13,
           ),
         ),
@@ -924,15 +930,17 @@ class _EvaluationCard extends StatelessWidget {
             child: Icon(
               Icons.close,
               size: hasKeyboard ? 16 : 14,
-              color: Colors.green[600],
+              color: green,
             ),
           ),
       ],
     );
   }
 
-  Widget _buildEvaluationContent(String text, bool hasKeyboard) {
+  Widget _buildEvaluationContent(
+      BuildContext context, String text, bool hasKeyboard) {
     final lines = text.split('\n');
+    final color = Theme.of(context).colorScheme.onSurface;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -943,7 +951,7 @@ class _EvaluationCard extends StatelessWidget {
             line.trim(),
             style: TextStyle(
               fontSize: hasKeyboard ? 12 : 11,
-              color: Colors.green[700],
+              color: color,
               height: 1.2,
             ),
           ),
@@ -986,7 +994,7 @@ class _HabitTextField extends StatelessWidget {
               color: theme.colorScheme.onSurface.withOpacity(0.6),
             ),
             hintStyle: TextStyle(
-              color: Colors.grey[500]?.withOpacity(0.7), 
+              color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1030,6 +1038,9 @@ class _EvaluateButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final green = AppColors.completed(context);
+    final disabled = theme.colorScheme.onSurface.withValues(alpha: 0.38);
     return SizedBox(
       height: hasKeyboard ? 40 : 36,
       child: OutlinedButton.icon(
@@ -1037,12 +1048,12 @@ class _EvaluateButton extends StatelessWidget {
         icon: Icon(
           Icons.psychology,
           size: 16,
-          color: canEvaluate ? Colors.green[600] : Colors.grey[400],
+          color: canEvaluate ? green : disabled,
         ),
         label: Text(
           'Evaluar con IA',
           style: TextStyle(
-            color: canEvaluate ? Colors.green[600] : Colors.grey[400],
+            color: canEvaluate ? green : disabled,
             fontSize: 14,
             fontWeight: FontWeight.w500,
           ),
@@ -1054,8 +1065,8 @@ class _EvaluateButton extends StatelessWidget {
           ),
           side: BorderSide(
             color: canEvaluate
-                ? Colors.green[600]!.withOpacity(0.3)
-                : Colors.grey[300]!,
+                ? green.withValues(alpha: 0.3)
+                : theme.colorScheme.outlineVariant,
           ),
         ),
       ),
@@ -1080,8 +1091,6 @@ class _ActionButtons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
     return Row(
       children: [
         Expanded(
@@ -1106,34 +1115,21 @@ class _ActionButtons extends StatelessWidget {
           flex: 2,
           child: SizedBox(
             height: hasKeyboard ? 48 : 44,
-            child: FilledButton(
+            // Colores enabled/disabled los maneja el tema (FilledButton).
+            child: FilledButton.icon(
               onPressed: canAddHabit ? onAdd : null,
               style: FilledButton.styleFrom(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                backgroundColor: canAddHabit
-                    ? theme.colorScheme.primary
-                    : Colors.grey[300],
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    isEditing ? Icons.check : Icons.add,
-                    size: 18,
-                    color: canAddHabit ? Colors.white : Colors.grey[500],
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    isEditing ? 'Guardar' : 'Crear hábito',
-                    style: TextStyle(
-                      color: canAddHabit ? Colors.white : Colors.grey[500],
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
+              icon: Icon(isEditing ? Icons.check : Icons.add, size: 18),
+              label: Text(
+                isEditing ? 'Guardar' : 'Crear hábito',
+                style: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),

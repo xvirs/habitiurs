@@ -179,7 +179,7 @@ class _UserDrawerState extends State<UserDrawer> {
     return ListTile(
       leading: Icon(
         Icons.settings_outlined,
-        color: Colors.grey[600],
+        color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       title: const Text('Configuración'),
       subtitle: const Text('Preferencias y ajustes'),
@@ -221,9 +221,13 @@ class _UserDrawerState extends State<UserDrawer> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey[50],
+        color: Theme.of(context).colorScheme.surfaceContainerHighest
+            .withValues(alpha: 0.5),
         border: Border(
-          top: BorderSide(color: Colors.grey[300]!, width: 1),
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 1,
+          ),
         ),
       ),
       child: Column(
@@ -234,13 +238,13 @@ class _UserDrawerState extends State<UserDrawer> {
               Icon(
                 Icons.apps,
                 size: 16,
-                color: Colors.grey[600],
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
               const SizedBox(width: 8),
               Text(
                 'Habitiurs v1.0.0',
                 style: TextStyle(
-                  color: Colors.grey[600],
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
                 ),
               ),
@@ -250,7 +254,7 @@ class _UserDrawerState extends State<UserDrawer> {
           Text(
             'Simplicidad sobre complejidad',
             style: TextStyle(
-              color: Colors.grey[500],
+              color: Theme.of(context).colorScheme.outline,
               fontSize: 10,
               fontStyle: FontStyle.italic,
             ),

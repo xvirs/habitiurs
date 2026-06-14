@@ -1,25 +1,34 @@
-// lib/shared/theme/app_theme.dart - TEMA (movido de core)
+// lib/shared/theme/app_theme.dart - TEMA (claro y oscuro)
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 class AppTheme {
-  static ThemeData get lightTheme {
+  static const Color _seed = Colors.blue;
+
+  static ThemeData get lightTheme => _build(Brightness.light);
+  static ThemeData get darkTheme => _build(Brightness.dark);
+
+  static ThemeData _build(Brightness brightness) {
+    final isDark = brightness == Brightness.dark;
+
     return ThemeData(
       colorScheme: ColorScheme.fromSeed(
-        seedColor: Colors.blue,
-        brightness: Brightness.light,
+        seedColor: _seed,
+        brightness: brightness,
       ),
       useMaterial3: true,
 
-      appBarTheme: const AppBarTheme(
+      appBarTheme: AppBarTheme(
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
+        // Iconos de la barra de estado: oscuros en claro, claros en oscuro.
+        systemOverlayStyle:
+            isDark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark,
       ),
 
       cardTheme: CardThemeData(
-        elevation: 2,
+        elevation: isDark ? 0 : 2,
         shadowColor: Colors.black12,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -51,4 +60,22 @@ class AppTheme {
       ),
     );
   }
+}
+
+/// Colores semánticos de hábitos/estadísticas que se adaptan al brillo.
+/// Verde = completado, rojo = no realizado, naranja = advertencia/pendiente.
+class AppColors {
+  AppColors._();
+
+  static bool _isDark(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark;
+
+  static Color completed(BuildContext context) =>
+      _isDark(context) ? const Color(0xFF66BB6A) : const Color(0xFF43A047);
+
+  static Color skipped(BuildContext context) =>
+      _isDark(context) ? const Color(0xFFEF5350) : const Color(0xFFE53935);
+
+  static Color warning(BuildContext context) =>
+      _isDark(context) ? const Color(0xFFFFA726) : const Color(0xFFFB8C00);
 }
