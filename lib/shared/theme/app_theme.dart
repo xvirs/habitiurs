@@ -8,14 +8,28 @@ class AppTheme {
   static ThemeData get lightTheme => _build(Brightness.light);
   static ThemeData get darkTheme => _build(Brightness.dark);
 
+  /// Azul de marca. Se mantiene sólido (no el pastel que M3 genera en oscuro).
+  static const Color _brandBlue = Color(0xFF1E88E5); // Blue 600
+
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
 
+    var scheme = ColorScheme.fromSeed(
+      seedColor: _seed,
+      brightness: brightness,
+    );
+
+    // En oscuro, M3 aclara el primario (queda celeste/fluorescente). Lo
+    // forzamos al azul de marca para que se vea igual de sólido que en claro.
+    if (isDark) {
+      scheme = scheme.copyWith(
+        primary: _brandBlue,
+        onPrimary: Colors.white,
+      );
+    }
+
     return ThemeData(
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: _seed,
-        brightness: brightness,
-      ),
+      colorScheme: scheme,
       useMaterial3: true,
 
       appBarTheme: AppBarTheme(
