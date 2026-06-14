@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
-import '../../../../shared/utils/responsive.dart';
 import '../../../../core/auth/models/auth_result.dart';
 import '../../../../core/auth/services/account_deletion_service.dart';
 import '../../../../core/constants/legal_constants.dart';
@@ -22,8 +21,7 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración'), elevation: 0),
-      body: CenteredContent(
-        child: BlocListener<SettingsBloc, SettingsState>(
+      body: BlocListener<SettingsBloc, SettingsState>(
         listenWhen: (previous, current) {
           // Solo reprogramar cuando la configuración realmente cambia,
           // no en la carga inicial de la página.
@@ -179,7 +177,6 @@ class SettingsPage extends StatelessWidget {
 
             return const SizedBox.shrink();
           },
-          ),
         ),
       ),
     );

@@ -1,7 +1,6 @@
 // lib/features/auth/presentation/pages/login_page.dart - ACTUALIZADO
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import '../../../../shared/utils/responsive.dart';
 import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
@@ -22,38 +21,31 @@ class LoginPage extends StatelessWidget {
               child: ConstrainedBox(
                 constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: const BoxConstraints(
-                        maxWidth: Responsive.readableMaxWidth,
-                      ),
-                      child: Padding(
-                        padding: const EdgeInsets.all(24),
-                        child: Column(
-                          children: [
-                            const Spacer(),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      children: [
+                        const Spacer(),
 
-                            // Logo y título
-                            _buildHeader(context),
+                        // Logo y título
+                        _buildHeader(context),
 
-                            const Spacer(),
+                        const Spacer(),
 
-                            // Features highlights
-                            _buildFeaturesList(context),
+                        // Features highlights
+                        _buildFeaturesList(context),
 
-                            const SizedBox(height: 32),
+                        const SizedBox(height: 32),
 
-                            // Login buttons
-                            _buildAuthButtons(context),
+                        // Login buttons
+                        _buildAuthButtons(context),
 
-                            const SizedBox(height: 16),
+                        const SizedBox(height: 16),
 
-                            _buildTermsText(context),
+                        _buildTermsText(context),
 
-                            const SizedBox(height: 32),
-                          ],
-                        ),
-                      ),
+                        const SizedBox(height: 32),
+                      ],
                     ),
                   ),
                 ),
