@@ -19,8 +19,15 @@ void main() async {
     // FirebaseCrashlytics.instance.recordFlutterError(details);
   };
 
-  // 1. Configuración básica del sistema
-  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+  // 1. Configuración básica del sistema.
+  // Se permiten todas las orientaciones para que la app rote y se despliegue
+  // libremente en tablets / Samsung Fold. En teléfono el layout sigue cómodo.
+  await SystemChrome.setPreferredOrientations([
+    DeviceOrientation.portraitUp,
+    DeviceOrientation.portraitDown,
+    DeviceOrientation.landscapeLeft,
+    DeviceOrientation.landscapeRight,
+  ]);
 
   // 2. Bootstrap de la aplicación
   final appBootstrap = AppBootstrap();

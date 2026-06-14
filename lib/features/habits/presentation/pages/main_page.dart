@@ -1,6 +1,7 @@
 // lib/features/main/presentation/pages/main_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/shared/utils/responsive.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_event.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_state.dart'; // Added
@@ -131,6 +132,25 @@ class _MainPageState extends State<MainPage> {
 
   @override
   Widget build(BuildContext context) {
+    final isWide = Responsive.isWide(context);
+
+    final pages = Column(
+      children: [
+        if (_isSyncing)
+          LinearProgressIndicator(
+            minHeight: 2,
+            backgroundColor: Colors.transparent,
+            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+          ),
+        Expanded(
+          child: IndexedStack(
+            index: _currentIndex,
+            children: const [AIAssistantPage(), HabitsPage(), StatisticsPage()],
+          ),
+        ),
+      ],
+    );
+
     return Scaffold(
       appBar: AppBar(
         title: Text(
@@ -153,26 +173,57 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
       drawer: UserDrawer(onDataSynced: _refreshCurrentTab),
-      body: Column(
-        children: [
-          if (_isSyncing)
-            LinearProgressIndicator(
-              minHeight: 2,
-              backgroundColor: Colors.transparent,
-              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.5),
+      // Pantalla ancha (Fold desplegado / tablet): riel de navegación lateral.
+      // Teléfono: barra de navegación inferior.
+      body: isWide
+          ? Row(
+              children: [
+                _NavRail(currentIndex: _currentIndex, onTap: _onTabTapped),
+                const VerticalDivider(width: 1, thickness: 1),
+                Expanded(child: pages),
+              ],
+            )
+          : pages,
+      bottomNavigationBar: isWide
+          ? null
+          : _BottomNavBar(
+              currentIndex: _currentIndex,
+              onTap: _onTabTapped,
             ),
-          Expanded(
-            child: IndexedStack(
-              index: _currentIndex,
-              children: const [AIAssistantPage(), HabitsPage(), StatisticsPage()],
-            ),
-          ),
-        ],
-      ),
-      bottomNavigationBar: _BottomNavBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-      ),
+    );
+  }
+}
+
+class _NavRail extends StatelessWidget {
+  final int currentIndex;
+  final void Function(int) onTap;
+
+  const _NavRail({required this.currentIndex, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return NavigationRail(
+      selectedIndex: currentIndex,
+      onDestinationSelected: onTap,
+      labelType: NavigationRailLabelType.all,
+      groupAlignment: -0.85,
+      destinations: const [
+        NavigationRailDestination(
+          icon: Icon(Icons.psychology_outlined),
+          selectedIcon: Icon(Icons.psychology),
+          label: Text('Asistente IA'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.check_circle_outline),
+          selectedIcon: Icon(Icons.check_circle),
+          label: Text('Hábitos'),
+        ),
+        NavigationRailDestination(
+          icon: Icon(Icons.analytics_outlined),
+          selectedIcon: Icon(Icons.analytics),
+          label: Text('Estadísticas'),
+        ),
+      ],
     );
   }
 }

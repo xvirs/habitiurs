@@ -13,6 +13,7 @@ import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../habits/presentation/bloc/habit_bloc.dart';
 import '../../../habits/presentation/bloc/habit_event.dart';
 import '../../../habits/presentation/pages/archived_habits_page.dart';
+import '../../../../shared/utils/responsive.dart';
 
 class SettingsPage extends StatelessWidget {
   const SettingsPage({super.key});
@@ -21,7 +22,8 @@ class SettingsPage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Configuración'), elevation: 0),
-      body: BlocListener<SettingsBloc, SettingsState>(
+      body: CenteredContent(
+        child: BlocListener<SettingsBloc, SettingsState>(
         listenWhen: (previous, current) {
           // Solo reprogramar cuando la configuración realmente cambia,
           // no en la carga inicial de la página.
@@ -177,6 +179,7 @@ class SettingsPage extends StatelessWidget {
 
             return const SizedBox.shrink();
           },
+          ),
         ),
       ),
     );

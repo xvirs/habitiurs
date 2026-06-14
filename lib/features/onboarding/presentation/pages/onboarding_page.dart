@@ -79,7 +79,10 @@ class _OnboardingPageState extends State<OnboardingPage> {
 
     return Scaffold(
       body: SafeArea(
-        child: Column(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: Column(
           children: [
             Align(
               alignment: Alignment.centerRight,
@@ -134,6 +137,8 @@ class _OnboardingPageState extends State<OnboardingPage> {
               ),
             ),
           ],
+            ),
+          ),
         ),
       ),
     );
