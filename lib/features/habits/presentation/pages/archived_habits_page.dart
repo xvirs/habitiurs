@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../../core/di/injection_container.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_appearance.dart';
+import '../../../../shared/utils/responsive.dart';
 import '../bloc/habit_event.dart';
 import '../widgets/delete_confirmation_dialog.dart';
 
@@ -89,7 +90,8 @@ class _ArchivedHabitsPageState extends State<ArchivedHabitsPage> {
             );
           }
 
-          return ListView.separated(
+          return CenteredContent(
+            child: ListView.separated(
             padding: const EdgeInsets.all(16),
             itemCount: habits.length,
             separatorBuilder: (_, __) => const SizedBox(height: 8),
@@ -145,6 +147,7 @@ class _ArchivedHabitsPageState extends State<ArchivedHabitsPage> {
                 ),
               );
             },
+            ),
           );
         },
       ),

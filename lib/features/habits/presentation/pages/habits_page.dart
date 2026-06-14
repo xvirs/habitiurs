@@ -6,6 +6,7 @@ import 'package:habitiurs/features/habits/domain/entities/habit.dart';
 import 'package:habitiurs/features/habits/domain/entities/habit_entry.dart';
 import 'package:habitiurs/features/habits/presentation/widgets/delete_confirmation_dialog.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
+import 'package:habitiurs/shared/utils/responsive.dart';
 import '../bloc/habit_bloc.dart';
 import '../bloc/habit_event.dart';
 import '../bloc/habit_state.dart';
@@ -366,6 +367,35 @@ class _LoadedView extends StatelessWidget {
         .where((h) => h.isScheduledOn(DateTime.now()))
         .toList();
 
+    final grid = WeeklyGrid(
+      habits: state.habits,
+      weekEntries: state.weekEntries,
+      weekStart: state.currentWeekStart,
+      isLoading: state.isRefreshing,
+    );
+
+    final dailyList = DailyHabitsList(
+      habits: todayHabits,
+      todayEntriesMap: todayEntriesMap,
+      onToggle: onToggle,
+      onDelete: onDelete,
+      onEdit: onEdit,
+      onAdd: onAdd,
+      isLoading: state.isRefreshing,
+    );
+
+    // Pantalla ancha (Fold desplegado): grilla y lista lado a lado.
+    if (Responsive.isWide(context)) {
+      return Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(child: grid),
+          Expanded(child: dailyList),
+        ],
+      );
+    }
+
+    // Teléfono: layout vertical clásico.
     return Column(
       children: [
         Expanded(
@@ -374,27 +404,11 @@ class _LoadedView extends StatelessWidget {
             physics: const AlwaysScrollableScrollPhysics(),
             child: SizedBox(
               height: MediaQuery.of(context).size.height * 0.4,
-              child: WeeklyGrid(
-                habits: state.habits,
-                weekEntries: state.weekEntries,
-                weekStart: state.currentWeekStart,
-                isLoading: state.isRefreshing,
-              ),
+              child: grid,
             ),
           ),
         ),
-        Expanded(
-          flex: 1,
-          child: DailyHabitsList(
-            habits: todayHabits,
-            todayEntriesMap: todayEntriesMap,
-            onToggle: onToggle,
-            onDelete: onDelete,
-            onEdit: onEdit,
-            onAdd: onAdd,
-            isLoading: state.isRefreshing,
-          ),
-        ),
+        Expanded(flex: 1, child: dailyList),
       ],
     );
   }

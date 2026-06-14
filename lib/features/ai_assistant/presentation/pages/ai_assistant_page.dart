@@ -1,6 +1,7 @@
 // lib/features/ai_assistant/presentation/pages/ai_assistant_page.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/shared/utils/responsive.dart';
 import '../bloc/ai_assistant_bloc.dart';
 import '../bloc/ai_assistant_event.dart';
 import '../bloc/ai_assistant_state.dart';
@@ -102,21 +103,46 @@ class _LoadedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final recommendation = AIRecommendationSection(
+      recommendation: state.currentRecommendation,
+      isLoading: state.isRecommendationLoading,
+      hasInternetConnection: state.hasInternetConnection,
+    );
+    final educational = EducationalContentSection(
+      content: state.educationalContent,
+    );
+    final guides = AppGuideSection(guides: state.appGuides);
+
+    final isWide = Responsive.isWide(context);
+
+    final Widget content = isWide
+        // Pantalla ancha: recomendación a la izquierda, material a la derecha.
+        ? Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(child: recommendation),
+              Expanded(
+                child: Column(children: [educational, guides]),
+              ),
+            ],
+          )
+        // Teléfono: columna única.
+        : Column(children: [recommendation, educational, guides]);
+
     return RefreshIndicator(
       onRefresh: () => _refreshRecommendation(context),
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        child: Column(
-          children: [
-            AIRecommendationSection(
-              recommendation: state.currentRecommendation,
-              isLoading: state.isRecommendationLoading,
-              hasInternetConnection: state.hasInternetConnection,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: isWide ? 1100 : 800),
+            child: Column(
+              children: [
+                content,
+                const SizedBox(height: 16),
+              ],
             ),
-            EducationalContentSection(content: state.educationalContent),
-            AppGuideSection(guides: state.appGuides),
-            const SizedBox(height: 16),
-          ],
+          ),
         ),
       ),
     );

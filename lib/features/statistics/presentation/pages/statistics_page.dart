@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:habitiurs/shared/utils/responsive.dart';
 import 'package:habitiurs/features/statistics/presentation/widgets/yearly_statistics_list.dart';
 import '../bloc/statistics_bloc.dart';
 import '../bloc/statistics_event.dart';
@@ -62,37 +63,66 @@ class StatisticsPage extends StatelessWidget {
         }
 
         if (state is StatisticsLoaded) {
+          final monthCard = CurrentMonthSummary(
+            statistics: state.currentMonth,
+            isRefreshing: state.isRefreshing,
+          );
+          final yearCard = YearlyStatisticsList(
+            statistics: state.currentYear,
+            isRefreshing: state.isRefreshing,
+          );
+          final chartCard = HistoricalChart(
+            data: state.historicalData,
+            isRefreshing: state.isRefreshing,
+          );
+
+          final isWide = Responsive.isWide(context);
+
+          final Widget content = isWide
+              // Pantalla ancha: dos columnas (mes+año | histórico).
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [monthCard, yearCard],
+                      ),
+                    ),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [chartCard],
+                      ),
+                    ),
+                  ],
+                )
+              // Teléfono: columna única.
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [monthCard, yearCard, chartCard],
+                );
+
           return RefreshIndicator(
             onRefresh: () => _refreshStatistics(context),
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
+                constraints: BoxConstraints(maxWidth: isWide ? 1100 : 800),
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      CurrentMonthSummary(
-                        statistics: state.currentMonth,
-                        isRefreshing: state.isRefreshing,
-                      ),
-                      YearlyStatisticsList(
-                        statistics: state.currentYear,
-                        isRefreshing: state.isRefreshing,
-                      ),
-                      HistoricalChart(
-                        data: state.historicalData,
-                        isRefreshing: state.isRefreshing,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        content,
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           );
         }
 
