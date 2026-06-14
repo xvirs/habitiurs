@@ -1,4 +1,3 @@
-import 'package:flutter/services.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
@@ -81,8 +80,8 @@ class NotificationService {
 
     if (androidPlatform != null) {
       await androidPlatform.requestNotificationsPermission();
-      await androidPlatform
-          .requestExactAlarmsPermission(); // Solicitar permiso de alarmas exactas
+      // Usamos alarmas inexactas (no requieren SCHEDULE_EXACT_ALARM), así que
+      // no pedimos el permiso de alarmas exactas.
     }
   }
 
@@ -156,36 +155,20 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // Programar notificación. Si el usuario no concedió el permiso de
-    // alarmas exactas (Android 12+), reintentar en modo inexacto.
-    try {
-      await _notifications.zonedSchedule(
-        0, // ID de la notificación
-        title,
-        body,
-        scheduledDate,
-        details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents:
-            DateTimeComponents.time, // Repetir diariamente a la misma hora
-      );
-    } on PlatformException catch (e) {
-      if (e.code != 'exact_alarms_not_permitted') rethrow;
-      appLog('⚠️ Sin permiso de alarmas exactas, programando en modo inexacto');
-      await _notifications.zonedSchedule(
-        0,
-        title,
-        body,
-        scheduledDate,
-        details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
-        matchDateTimeComponents: DateTimeComponents.time,
-      );
-    }
+    // Programar notificación con alarma inexacta (no requiere
+    // SCHEDULE_EXACT_ALARM; el aviso puede llegar dentro de una ventana corta).
+    await _notifications.zonedSchedule(
+      0, // ID de la notificación
+      title,
+      body,
+      scheduledDate,
+      details,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
+      matchDateTimeComponents:
+          DateTimeComponents.time, // Repetir diariamente a la misma hora
+    );
 
     final timeStr =
         '${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}';
@@ -278,32 +261,17 @@ class NotificationService {
 
     for (final weekday in weekdays) {
       final scheduledDate = _nextInstanceOfWeekdayTime(weekday, hour, minute);
-      try {
-        await _notifications.zonedSchedule(
-          _habitReminderId(habitId, weekday),
-          habitName,
-          'Es momento de cumplir tu hábito. ¡Tú puedes!',
-          scheduledDate,
-          details,
-          androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-        );
-      } on PlatformException catch (e) {
-        if (e.code != 'exact_alarms_not_permitted') rethrow;
-        await _notifications.zonedSchedule(
-          _habitReminderId(habitId, weekday),
-          habitName,
-          'Es momento de cumplir tu hábito. ¡Tú puedes!',
-          scheduledDate,
-          details,
-          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-          uiLocalNotificationDateInterpretation:
-              UILocalNotificationDateInterpretation.absoluteTime,
-          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
-        );
-      }
+      await _notifications.zonedSchedule(
+        _habitReminderId(habitId, weekday),
+        habitName,
+        'Es momento de cumplir tu hábito. ¡Tú puedes!',
+        scheduledDate,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+        matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+      );
     }
     appLog(
       '⏰ [NotificationService] Recordatorio de hábito $habitId programado '
