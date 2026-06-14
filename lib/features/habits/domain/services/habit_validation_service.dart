@@ -32,19 +32,6 @@ class HabitValidationService {
         .toList();
   }
 
-  /// Filtra y valida las entradas de hábitos
-  static List<HabitEntry> validateHabitEntries(
-    List<HabitEntry> entries,
-    List<Habit> validHabits,
-  ) {
-    final validHabitIds = validHabits.map((h) => h.id!).toSet();
-
-    return entries
-        .where(isValidHabitEntry)
-        .where((entry) => validHabitIds.contains(entry.habitId))
-        .toList();
-  }
-
   /// Valida consistencia entre hábitos y entradas para una semana específica
   static ValidationResult validateWeekData(
     List<Habit> habits,
@@ -60,17 +47,26 @@ class HabitValidationService {
       issues.add('Se encontraron ${habits.length - validHabits.length} hábitos inválidos');
     }
 
-    // Validar entradas
-    final validEntries = validateHabitEntries(weekEntries, validHabits);
-    if (validEntries.length != weekEntries.length) {
-      issues.add('Se encontraron ${weekEntries.length - validEntries.length} entradas inválidas');
+    // Validar entradas. Solo cuentan como "inválidas" las que tienen datos
+    // corruptos (id <= 0, fecha demasiado futura). Las entradas que pertenecen
+    // a un hábito archivado/inactivo NO son inválidas: simplemente se excluyen
+    // de la vista de la semana sin romper la carga.
+    final structurallyValid = weekEntries.where(isValidHabitEntry).toList();
+    final corruptCount = weekEntries.length - structurallyValid.length;
+    if (corruptCount > 0) {
+      issues.add('Se encontraron $corruptCount entradas inválidas');
     }
 
-    // Verificar entradas huérfanas (sin hábito asociado)
     final habitIds = validHabits.map((h) => h.id!).toSet();
-    final orphanEntries = validEntries.where((entry) => !habitIds.contains(entry.habitId)).toList();
-    if (orphanEntries.isNotEmpty) {
-      warnings.add('Se encontraron ${orphanEntries.length} entradas sin hábito asociado');
+    final validEntries = structurallyValid
+        .where((entry) => habitIds.contains(entry.habitId))
+        .toList();
+
+    // Entradas excluidas por pertenecer a un hábito archivado/inactivo: solo
+    // informativo, no es un error.
+    final orphanCount = structurallyValid.length - validEntries.length;
+    if (orphanCount > 0) {
+      warnings.add('Se excluyeron $orphanCount entradas de hábitos archivados');
     }
 
     // Verificar duplicados por fecha y hábito

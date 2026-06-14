@@ -8,8 +8,9 @@ class AppTheme {
   static ThemeData get lightTheme => _build(Brightness.light);
   static ThemeData get darkTheme => _build(Brightness.dark);
 
-  /// Azul de marca. Se mantiene sólido (no el pastel que M3 genera en oscuro).
-  static const Color _brandBlue = Color(0xFF1E88E5); // Blue 600
+  /// Azul de marca para oscuro: sólido y un poco más oscuro (no el pastel
+  /// que M3 genera en modo oscuro).
+  static const Color _brandBlue = Color(0xFF1976D2); // Blue 700
 
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
