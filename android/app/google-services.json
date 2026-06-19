@@ -8,58 +8,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:819697521102:android:9795e4fab473378b551b9f",
-        "android_client_info": {
-          "package_name": "com.example.habitiurs"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "819697521102-4rpdp15lq4in3uho5sc8cdrrc29vvhs4.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.habitiurs",
-            "certificate_hash": "70692add113526de1c1327306d226fe089cc641f"
-          }
-        },
-        {
-          "client_id": "819697521102-fb26notd3980bd4n1kvf092af64aimsc.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.example.habitiurs",
-            "certificate_hash": "adcf6628751312865bcdd812ef0ae0506d0521d8"
-          }
-        },
-        {
-          "client_id": "819697521102-is1cej847nom4b4c19ah0o36gr75frev.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyAKAQl97fpJ8AROD3kIu-2MjH6ELmzIK3Q"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "819697521102-is1cej847nom4b4c19ah0o36gr75frev.apps.googleusercontent.com",
-              "client_type": 3
-            },
-            {
-              "client_id": "819697521102-kodd2j2o6febq2269sp1i5u7bj5jiuks.apps.googleusercontent.com",
-              "client_type": 2,
-              "ios_info": {
-                "bundle_id": "com.habitiurs.app"
-              }
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:819697521102:android:5de8a675de7be642551b9f",
         "android_client_info": {
           "package_name": "com.habitiurs.app"
@@ -80,6 +28,14 @@
           "android_info": {
             "package_name": "com.habitiurs.app",
             "certificate_hash": "5603db7cffbd7b33f5de2f7c01a089a4d6e6e3a1"
+          }
+        },
+        {
+          "client_id": "819697521102-hfgk0m42m65sutivca7o630581bkrubu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.habitiurs.app",
+            "certificate_hash": "f8f8455163a2697bfae293c8b74b3650dfa435bb"
           }
         },
         {
