@@ -1,7 +1,11 @@
 class DateUtils {
   static DateTime getStartOfWeek(DateTime date) {
     final daysFromMonday = date.weekday - 1;
-    return DateTime(date.year, date.month, date.day).subtract(Duration(days: daysFromMonday));
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: daysFromMonday));
   }
 
   static List<DateTime> getWeekDates(DateTime startOfWeek) {
@@ -12,8 +16,8 @@ class DateUtils {
 
   static bool isSameDay(DateTime date1, DateTime date2) {
     return date1.year == date2.year &&
-           date1.month == date2.month &&
-           date1.day == date2.day;
+        date1.month == date2.month &&
+        date1.day == date2.day;
   }
 
   static bool isToday(DateTime date) {

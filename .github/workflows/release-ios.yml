@@ -16,7 +16,7 @@ env:
 jobs:
   build-and-upload:
     name: Build IPA + upload to TestFlight
-    runs-on: macos-14
+    runs-on: macos-26   # Xcode 26+ obligatorio: Apple exige compilar con el SDK iOS más reciente
     steps:
       - uses: actions/checkout@v4
       - uses: subosito/flutter-action@v2

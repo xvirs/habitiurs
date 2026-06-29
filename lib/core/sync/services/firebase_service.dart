@@ -8,10 +8,10 @@ import 'package:habitiurs/core/utils/app_logger.dart';
 
 class FirebaseService {
   final FirebaseFirestore _firestore;
-  
+
   static final FirebaseService _instance = FirebaseService._internal();
   factory FirebaseService() => _instance;
-  
+
   FirebaseService._internal() : _firestore = FirebaseFirestore.instance;
 
   // COLECCIONES
@@ -34,19 +34,20 @@ class FirebaseService {
 
   Future<User?> getUser(String userId) async {
     try {
-      final doc = await _firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .get();
-      
+      final doc =
+          await _firestore.collection(_usersCollection).doc(userId).get();
+
       return doc.exists ? _userFromJson(doc.data()!) : null;
     } catch (e) {
       throw FirebaseException('Error obteniendo usuario: $e');
     }
   }
 
-  // HABITS SYNC 
-  Future<void> syncHabits(String userId, List<Map<String, dynamic>> habits) async {
+  // HABITS SYNC
+  Future<void> syncHabits(
+    String userId,
+    List<Map<String, dynamic>> habits,
+  ) async {
     try {
       final batch = _firestore.batch();
       final userHabitsRef = _firestore
@@ -57,7 +58,7 @@ class FirebaseService {
       for (final habit in habits) {
         final habitId = habit['id'].toString();
         final docRef = userHabitsRef.doc(habitId);
-        
+
         batch.set(docRef, {
           'id': habit['id'],
           'name': habit['name'],
@@ -82,30 +83,34 @@ class FirebaseService {
 
   Future<List<Map<String, dynamic>>> getHabits(String userId) async {
     try {
-      final snapshot = await _firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .collection(_habitsCollection)
-          .orderBy('created_at')
-          .get();
+      final snapshot =
+          await _firestore
+              .collection(_usersCollection)
+              .doc(userId)
+              .collection(_habitsCollection)
+              .orderBy('created_at')
+              .get();
 
-      final habits = snapshot.docs.map((doc) {
-        final data = doc.data();
-        return {
-          'id': data['id'],
-          'name': data['name'],
-          'created_at': data['created_at'],
-          'is_active': data['is_active'],
-          'color': data['color'],
-          'icon': data['icon'],
-          'weekdays': data['weekdays'],
-          'reminder_time': data['reminder_time'],
-          'last_sync': data['last_sync'],
-          'firestore_id': doc.id,
-        };
-      }).toList();
+      final habits =
+          snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'id': data['id'],
+              'name': data['name'],
+              'created_at': data['created_at'],
+              'is_active': data['is_active'],
+              'color': data['color'],
+              'icon': data['icon'],
+              'weekdays': data['weekdays'],
+              'reminder_time': data['reminder_time'],
+              'last_sync': data['last_sync'],
+              'firestore_id': doc.id,
+            };
+          }).toList();
 
-      appLog('☁️ [Firebase] Descargados ${habits.length} hábitos para usuario $userId');
+      appLog(
+        '☁️ [Firebase] Descargados ${habits.length} hábitos para usuario $userId',
+      );
       return habits;
     } catch (e) {
       throw FirebaseException('Error obteniendo hábitos: $e');
@@ -133,13 +138,18 @@ class FirebaseService {
       }
 
       await userRef.delete();
-      appLog('🗑️ [Firebase] Datos del usuario $userId eliminados de Firestore');
+      appLog(
+        '🗑️ [Firebase] Datos del usuario $userId eliminados de Firestore',
+      );
     } catch (e) {
       throw FirebaseException('Error eliminando datos del usuario: $e');
     }
   }
 
-  Future<void> markHabitAsInactiveInFirestore(String userId, int habitId) async {
+  Future<void> markHabitAsInactiveInFirestore(
+    String userId,
+    int habitId,
+  ) async {
     try {
       await _firestore
           .collection(_usersCollection)
@@ -147,9 +157,13 @@ class FirebaseService {
           .collection(_habitsCollection)
           .doc(habitId.toString())
           .update({'is_active': 0, 'last_sync': FieldValue.serverTimestamp()});
-      appLog('✅ [Firebase] Hábito marcado como inactivo en Firestore: $habitId');
+      appLog(
+        '✅ [Firebase] Hábito marcado como inactivo en Firestore: $habitId',
+      );
     } catch (e) {
-      throw FirebaseException('Error marcando hábito como inactivo en Firestore: $e');
+      throw FirebaseException(
+        'Error marcando hábito como inactivo en Firestore: $e',
+      );
     }
   }
 
@@ -160,7 +174,7 @@ class FirebaseService {
           .collection(_usersCollection)
           .doc(userId)
           .collection(_habitsCollection);
-      
+
       final userEntriesRef = _firestore
           .collection(_usersCollection)
           .doc(userId)
@@ -169,14 +183,15 @@ class FirebaseService {
       final batch = _firestore.batch();
 
       // 1. Eliminar todas las entradas de hábito relacionadas
-      final entriesToDeleteSnapshot = await userEntriesRef
-          .where('habit_id', isEqualTo: habitId)
-          .get();
-      
+      final entriesToDeleteSnapshot =
+          await userEntriesRef.where('habit_id', isEqualTo: habitId).get();
+
       for (final doc in entriesToDeleteSnapshot.docs) {
         batch.delete(doc.reference);
       }
-      appLog('DEBUG: Preparadas ${entriesToDeleteSnapshot.docs.length} entradas para eliminación en Firebase.');
+      appLog(
+        'DEBUG: Preparadas ${entriesToDeleteSnapshot.docs.length} entradas para eliminación en Firebase.',
+      );
 
       // 2. Eliminar el documento del hábito principal
       final habitDocRef = userHabitsRef.doc(habitId.toString());
@@ -185,14 +200,21 @@ class FirebaseService {
 
       // 3. Ejecutar el batch
       await batch.commit();
-      appLog('✅ [Firebase] Hábito $habitId y sus entradas relacionadas eliminados físicamente de Firestore.');
+      appLog(
+        '✅ [Firebase] Hábito $habitId y sus entradas relacionadas eliminados físicamente de Firestore.',
+      );
     } catch (e) {
-      throw FirebaseException('Error eliminando hábito $habitId y sus entradas en Firestore: $e');
+      throw FirebaseException(
+        'Error eliminando hábito $habitId y sus entradas en Firestore: $e',
+      );
     }
   }
 
-  // HABIT ENTRIES SYNC 
-  Future<void> syncHabitEntries(String userId, List<Map<String, dynamic>> entries) async {
+  // HABIT ENTRIES SYNC
+  Future<void> syncHabitEntries(
+    String userId,
+    List<Map<String, dynamic>> entries,
+  ) async {
     try {
       final userEntriesRef = _firestore
           .collection(_usersCollection)
@@ -220,21 +242,28 @@ class FirebaseService {
             'device_sync_time': DateTime.now().toIso8601String(),
             // Preservar el timestamp real del cambio; solo usar server timestamp para entradas nuevas
             if (entry['last_modified'] != null)
-              'last_modified': Timestamp.fromDate(DateTime.parse(entry['last_modified'] as String))
+              'last_modified': Timestamp.fromDate(
+                DateTime.parse(entry['last_modified'] as String),
+              )
             else
               'last_modified': FieldValue.serverTimestamp(),
           }, SetOptions(merge: true));
         }
 
         await chunkBatch.commit();
-        appLog('✅ [Firebase] Chunk ${(i / chunkSize).floor() + 1} sincronizado (${chunk.length} entradas)');
+        appLog(
+          '✅ [Firebase] Chunk ${(i / chunkSize).floor() + 1} sincronizado (${chunk.length} entradas)',
+        );
       }
     } catch (e) {
       throw FirebaseException('Error sincronizando entradas: $e');
     }
   }
 
-  Future<List<Map<String, dynamic>>> getHabitEntries(String userId, {DateTime? since}) async {
+  Future<List<Map<String, dynamic>>> getHabitEntries(
+    String userId, {
+    DateTime? since,
+  }) async {
     try {
       Query query = _firestore
           .collection(_usersCollection)
@@ -242,51 +271,64 @@ class FirebaseService {
           .collection(_habitEntriesCollection);
 
       if (since != null) {
-        final sinceString = since.toIso8601String().split('T')[0]; 
+        final sinceString = since.toIso8601String().split('T')[0];
         query = query.where('date', isGreaterThanOrEqualTo: sinceString);
       }
 
       final snapshot = await query.get();
-      
-      final entries = snapshot.docs.map((doc) {
-        final data = doc.data() as Map<String, dynamic>;
-        return {
-          'habit_id': data['habit_id'],
-          'date': data['date'],
-          'status': data['status'],
-          'entry_id': data['entry_id'],
-          'last_sync': data['last_sync'],
-          'firestore_id': doc.id,
-          'last_modified': data['last_modified'] is Timestamp
-              ? (data['last_modified'] as Timestamp).toDate().toIso8601String()
-              : data['last_modified'] as String?,
-        };
-      }).toList();
 
-      appLog('☁️ [Firebase] Descargadas ${entries.length} entradas para usuario $userId (desde ${since?.toString().split(' ')[0] ?? 'inicio'})');
+      final entries =
+          snapshot.docs.map((doc) {
+            final data = doc.data() as Map<String, dynamic>;
+            return {
+              'habit_id': data['habit_id'],
+              'date': data['date'],
+              'status': data['status'],
+              'entry_id': data['entry_id'],
+              'last_sync': data['last_sync'],
+              'firestore_id': doc.id,
+              'last_modified':
+                  data['last_modified'] is Timestamp
+                      ? (data['last_modified'] as Timestamp)
+                          .toDate()
+                          .toIso8601String()
+                      : data['last_modified'] as String?,
+            };
+          }).toList();
+
+      appLog(
+        '☁️ [Firebase] Descargadas ${entries.length} entradas para usuario $userId (desde ${since?.toString().split(' ')[0] ?? 'inicio'})',
+      );
       return entries;
     } catch (e) {
       throw FirebaseException('Error obteniendo entradas: $e');
     }
   }
 
-  Future<DateTime?> getLastSyncTimestamp(String userId, String collectionType) async {
+  Future<DateTime?> getLastSyncTimestamp(
+    String userId,
+    String collectionType,
+  ) async {
     try {
-      String collection = collectionType == 'habits' ? _habitsCollection : _habitEntriesCollection;
-      
-      final snapshot = await _firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .collection(collection)
-          .orderBy('last_sync', descending: true)
-          .limit(1)
-          .get();
+      String collection =
+          collectionType == 'habits'
+              ? _habitsCollection
+              : _habitEntriesCollection;
+
+      final snapshot =
+          await _firestore
+              .collection(_usersCollection)
+              .doc(userId)
+              .collection(collection)
+              .orderBy('last_sync', descending: true)
+              .limit(1)
+              .get();
 
       if (snapshot.docs.isNotEmpty) {
         final timestamp = snapshot.docs.first.data()['last_sync'] as Timestamp?;
         return timestamp?.toDate();
       }
-      
+
       return null;
     } catch (e) {
       appLog('⚠️ [Firebase] Error obteniendo último timestamp: $e');
@@ -294,12 +336,16 @@ class FirebaseService {
     }
   }
 
-  Future<bool> hasConflicts(String userId, String collectionType, DateTime localLastSync) async {
+  Future<bool> hasConflicts(
+    String userId,
+    String collectionType,
+    DateTime localLastSync,
+  ) async {
     try {
       final remoteLastSync = await getLastSyncTimestamp(userId, collectionType);
-      
+
       if (remoteLastSync == null) return false;
-      
+
       return remoteLastSync.isAfter(localLastSync);
     } catch (e) {
       appLog('⚠️ [Firebase] Error verificando conflictos: $e');
@@ -321,8 +367,9 @@ class FirebaseService {
 
   Future<bool> hasInternetConnection() async {
     try {
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 5));
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 5));
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (e) {
       return false;
@@ -356,8 +403,12 @@ class FirebaseService {
       lastLogin: DateTime.parse(json['last_login']),
       isPremium: json['is_premium'] ?? false,
       preferences: UserPreferences(
-        mode: UserMode.values.byName(json['preferences']?['mode'] ?? 'authenticated'),
-        settings: Map<String, dynamic>.from(json['preferences']?['settings'] ?? {}),
+        mode: UserMode.values.byName(
+          json['preferences']?['mode'] ?? 'authenticated',
+        ),
+        settings: Map<String, dynamic>.from(
+          json['preferences']?['settings'] ?? {},
+        ),
       ),
     );
   }

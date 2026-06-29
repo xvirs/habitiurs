@@ -1,17 +1,7 @@
 // lib/core/sync/models/sync_models.dart
-enum SyncStatus {
-  pending,
-  syncing,
-  completed,
-  failed,
-  conflict,
-}
+enum SyncStatus { pending, syncing, completed, failed, conflict }
 
-enum SyncOperationType {
-  create,
-  update,
-  delete,
-}
+enum SyncOperationType { create, update, delete }
 
 class SyncOperation {
   final String id;
@@ -60,10 +50,7 @@ class SyncOperation {
     );
   }
 
-  SyncOperation copyWith({
-    SyncStatus? status,
-    String? error,
-  }) {
+  SyncOperation copyWith({SyncStatus? status, String? error}) {
     return SyncOperation(
       id: id,
       entityType: entityType,

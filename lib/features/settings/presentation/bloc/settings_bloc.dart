@@ -12,10 +12,8 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
   final GetSettings getSettings;
   final UpdateSettings updateSettings;
 
-  SettingsBloc({
-    required this.getSettings,
-    required this.updateSettings,
-  }) : super(const SettingsInitial()) {
+  SettingsBloc({required this.getSettings, required this.updateSettings})
+    : super(const SettingsInitial()) {
     on<LoadSettings>(_onLoadSettings);
     on<ToggleNotifications>(_onToggleNotifications);
     on<UpdateNotificationTime>(_onUpdateNotificationTime);
@@ -57,7 +55,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
             await NotificationService().cancelNotification(0);
             appLog('🔕 [SettingsBloc] Notificaciones deshabilitadas');
           } catch (notifError) {
-            appLog('⚠️ [SettingsBloc] Error cancelando notificación: $notifError');
+            appLog(
+              '⚠️ [SettingsBloc] Error cancelando notificación: $notifError',
+            );
             // Continuar de todas formas, el estado ya se guardó
           }
         }
@@ -70,7 +70,9 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
       if (state is SettingsLoaded) {
         emit(state as SettingsLoaded);
       } else {
-        emit(SettingsError('Error al actualizar notificaciones: ${e.toString()}'));
+        emit(
+          SettingsError('Error al actualizar notificaciones: ${e.toString()}'),
+        );
       }
     }
   }
@@ -92,9 +94,13 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
         // Cancelar notificación anterior y reprogramar con nueva hora
         try {
           await NotificationService().cancelNotification(0);
-          appLog('⏰ [SettingsBloc] Hora actualizada: ${event.hour}:${event.minute}');
+          appLog(
+            '⏰ [SettingsBloc] Hora actualizada: ${event.hour}:${event.minute}',
+          );
         } catch (notifError) {
-          appLog('⚠️ [SettingsBloc] Error cancelando notificación: $notifError');
+          appLog(
+            '⚠️ [SettingsBloc] Error cancelando notificación: $notifError',
+          );
           // Continuar de todas formas, se reprogramará en el próximo load de hábitos
         }
 

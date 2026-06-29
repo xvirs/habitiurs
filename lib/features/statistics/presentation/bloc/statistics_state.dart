@@ -28,7 +28,13 @@ class StatisticsLoaded extends StatisticsState {
   });
 
   @override
-  List<Object> get props => [currentMonth, currentYear, historicalData, isRefreshing, errorMessage ?? ''];
+  List<Object> get props => [
+    currentMonth,
+    currentYear,
+    historicalData,
+    isRefreshing,
+    errorMessage ?? '',
+  ];
 
   StatisticsLoaded copyWith({
     MonthlyStatistics? currentMonth,

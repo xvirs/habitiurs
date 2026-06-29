@@ -63,8 +63,16 @@ class Habit extends Equatable {
   }
 
   @override
-  List<Object?> get props =>
-      [id, name, createdAt, isActive, colorValue, iconKey, weekdays, reminderTime];
+  List<Object?> get props => [
+    id,
+    name,
+    createdAt,
+    isActive,
+    colorValue,
+    iconKey,
+    weekdays,
+    reminderTime,
+  ];
 
   @override
   String toString() {

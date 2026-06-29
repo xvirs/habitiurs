@@ -14,10 +14,7 @@ class AppState {
 
   // ✅ Factory constructors que retornan datos, NO widgets
   factory AppState.success() {
-    return const AppState._(
-      hasError: false,
-      isInitialized: true,
-    );
+    return const AppState._(hasError: false, isInitialized: true);
   }
 
   factory AppState.error({
@@ -43,7 +40,7 @@ class AppState {
     if (!isInitialized) {
       throw StateError('Cannot get auth config - App not initialized');
     }
-    
+
     return {
       'initialized': isInitialized,
       'timestamp': DateTime.now().toIso8601String(),

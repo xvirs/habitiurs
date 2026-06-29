@@ -14,7 +14,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
   Future<AppSettings> getSettings() async {
     final model = await localDatasource.getSettings();
     final minStr = model.notificationMinute.toString().padLeft(2, '0');
-    appLog('⚙️ [Settings] Configuración cargada — notificaciones: ${model.notificationsEnabled}, hora: ${model.notificationHour}:$minStr');
+    appLog(
+      '⚙️ [Settings] Configuración cargada — notificaciones: ${model.notificationsEnabled}, hora: ${model.notificationHour}:$minStr',
+    );
     return model.toEntity();
   }
 
@@ -23,7 +25,9 @@ class SettingsRepositoryImpl implements SettingsRepository {
     final model = AppSettingsModel.fromEntity(settings);
     await localDatasource.saveSettings(model);
     final minStr = settings.notificationMinute.toString().padLeft(2, '0');
-    appLog('✅ [Settings] Configuración guardada — notificaciones: ${settings.notificationsEnabled}, hora: ${settings.notificationHour}:$minStr');
+    appLog(
+      '✅ [Settings] Configuración guardada — notificaciones: ${settings.notificationsEnabled}, hora: ${settings.notificationHour}:$minStr',
+    );
   }
 
   @override

@@ -5,9 +5,9 @@ import 'package:habitiurs/core/auth/models/auth_result.dart';
 
 class LogoutUser {
   final IAuthService _authService;
-  
+
   const LogoutUser(this._authService);
-  
+
   Future<AuthResult<void>> call() async {
     return await _authService.signOut();
   }

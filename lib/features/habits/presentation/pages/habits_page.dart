@@ -59,7 +59,9 @@ class HabitsPageState extends State<HabitsPage>
 
       // Verificar si cambió el día desde la última carga
       if (!AppDateUtils.isSameDay(now, _lastLoadDate)) {
-        appLog('🔄 [HabitsPage] Día cambió de ${AppDateUtils.formatToYYYYMMDD(_lastLoadDate)} a ${AppDateUtils.formatToYYYYMMDD(now)} - Recargando hábitos');
+        appLog(
+          '🔄 [HabitsPage] Día cambió de ${AppDateUtils.formatToYYYYMMDD(_lastLoadDate)} a ${AppDateUtils.formatToYYYYMMDD(now)} - Recargando hábitos',
+        );
         _lastLoadDate = now;
 
         if (mounted) {
@@ -97,7 +99,9 @@ class HabitsPageState extends State<HabitsPage>
     }
 
     // Vibración suave cuando los hábitos se cargan exitosamente
-    if (state is HabitLoaded && state.habits.isNotEmpty && !state.isRefreshing) {
+    if (state is HabitLoaded &&
+        state.habits.isNotEmpty &&
+        !state.isRefreshing) {
       VibrationService.selection();
     }
 
@@ -177,10 +181,10 @@ class HabitsPageState extends State<HabitsPage>
       habitName: habitName,
       onConfirm: () {
         context.read<HabitBloc>().add(DeleteHabitEvent(habitId));
-        
+
         // Vibración de confirmación después de eliminar
         VibrationService.success();
-        
+
         // Mostrar feedback al usuario
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -198,14 +202,14 @@ class HabitsPageState extends State<HabitsPage>
       context,
       onSubmit: (result) {
         context.read<HabitBloc>().add(
-              CreateHabitEvent(
-                result.name,
-                colorValue: result.colorValue,
-                iconKey: result.iconKey,
-                weekdays: result.weekdays,
-                reminderTime: result.reminderTime,
-              ),
-            );
+          CreateHabitEvent(
+            result.name,
+            colorValue: result.colorValue,
+            iconKey: result.iconKey,
+            weekdays: result.weekdays,
+            reminderTime: result.reminderTime,
+          ),
+        );
 
         VibrationService.success();
 
@@ -236,17 +240,17 @@ class HabitsPageState extends State<HabitsPage>
       },
       onSubmit: (result) {
         context.read<HabitBloc>().add(
-              UpdateHabitEvent(
-                habit.copyWith(
-                  name: result.name,
-                  colorValue: result.colorValue,
-                  iconKey: result.iconKey,
-                  weekdays: result.weekdays,
-                  reminderTime: result.reminderTime,
-                  clearReminder: result.reminderTime == null,
-                ),
-              ),
-            );
+          UpdateHabitEvent(
+            habit.copyWith(
+              name: result.name,
+              colorValue: result.colorValue,
+              iconKey: result.iconKey,
+              weekdays: result.weekdays,
+              reminderTime: result.reminderTime,
+              clearReminder: result.reminderTime == null,
+            ),
+          ),
+        );
         VibrationService.success();
       },
     );
@@ -363,9 +367,8 @@ class _LoadedView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // En la lista de hoy solo aparecen los hábitos programados para hoy
-    final todayHabits = state.habits
-        .where((h) => h.isScheduledOn(DateTime.now()))
-        .toList();
+    final todayHabits =
+        state.habits.where((h) => h.isScheduledOn(DateTime.now())).toList();
 
     return CenteredContent(
       child: Column(

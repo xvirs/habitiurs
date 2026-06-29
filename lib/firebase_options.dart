@@ -40,7 +40,8 @@ class DefaultFirebaseOptions {
     projectId: 'habitiurs',
     authDomain: 'habitiurs.firebaseapp.com',
     storageBucket: 'habitiurs.firebasestorage.app',
-    databaseURL: 'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
   );
 
   static const FirebaseOptions android = FirebaseOptions(
@@ -48,7 +49,8 @@ class DefaultFirebaseOptions {
     appId: '1:819697521102:android:5de8a675de7be642551b9f',
     messagingSenderId: '819697521102',
     projectId: 'habitiurs',
-    databaseURL: 'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'habitiurs.firebasestorage.app',
   );
 
@@ -57,10 +59,13 @@ class DefaultFirebaseOptions {
     appId: '1:819697521102:ios:ce4ed0eae806329e551b9f',
     messagingSenderId: '819697521102',
     projectId: 'habitiurs',
-    databaseURL: 'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
+    databaseURL:
+        'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
     storageBucket: 'habitiurs.firebasestorage.app',
-    androidClientId: '819697521102-4rpdp15lq4in3uho5sc8cdrrc29vvhs4.apps.googleusercontent.com',
-    iosClientId: '819697521102-kodd2j2o6febq2269sp1i5u7bj5jiuks.apps.googleusercontent.com',
+    androidClientId:
+        '819697521102-4rpdp15lq4in3uho5sc8cdrrc29vvhs4.apps.googleusercontent.com',
+    iosClientId:
+        '819697521102-kodd2j2o6febq2269sp1i5u7bj5jiuks.apps.googleusercontent.com',
     iosBundleId: 'com.habitiurs.app',
   );
 
@@ -70,8 +75,10 @@ class DefaultFirebaseOptions {
     messagingSenderId: '819697521102',
     projectId: 'habitiurs',
     storageBucket: 'habitiurs.firebasestorage.app',
-    databaseURL: 'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
-    iosClientId: '819697521102-4rpdp15lq4in3uho5sc8cdrrc29vvhs4.apps.googleusercontent.com',
+    databaseURL:
+        'https://habitiurs-default-rtdb.europe-west1.firebasedatabase.app',
+    iosClientId:
+        '819697521102-4rpdp15lq4in3uho5sc8cdrrc29vvhs4.apps.googleusercontent.com',
     iosBundleId: 'com.example.habitiurs',
   );
 }

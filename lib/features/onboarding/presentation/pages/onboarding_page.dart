@@ -83,60 +83,62 @@ class _OnboardingPageState extends State<OnboardingPage> {
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 480),
             child: Column(
-          children: [
-            Align(
-              alignment: Alignment.centerRight,
-              child: Padding(
-                padding: const EdgeInsets.all(8),
-                child: TextButton(
-                  onPressed: _finish,
-                  child: const Text('Saltar'),
-                ),
-              ),
-            ),
-            Expanded(
-              child: PageView.builder(
-                controller: _controller,
-                itemCount: _pages.length,
-                onPageChanged: (page) => setState(() => _currentPage = page),
-                itemBuilder: (context, index) => _pages[index],
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(_pages.length, (index) {
-                      final isActive = index == _currentPage;
-                      return AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        margin: const EdgeInsets.symmetric(horizontal: 4),
-                        width: isActive ? 20 : 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: isActive
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outlineVariant,
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                      );
-                    }),
-                  ),
-                  const SizedBox(height: 24),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: FilledButton(
-                      onPressed: _next,
-                      child: Text(isLast ? 'Empezar' : 'Siguiente'),
+              children: [
+                Align(
+                  alignment: Alignment.centerRight,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8),
+                    child: TextButton(
+                      onPressed: _finish,
+                      child: const Text('Saltar'),
                     ),
                   ),
-                ],
-              ),
-            ),
-          ],
+                ),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _controller,
+                    itemCount: _pages.length,
+                    onPageChanged:
+                        (page) => setState(() => _currentPage = page),
+                    itemBuilder: (context, index) => _pages[index],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 32),
+                  child: Column(
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(_pages.length, (index) {
+                          final isActive = index == _currentPage;
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 200),
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isActive ? 20 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color:
+                                  isActive
+                                      ? theme.colorScheme.primary
+                                      : theme.colorScheme.outlineVariant,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                          );
+                        }),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: FilledButton(
+                          onPressed: _next,
+                          child: Text(isLast ? 'Empezar' : 'Siguiente'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
         ),

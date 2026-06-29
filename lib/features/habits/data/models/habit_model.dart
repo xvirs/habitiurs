@@ -38,22 +38,24 @@ class HabitModel extends Habit {
     if (value == null) return Habit.allWeekdays;
     if (value is String) {
       if (value.trim().isEmpty) return Habit.allWeekdays;
-      final days = value
-          .split(',')
-          .map((d) => int.tryParse(d.trim()))
-          .whereType<int>()
-          .where((d) => d >= 1 && d <= 7)
-          .toList()
-        ..sort();
+      final days =
+          value
+              .split(',')
+              .map((d) => int.tryParse(d.trim()))
+              .whereType<int>()
+              .where((d) => d >= 1 && d <= 7)
+              .toList()
+            ..sort();
       return days.isEmpty ? Habit.allWeekdays : days;
     }
     if (value is List) {
-      final days = value
-          .map((d) => d is int ? d : int.tryParse(d.toString()))
-          .whereType<int>()
-          .where((d) => d >= 1 && d <= 7)
-          .toList()
-        ..sort();
+      final days =
+          value
+              .map((d) => d is int ? d : int.tryParse(d.toString()))
+              .whereType<int>()
+              .where((d) => d >= 1 && d <= 7)
+              .toList()
+            ..sort();
       return days.isEmpty ? Habit.allWeekdays : days;
     }
     return Habit.allWeekdays;

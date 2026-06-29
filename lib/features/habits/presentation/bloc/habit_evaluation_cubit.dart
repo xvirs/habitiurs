@@ -8,19 +8,25 @@ class HabitEvaluationCubit extends Cubit<HabitEvaluationState> {
   final HabitAIPromptBuilder _promptBuilder;
 
   HabitEvaluationCubit({required AIRepository aiRepository})
-      : _aiRepository = aiRepository,
-        _promptBuilder = HabitAIPromptBuilder(),
-        super(HabitEvaluationInitial());
+    : _aiRepository = aiRepository,
+      _promptBuilder = HabitAIPromptBuilder(),
+      super(HabitEvaluationInitial());
 
   Future<void> evaluateHabit(String habitDescription) async {
     if (habitDescription.trim().isEmpty) {
-      emit(const HabitEvaluationError('La descripción del hábito no puede estar vacía.'));
+      emit(
+        const HabitEvaluationError(
+          'La descripción del hábito no puede estar vacía.',
+        ),
+      );
       return;
     }
 
     emit(const HabitEvaluationLoading());
     try {
-      final prompt = _promptBuilder.buildHabitEvaluationPrompt(habitDescription);
+      final prompt = _promptBuilder.buildHabitEvaluationPrompt(
+        habitDescription,
+      );
       final metadata = {'habit': habitDescription};
 
       final aiResponse = await _aiRepository.evaluateHabit(
@@ -29,7 +35,11 @@ class HabitEvaluationCubit extends Cubit<HabitEvaluationState> {
       );
       emit(HabitEvaluationSuccess(aiResponse.content));
     } catch (e) {
-      emit(HabitEvaluationError('Error al obtener evaluación de IA. Intenta de nuevo: ${e.toString()}'));
+      emit(
+        HabitEvaluationError(
+          'Error al obtener evaluación de IA. Intenta de nuevo: ${e.toString()}',
+        ),
+      );
     }
   }
 

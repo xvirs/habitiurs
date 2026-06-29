@@ -26,10 +26,7 @@ class HabitValidationService {
 
   /// Filtra y valida la lista de hábitos
   static List<Habit> validateHabits(List<Habit> habits) {
-    return habits
-        .where(isValidHabit)
-        .where((habit) => habit.isActive)
-        .toList();
+    return habits.where(isValidHabit).where((habit) => habit.isActive).toList();
   }
 
   /// Valida consistencia entre hábitos y entradas para una semana específica
@@ -44,7 +41,9 @@ class HabitValidationService {
     // Validar hábitos
     final validHabits = validateHabits(habits);
     if (validHabits.length != habits.length) {
-      issues.add('Se encontraron ${habits.length - validHabits.length} hábitos inválidos');
+      issues.add(
+        'Se encontraron ${habits.length - validHabits.length} hábitos inválidos',
+      );
     }
 
     // Validar entradas. Solo cuentan como "inválidas" las que tienen datos
@@ -58,9 +57,10 @@ class HabitValidationService {
     }
 
     final habitIds = validHabits.map((h) => h.id!).toSet();
-    final validEntries = structurallyValid
-        .where((entry) => habitIds.contains(entry.habitId))
-        .toList();
+    final validEntries =
+        structurallyValid
+            .where((entry) => habitIds.contains(entry.habitId))
+            .toList();
 
     // Entradas excluidas por pertenecer a un hábito archivado/inactivo: solo
     // informativo, no es un error.
@@ -73,7 +73,8 @@ class HabitValidationService {
     final duplicateCheck = <String>{};
     final duplicates = <HabitEntry>[];
     for (final entry in validEntries) {
-      final key = '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
+      final key =
+          '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
       if (duplicateCheck.contains(key)) {
         duplicates.add(entry);
       } else {
@@ -87,7 +88,8 @@ class HabitValidationService {
     return ValidationResult(
       isValid: issues.isEmpty,
       validHabits: validHabits,
-      validEntries: validEntries.where((entry) => !duplicates.contains(entry)).toList(),
+      validEntries:
+          validEntries.where((entry) => !duplicates.contains(entry)).toList(),
       issues: issues,
       warnings: warnings,
     );
@@ -106,7 +108,8 @@ class HabitValidationService {
     // Crear un mapa de entradas existentes para búsqueda rápida
     final existingEntriesMap = <String, HabitEntry>{};
     for (final entry in existingEntries) {
-      final key = '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
+      final key =
+          '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
       existingEntriesMap[key] = entry;
     }
 
@@ -115,12 +118,15 @@ class HabitValidationService {
 
       for (final date in weekDates) {
         final normalizedDate = AppDateUtils.getStartOfDay(date);
-        final key = '${habit.id!}_${AppDateUtils.formatToYYYYMMDD(normalizedDate)}';
+        final key =
+            '${habit.id!}_${AppDateUtils.formatToYYYYMMDD(normalizedDate)}';
 
         // Skip si ya existe una entrada
         if (existingEntriesMap.containsKey(key)) {
           // Log para debugging: entrada ya existe
-          appLog('✓ [ValidationService] Entrada existente: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}');
+          appLog(
+            '✓ [ValidationService] Entrada existente: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}',
+          );
           continue;
         }
 
@@ -135,12 +141,16 @@ class HabitValidationService {
 
         // Para días pasados sin entrada, crear entrada con estado skipped
         if (normalizedDate.isBefore(today)) {
-          appLog('⚠️ [ValidationService] Generando entrada SKIPPED: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}');
-          missingEntries.add(HabitEntry(
-            habitId: habit.id!,
-            date: normalizedDate,
-            status: HabitStatus.skipped,
-          ));
+          appLog(
+            '⚠️ [ValidationService] Generando entrada SKIPPED: ${habit.name} en ${AppDateUtils.formatToYYYYMMDD(normalizedDate)}',
+          );
+          missingEntries.add(
+            HabitEntry(
+              habitId: habit.id!,
+              date: normalizedDate,
+              status: HabitStatus.skipped,
+            ),
+          );
         }
       }
     }

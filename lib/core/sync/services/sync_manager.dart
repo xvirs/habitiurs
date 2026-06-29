@@ -215,7 +215,9 @@ class SyncManager {
 
   Future<void> _syncHabitsWithBidirectionalMerge(String userId) async {
     try {
-      appLog('🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE HÁBITOS ===');
+      appLog(
+        '🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE HÁBITOS ===',
+      );
       final localHabits = await _habitDataSource.getAllHabits(
         includeInactive: true,
       );
@@ -255,7 +257,9 @@ class SyncManager {
 
         final remoteColor = remoteHabit['color'] as int?;
         final remoteIcon = remoteHabit['icon'] as String?;
-        final remoteWeekdays = HabitModel.parseWeekdays(remoteHabit['weekdays']);
+        final remoteWeekdays = HabitModel.parseWeekdays(
+          remoteHabit['weekdays'],
+        );
         final remoteReminder = remoteHabit['reminder_time'] as String?;
 
         final localHabit = localHabitsMap[remoteId];
@@ -558,7 +562,9 @@ class SyncManager {
   void _logSyncError(String step, Object e) {
     final msg = e.toString();
     if (msg.contains('RESOURCE_EXHAUSTED') || msg.contains('Quota exceeded')) {
-      appLog('🚫 [SyncManager] $step fallido — cuota de Firestore agotada (se renueva en 24 h): $e');
+      appLog(
+        '🚫 [SyncManager] $step fallido — cuota de Firestore agotada (se renueva en 24 h): $e',
+      );
     } else {
       appLog('⚠️ [SyncManager] $step fallido, continuando: $e');
     }

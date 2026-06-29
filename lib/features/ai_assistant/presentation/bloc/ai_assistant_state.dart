@@ -34,9 +34,12 @@ class AIAssistantLoaded extends AIAssistantState {
     return AIAssistantLoaded(
       educationalContent: educationalContent ?? this.educationalContent,
       appGuides: appGuides ?? this.appGuides,
-      currentRecommendation: currentRecommendation ?? this.currentRecommendation,
-      isRecommendationLoading: isRecommendationLoading ?? this.isRecommendationLoading,
-      hasInternetConnection: hasInternetConnection ?? this.hasInternetConnection,
+      currentRecommendation:
+          currentRecommendation ?? this.currentRecommendation,
+      isRecommendationLoading:
+          isRecommendationLoading ?? this.isRecommendationLoading,
+      hasInternetConnection:
+          hasInternetConnection ?? this.hasInternetConnection,
     );
   }
 }

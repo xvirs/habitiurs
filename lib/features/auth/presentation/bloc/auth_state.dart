@@ -14,13 +14,13 @@ class AuthLoading extends AuthState {
 class AuthAuthenticated extends AuthState {
   final User user;
   AuthAuthenticated(this.user);
-  
+
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is AuthAuthenticated && 
-      runtimeType == other.runtimeType &&
-      user == other.user;
+      other is AuthAuthenticated &&
+          runtimeType == other.runtimeType &&
+          user == other.user;
 
   @override
   int get hashCode => user.hashCode;

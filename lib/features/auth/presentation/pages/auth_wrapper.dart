@@ -52,8 +52,8 @@ class _LoadingPage extends StatelessWidget {
               Text(
                 message!,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
               ),
             ],
           ],
@@ -102,9 +102,7 @@ class _ErrorPage extends StatelessWidget {
                 const SizedBox(height: 32),
                 FilledButton.icon(
                   onPressed: () {
-                    context
-                        .read<AuthBloc>()
-                        .add(AuthInitializationRequested());
+                    context.read<AuthBloc>().add(AuthInitializationRequested());
                   },
                   icon: const Icon(Icons.refresh),
                   label: const Text('Reintentar'),

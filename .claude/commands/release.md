@@ -67,7 +67,9 @@ Si no: pedí confirmación explícita ("¿Ejecuto el release vX.Y.Z? [y/N]"). No
 ## Paso 6 — Reportar
 
 - Link a workflows: https://github.com/xvirs/habitiurs/actions
-- **Android**: se publica solo en producción al terminar el workflow (después review de Google).
+- **Android**: sube al track **`alpha`** (prueba cerrada) por defecto. Producción requiere que
+  Google te habilite acceso (cuenta personal: 12 testers / 14 días). No cambies a `production`
+  a ciegas o falla con "Precondition check failed".
 - **iOS**: el build llega a App Store Connect (TestFlight). Apple **obliga a revisión humana** —
   recordale al usuario entrar a https://appstoreconnect.apple.com, seleccionar el build nuevo
   y enviar la versión a revisión (~1 día). No se puede automatizar ese envío.

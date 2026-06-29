@@ -2,9 +2,9 @@
 abstract class AuthException implements Exception {
   final String message;
   final String? code;
-  
+
   const AuthException(this.message, {this.code});
-  
+
   @override
   String toString() => 'AuthException: $message';
 }
@@ -18,7 +18,8 @@ class InvalidCredentialsException extends AuthException {
 }
 
 class NetworkAuthException extends AuthException {
-  const NetworkAuthException() : super('Error de conexión durante autenticación');
+  const NetworkAuthException()
+    : super('Error de conexión durante autenticación');
 }
 
 class UnknownAuthException extends AuthException {

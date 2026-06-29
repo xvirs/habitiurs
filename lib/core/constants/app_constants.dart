@@ -7,7 +7,13 @@ class AppConstants {
   // UI Constants
   static const List<String> weekDayNames = ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
   static const List<String> weekDayNamesFull = [
-    'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado', 'Domingo'
+    'Lunes',
+    'Martes',
+    'Miércoles',
+    'Jueves',
+    'Viernes',
+    'Sábado',
+    'Domingo',
   ];
 
   // Date formats

@@ -6,10 +6,7 @@ import '../../../../shared/widgets/section_header.dart';
 class AppGuideSection extends StatefulWidget {
   final List<AppGuide> guides;
 
-  const AppGuideSection({
-    Key? key,
-    required this.guides,
-  }) : super(key: key);
+  const AppGuideSection({Key? key, required this.guides}) : super(key: key);
 
   @override
   State<AppGuideSection> createState() => _AppGuideSectionState();
@@ -27,10 +24,7 @@ class _AppGuideSectionState extends State<AppGuideSection> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SectionHeader(
-              icon: Icons.help_outline,
-              title: 'Guía de Uso',
-            ),
+            const SectionHeader(icon: Icons.help_outline, title: 'Guía de Uso'),
             const SizedBox(height: 16),
             _GuideExpansionList(
               guides: widget.guides,
@@ -69,23 +63,21 @@ class _GuideExpansionList extends StatelessWidget {
       },
       elevation: 0,
       dividerColor: Colors.transparent,
-      children: guides.asMap().entries.map((entry) {
-        final index = entry.key;
-        final guide = entry.value;
-        
-        return ExpansionPanel(
-          headerBuilder: (context, isExpanded) {
-            return _GuideHeader(
-              guide: guide,
-              isExpanded: isExpanded,
+      children:
+          guides.asMap().entries.map((entry) {
+            final index = entry.key;
+            final guide = entry.value;
+
+            return ExpansionPanel(
+              headerBuilder: (context, isExpanded) {
+                return _GuideHeader(guide: guide, isExpanded: isExpanded);
+              },
+              body: _GuideBody(content: guide.content),
+              isExpanded: expandedIndex == index,
+              canTapOnHeader: true,
+              backgroundColor: Colors.transparent,
             );
-          },
-          body: _GuideBody(content: guide.content),
-          isExpanded: expandedIndex == index,
-          canTapOnHeader: true,
-          backgroundColor: Colors.transparent,
-        );
-      }).toList(),
+          }).toList(),
     );
   }
 }
@@ -94,10 +86,7 @@ class _GuideHeader extends StatelessWidget {
   final AppGuide guide;
   final bool isExpanded;
 
-  const _GuideHeader({
-    required this.guide,
-    required this.isExpanded,
-  });
+  const _GuideHeader({required this.guide, required this.isExpanded});
 
   @override
   Widget build(BuildContext context) {
@@ -107,9 +96,7 @@ class _GuideHeader extends StatelessWidget {
         children: [
           _GuideNumber(order: guide.order),
           const SizedBox(width: 12),
-          Expanded(
-            child: _GuideTitle(title: guide.title),
-          ),
+          Expanded(child: _GuideTitle(title: guide.title)),
         ],
       ),
     );
@@ -147,10 +134,7 @@ class _GuideTitle extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       title,
-      style: const TextStyle(
-        fontWeight: FontWeight.w500,
-        fontSize: 14,
-      ),
+      style: const TextStyle(fontWeight: FontWeight.w500, fontSize: 14),
     );
   }
 }
@@ -167,11 +151,7 @@ class _GuideBody extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Text(
         content,
-        style: TextStyle(
-          fontSize: 13,
-          height: 1.4,
-          color: Colors.grey[700],
-        ),
+        style: TextStyle(fontSize: 13, height: 1.4, color: Colors.grey[700]),
       ),
     );
   }

@@ -19,8 +19,6 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
 import 'dart:async';
 
-
-
 class MainPage extends StatefulWidget {
   const MainPage({super.key});
 
@@ -62,8 +60,9 @@ class _MainPageState extends State<MainPage> {
           !authBloc.isSyncCompleted) {
         setState(() => _isSyncing = true);
       }
-      _authBlocSyncSubscription = authBloc.initialSyncCompletedStream
-          .listen((_) => _onInitialSyncCompleted());
+      _authBlocSyncSubscription = authBloc.initialSyncCompletedStream.listen(
+        (_) => _onInitialSyncCompleted(),
+      );
     });
   }
 
@@ -175,21 +174,20 @@ class _MainPageState extends State<MainPage> {
       drawer: UserDrawer(onDataSynced: _refreshCurrentTab),
       // Pantalla ancha (Fold desplegado / tablet): riel de navegación lateral.
       // Teléfono: barra de navegación inferior.
-      body: isWide
-          ? Row(
-              children: [
-                _NavRail(currentIndex: _currentIndex, onTap: _onTabTapped),
-                const VerticalDivider(width: 1, thickness: 1),
-                Expanded(child: pages),
-              ],
-            )
-          : pages,
-      bottomNavigationBar: isWide
-          ? null
-          : _BottomNavBar(
-              currentIndex: _currentIndex,
-              onTap: _onTabTapped,
-            ),
+      body:
+          isWide
+              ? Row(
+                children: [
+                  _NavRail(currentIndex: _currentIndex, onTap: _onTabTapped),
+                  const VerticalDivider(width: 1, thickness: 1),
+                  Expanded(child: pages),
+                ],
+              )
+              : pages,
+      bottomNavigationBar:
+          isWide
+              ? null
+              : _BottomNavBar(currentIndex: _currentIndex, onTap: _onTabTapped),
     );
   }
 }

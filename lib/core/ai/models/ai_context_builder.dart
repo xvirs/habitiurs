@@ -1,7 +1,6 @@
 // lib/core/ai/models/ai_context_builder.dart
 /// Builder para generar contextos específicos por feature
 class AIContextBuilder {
-  
   /// HABITS CONTEXT
   static Map<String, dynamic> buildHabitEvaluationContext(String habitName) {
     return {
@@ -44,12 +43,16 @@ class AIContextBuilder {
       'weekly_rates': weeklyRates,
       'total_days_tracked': totalDaysTracked,
       'habit_performance': habitPerformance,
-      'average_weekly_rate': weeklyRates.isNotEmpty 
-          ? weeklyRates.reduce((a, b) => a + b) / weeklyRates.length 
-          : 0.0,
-      'trend_direction': weeklyRates.length >= 2 
-          ? (weeklyRates.last - weeklyRates.first > 0 ? 'positive' : 'negative')
-          : 'stable',
+      'average_weekly_rate':
+          weeklyRates.isNotEmpty
+              ? weeklyRates.reduce((a, b) => a + b) / weeklyRates.length
+              : 0.0,
+      'trend_direction':
+          weeklyRates.length >= 2
+              ? (weeklyRates.last - weeklyRates.first > 0
+                  ? 'positive'
+                  : 'negative')
+              : 'stable',
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
@@ -100,12 +103,15 @@ class AIContextBuilder {
     required DateTime lastActiveDate,
   }) {
     // Calcular métricas adicionales
-    final avgCompletionRate = completionRates.values.isNotEmpty 
-        ? completionRates.values.reduce((a, b) => a + b) / completionRates.values.length
-        : 0.0;
-    
-    final daysSinceLastActive = DateTime.now().difference(lastActiveDate).inDays;
-    
+    final avgCompletionRate =
+        completionRates.values.isNotEmpty
+            ? completionRates.values.reduce((a, b) => a + b) /
+                completionRates.values.length
+            : 0.0;
+
+    final daysSinceLastActive =
+        DateTime.now().difference(lastActiveDate).inDays;
+
     return {
       'feature': 'ai_assistant',
       'action': 'personal_recommendation',
@@ -135,7 +141,10 @@ class AIContextBuilder {
       'current_streak': currentStreak,
       'weekly_progress': weeklyProgress,
       'user_mood': userMood,
-      'encouragement_type': _getEncouragementType(currentStreak, weeklyProgress),
+      'encouragement_type': _getEncouragementType(
+        currentStreak,
+        weeklyProgress,
+      ),
       'timestamp': DateTime.now().toIso8601String(),
     };
   }
@@ -176,11 +185,11 @@ class AIContextBuilder {
   static Map<String, dynamic> sanitizeContext(Map<String, dynamic> context) {
     // Remover datos sensibles o innecesarios
     final sanitized = Map<String, dynamic>.from(context);
-    
+
     // Remover información personal si existe
     sanitized.remove('user_email');
     sanitized.remove('device_id');
-    
+
     // Limitar tamaño de arrays grandes
     if (sanitized['historical_data'] is List) {
       final List data = sanitized['historical_data'];
@@ -189,7 +198,7 @@ class AIContextBuilder {
         sanitized['data_truncated'] = true;
       }
     }
-    
+
     return sanitized;
   }
 }

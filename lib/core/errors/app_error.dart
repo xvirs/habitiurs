@@ -5,7 +5,7 @@ class AppError {
   final String technicalDetails;
   final DateTime timestamp;
   final ErrorType type;
-  
+
   AppError({
     required this.title,
     required this.message,
@@ -18,10 +18,4 @@ class AppError {
   String toString() => 'AppError: $title - $message';
 }
 
-enum ErrorType {
-  initialization,
-  network,
-  authentication,
-  permission,
-  unknown,
-}
+enum ErrorType { initialization, network, authentication, permission, unknown }

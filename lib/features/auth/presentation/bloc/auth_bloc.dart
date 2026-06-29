@@ -63,7 +63,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
         if (user != null) {
           appLog('✅ AuthBloc: Usuario autenticado: ${user.email}');
           // Dispara la carga inicial de datos para los otros Blocs
-          _loadInitialAppData(); 
+          _loadInitialAppData();
           if (!user.isGuest) {
             _startFullSync();
           }
@@ -123,7 +123,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     AuthLoginWithAppleRequested event,
     Emitter<AuthState> emit,
   ) async {
-    appLog('🔄 AuthBloc: AuthLoginWithAppleRequested - Iniciando login con Apple.');
+    appLog(
+      '🔄 AuthBloc: AuthLoginWithAppleRequested - Iniciando login con Apple.',
+    );
     emit(AuthLoading(message: 'Iniciando sesión...'));
     final result = await loginWithApple.call();
     if (result is AuthSuccess<User>) {
@@ -132,7 +134,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       _startFullSync();
       emit(AuthAuthenticated(result.data));
     } else if (result is AuthFailure<User>) {
-      appLog('❌ AuthBloc: Fallo en el login con Apple: ${result.exception.message}');
+      appLog(
+        '❌ AuthBloc: Fallo en el login con Apple: ${result.exception.message}',
+      );
       if (result.exception is LoginCancelledException) {
         emit(AuthUnauthenticated());
       } else {
@@ -159,7 +163,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final syncManager = InjectionContainer().syncManager;
       appLog('🔄 AuthBloc: Sincronizando datos antes de cerrar sesión...');
       await syncManager.syncAll().catchError((e) {
-        appLog('⚠️ AuthBloc: Sync previo al logout no completado (sin internet o error): $e');
+        appLog(
+          '⚠️ AuthBloc: Sync previo al logout no completado (sin internet o error): $e',
+        );
         return false;
       });
 
@@ -219,7 +225,9 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
   void _loadInitialAppData() {
     if (_initialDataLoaded) return;
     _initialDataLoaded = true;
-    appLog('🔄 AuthBloc: Disparando eventos de carga inicial para HabitBloc, StatisticsBloc, AIAssistantBloc.');
+    appLog(
+      '🔄 AuthBloc: Disparando eventos de carga inicial para HabitBloc, StatisticsBloc, AIAssistantBloc.',
+    );
     final container = InjectionContainer();
     container.habitBloc.add(LoadHabits());
     container.statisticsBloc.add(LoadStatistics());

@@ -19,7 +19,9 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
   @override
   Future<MonthlyStatisticsModel> getCurrentMonthStatistics() async {
     final now = DateTime.now();
-    appLog('📊 [Statistics] Cargando estadísticas mes ${now.month}/${now.year}');
+    appLog(
+      '📊 [Statistics] Cargando estadísticas mes ${now.month}/${now.year}',
+    );
     return await getMonthStatistics(now.year, now.month);
   }
 
@@ -34,7 +36,9 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
         yearStatistics.add(monthStats);
       }
     }
-    appLog('📊 [Statistics] Año ${now.year}: ${yearStatistics.length} mes(es) con datos');
+    appLog(
+      '📊 [Statistics] Año ${now.year}: ${yearStatistics.length} mes(es) con datos',
+    );
     return yearStatistics;
   }
 
@@ -81,8 +85,11 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
 
     // 1. Obtener "Total Esperado" (Opportunities) calculado teóricamente
     // Basado en cuándo se creó cada hábito.
-    final habitsResult =
-        await db.query('habits', where: 'is_active = ?', whereArgs: [1]);
+    final habitsResult = await db.query(
+      'habits',
+      where: 'is_active = ?',
+      whereArgs: [1],
+    );
     int calculatedTotalHabits = 0;
 
     // Límite superior para contar "oportunidades": Hasta hoy o fin de mes, lo que pase antes.
@@ -117,8 +124,11 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
 
       // Contar solo los días programados según la frecuencia del hábito
       final weekdays = HabitModel.parseWeekdays(habitMap['weekdays']);
-      calculatedTotalHabits +=
-          _countScheduledDays(effectiveStart, calculationEnd, weekdays);
+      calculatedTotalHabits += _countScheduledDays(
+        effectiveStart,
+        calculationEnd,
+        weekdays,
+      );
     }
 
     // 2. Obtener conteos reales de la BD (solo Completed importa mucho ahora)
@@ -222,8 +232,11 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
           if (effectiveStart.isAfter(calculationDutyEnd)) continue;
 
           final weekdays = HabitModel.parseWeekdays(habitMap['weekdays']);
-          calculatedWeekTotal +=
-              _countScheduledDays(effectiveStart, calculationDutyEnd, weekdays);
+          calculatedWeekTotal += _countScheduledDays(
+            effectiveStart,
+            calculationDutyEnd,
+            weekdays,
+          );
         }
       }
 

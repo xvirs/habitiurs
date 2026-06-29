@@ -25,7 +25,9 @@ class NotificationService {
     try {
       final timezoneInfo = await FlutterTimezone.getLocalTimezone();
       tz.setLocalLocation(tz.getLocation(timezoneInfo.identifier));
-      appLog('✅ [NotificationService] Timezone configurado: ${timezoneInfo.identifier}');
+      appLog(
+        '✅ [NotificationService] Timezone configurado: ${timezoneInfo.identifier}',
+      );
     } catch (e) {
       appLog('❌ [NotificationService] Error configurando timezone: $e');
       // Fallback a UTC si falla
@@ -291,8 +293,14 @@ class NotificationService {
 
   tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, int hour, int minute) {
     final now = tz.TZDateTime.now(tz.local);
-    var scheduled =
-        tz.TZDateTime(tz.local, now.year, now.month, now.day, hour, minute);
+    var scheduled = tz.TZDateTime(
+      tz.local,
+      now.year,
+      now.month,
+      now.day,
+      hour,
+      minute,
+    );
     while (scheduled.weekday != weekday || scheduled.isBefore(now)) {
       scheduled = scheduled.add(const Duration(days: 1));
     }

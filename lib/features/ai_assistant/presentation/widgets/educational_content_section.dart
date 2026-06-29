@@ -6,10 +6,8 @@ import '../../../../shared/widgets/section_header.dart';
 class EducationalContentSection extends StatelessWidget {
   final List<EducationalContent> content;
 
-  const EducationalContentSection({
-    Key? key,
-    required this.content,
-  }) : super(key: key);
+  const EducationalContentSection({Key? key, required this.content})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -98,10 +96,7 @@ class _ContentCard extends StatelessWidget {
     return Row(
       children: [
         Container(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 8,
-            vertical: 4,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
           decoration: BoxDecoration(
             color: theme.colorScheme.primary.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
@@ -116,11 +111,7 @@ class _ContentCard extends StatelessWidget {
         ),
         const Spacer(),
         if (article.isLocal)
-          Icon(
-            Icons.offline_bolt,
-            size: 16,
-            color: Colors.green[600],
-          ),
+          Icon(Icons.offline_bolt, size: 16, color: Colors.green[600]),
       ],
     );
   }
@@ -128,10 +119,7 @@ class _ContentCard extends StatelessWidget {
   Widget _CardTitle() {
     return Text(
       article.title,
-      style: const TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: 14,
-      ),
+      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -152,13 +140,18 @@ class _ContentCard extends StatelessWidget {
   Widget _CardFooter(BuildContext context) {
     return Row(
       children: [
-        Icon(Icons.access_time, size: 14,
-            color: Theme.of(context).colorScheme.outline),
+        Icon(
+          Icons.access_time,
+          size: 14,
+          color: Theme.of(context).colorScheme.outline,
+        ),
         const SizedBox(width: 4),
         Text(
           '${article.readTimeMinutes} min',
           style: TextStyle(
-              fontSize: 11, color: Theme.of(context).colorScheme.outline),
+            fontSize: 11,
+            color: Theme.of(context).colorScheme.outline,
+          ),
         ),
         const Spacer(),
         Text(
@@ -213,19 +206,14 @@ class _DialogHeader extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer,
-        borderRadius: const BorderRadius.vertical(
-          top: Radius.circular(12),
-        ),
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
       ),
       child: Row(
         children: [
           Expanded(
             child: Text(
               title,
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 16,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ),
           IconButton(
@@ -248,10 +236,7 @@ class _DialogContent extends StatelessWidget {
     return Expanded(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Text(
-          content,
-          style: const TextStyle(fontSize: 14, height: 1.5),
-        ),
+        child: Text(content, style: const TextStyle(fontSize: 14, height: 1.5)),
       ),
     );
   }

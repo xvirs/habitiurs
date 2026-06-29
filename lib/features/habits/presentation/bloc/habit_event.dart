@@ -29,8 +29,13 @@ class CreateHabitEvent extends HabitEvent {
   });
 
   @override
-  List<Object> get props =>
-      [name, colorValue, iconKey, weekdays, reminderTime ?? ''];
+  List<Object> get props => [
+    name,
+    colorValue,
+    iconKey,
+    weekdays,
+    reminderTime ?? '',
+  ];
 }
 
 /// Actualiza propiedades del hábito (renombrar, personalizar, archivar).

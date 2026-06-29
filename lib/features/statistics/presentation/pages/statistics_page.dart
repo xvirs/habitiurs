@@ -69,30 +69,30 @@ class StatisticsPage extends StatelessWidget {
                 constraints: const BoxConstraints(maxWidth: 800),
                 child: SingleChildScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      CurrentMonthSummary(
-                        statistics: state.currentMonth,
-                        isRefreshing: state.isRefreshing,
-                      ),
-                      YearlyStatisticsList(
-                        statistics: state.currentYear,
-                        isRefreshing: state.isRefreshing,
-                      ),
-                      HistoricalChart(
-                        data: state.historicalData,
-                        isRefreshing: state.isRefreshing,
-                      ),
-                      const SizedBox(height: 16),
-                    ],
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16.0),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        CurrentMonthSummary(
+                          statistics: state.currentMonth,
+                          isRefreshing: state.isRefreshing,
+                        ),
+                        YearlyStatisticsList(
+                          statistics: state.currentYear,
+                          isRefreshing: state.isRefreshing,
+                        ),
+                        HistoricalChart(
+                          data: state.historicalData,
+                          isRefreshing: state.isRefreshing,
+                        ),
+                        const SizedBox(height: 16),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           );
         }
 

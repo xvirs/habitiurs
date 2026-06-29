@@ -14,7 +14,8 @@ class OfflineContentDatasourceImpl implements OfflineContentDatasource {
       EducationalContentModel(
         id: 1,
         title: "La Regla de los 2 Minutos",
-        content: """James Clear propone que cuando estés comenzando un nuevo hábito, debería tomar menos de dos minutos realizarlo.
+        content:
+            """James Clear propone que cuando estés comenzando un nuevo hábito, debería tomar menos de dos minutos realizarlo.
 
 "Leer antes de dormir" se convierte en "leer una página".
 "Hacer ejercicio 30 minutos" se convierte en "ponerme las zapatillas de deporte".
@@ -31,7 +32,8 @@ Una vez que dominas el arte de aparecer, puedes mejorar y refinar el hábito. Es
       EducationalContentModel(
         id: 2,
         title: "El Poder del Apilamiento de Hábitos",
-        content: """El apilamiento de hábitos es una forma especial de intención de implementación. En lugar de emparejar tu nuevo hábito con un tiempo y lugar particular, lo emparejas con un hábito actual.
+        content:
+            """El apilamiento de hábitos es una forma especial de intención de implementación. En lugar de emparejar tu nuevo hábito con un tiempo y lugar particular, lo emparejas con un hábito actual.
 
 La fórmula es: "Después de [HÁBITO ACTUAL], haré [NUEVO HÁBITO]."
 
@@ -49,7 +51,8 @@ El apilamiento de hábitos funciona mejor cuando el hábito de pila y el nuevo h
       EducationalContentModel(
         id: 3,
         title: "Diseño del Entorno para el Éxito",
-        content: """Tu entorno físico influye enormemente en tus hábitos. Hacer que las señales de los hábitos buenos sean obvias en tu entorno es una forma poderosa de mantenerlos.
+        content:
+            """Tu entorno físico influye enormemente en tus hábitos. Hacer que las señales de los hábitos buenos sean obvias en tu entorno es una forma poderosa de mantenerlos.
 
 Estrategias para diseñar tu entorno:
 
@@ -73,7 +76,8 @@ Recuerda: es más fácil cambiar tu entorno que cambiar tu fuerza de voluntad.""
       EducationalContentModel(
         id: 4,
         title: "La Importancia de la Identidad",
-        content: """El cambio de comportamiento más profundo es el cambio de identidad. Cada acción es un voto por el tipo de persona que deseas convertirte.
+        content:
+            """El cambio de comportamiento más profundo es el cambio de identidad. Cada acción es un voto por el tipo de persona que deseas convertirte.
 
 En lugar de enfocarte en lo que quieres lograr, enfócate en quién quieres convertirte:
 • "Quiero leer más" → "Soy una persona que lee"
@@ -97,7 +101,8 @@ Tu identidad emerge de tus hábitos. Cada repetición es evidencia de que eres e
       AppGuideModel(
         id: 1,
         title: "Bienvenido a Habitiurs",
-        content: """Habitiurs es tu compañero para construir hábitos duraderos de manera simple y efectiva.
+        content:
+            """Habitiurs es tu compañero para construir hábitos duraderos de manera simple y efectiva.
 
 **¿Por qué Habitiurs?**
 Esta aplicación está diseñada con principios científicos de formación de hábitos. No encontrarás gamificación complicada ni recordatorios molestos, solo las herramientas esenciales para el seguimiento consistente.
@@ -115,7 +120,8 @@ Habitiurs te ayuda a enfocarte en lo que realmente importa: aparecer cada día y
       AppGuideModel(
         id: 2,
         title: "Entendiendo la Cuadrícula Semanal",
-        content: """La cuadrícula semanal es el corazón de Habitiurs. Aquí es donde visualizas tu progreso de manera clara y motivadora.
+        content:
+            """La cuadrícula semanal es el corazón de Habitiurs. Aquí es donde visualizas tu progreso de manera clara y motivadora.
 
 **Cómo funciona:**
 • Cada fila representa un hábito
@@ -140,7 +146,8 @@ Habitiurs te ayuda a enfocarte en lo que realmente importa: aparecer cada día y
       AppGuideModel(
         id: 3,
         title: "Interpretando tus Estadísticas",
-        content: """Las estadísticas te dan una perspectiva objetiva de tu progreso a lo largo del tiempo.
+        content:
+            """Las estadísticas te dan una perspectiva objetiva de tu progreso a lo largo del tiempo.
 
 **Sección 1 - Resumen del Mes:**
 Muestra las semanas completas del mes actual con hábitos cumplidos y no cumplidos por semana.
@@ -165,7 +172,8 @@ Recuerda: las estadísticas son una herramienta, no un juicio. Úsalas para iden
       AppGuideModel(
         id: 4,
         title: "Creando Hábitos con IA",
-        content: """Al crear un nuevo hábito, puedes usar la **Evaluación con IA** para validar que tu hábito sea efectivo.
+        content:
+            """Al crear un nuevo hábito, puedes usar la **Evaluación con IA** para validar que tu hábito sea efectivo.
 
 **¿Qué evalúa la IA?**
 La IA verifica que tu hábito cumpla 3 criterios:
@@ -190,7 +198,8 @@ La IA verifica que tu hábito cumpla 3 criterios:
       AppGuideModel(
         id: 5,
         title: "Asistente de IA Personalizado",
-        content: """El Asistente de IA analiza tus datos reales y te da recomendaciones específicas y accionables.
+        content:
+            """El Asistente de IA analiza tus datos reales y te da recomendaciones específicas y accionables.
 
 **¿Qué analiza?**
 • Tus hábitos actuales
@@ -216,7 +225,8 @@ La IA verifica que tu hábito cumpla 3 criterios:
       AppGuideModel(
         id: 6,
         title: "Modificando Días Pasados",
-        content: """A veces olvidas marcar un hábito que sí completaste. Habitiurs te permite corregir días pasados.
+        content:
+            """A veces olvidas marcar un hábito que sí completaste. Habitiurs te permite corregir días pasados.
 
 **Cómo modificar un día pasado:**
 1. Ve a la cuadrícula semanal en la página principal
@@ -239,7 +249,8 @@ La IA verifica que tu hábito cumpla 3 criterios:
       AppGuideModel(
         id: 7,
         title: "Eliminando Hábitos",
-        content: """Si un hábito ya no te sirve o quieres reemplazarlo, puedes eliminarlo fácilmente.
+        content:
+            """Si un hábito ya no te sirve o quieres reemplazarlo, puedes eliminarlo fácilmente.
 
 **Cómo eliminar un hábito:**
 1. Ve a la cuadrícula semanal

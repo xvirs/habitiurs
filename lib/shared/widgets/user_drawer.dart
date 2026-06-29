@@ -14,11 +14,8 @@ import '../../features/settings/presentation/bloc/settings_event.dart';
 
 class UserDrawer extends StatefulWidget {
   final VoidCallback? onDataSynced;
-  
-  const UserDrawer({
-    Key? key,
-    this.onDataSynced,
-  }) : super(key: key);
+
+  const UserDrawer({Key? key, this.onDataSynced}) : super(key: key);
   @override
   State<UserDrawer> createState() => _UserDrawerState();
 }
@@ -76,13 +73,13 @@ class _UserDrawerState extends State<UserDrawer> {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         User? user;
-        
+
         if (state is AuthAuthenticated) {
           user = state.user;
         }
-        
+
         final isGuest = user?.isGuest ?? true;
-        
+
         return Container(
           height: 160,
           decoration: BoxDecoration(
@@ -102,20 +99,22 @@ class _UserDrawerState extends State<UserDrawer> {
               CircleAvatar(
                 radius: 22,
                 backgroundColor: Colors.white,
-                backgroundImage: user?.photoURL != null 
-                    ? NetworkImage(user!.photoURL!)
-                    : null,
-                child: user?.photoURL == null
-                    ? Icon(
-                        isGuest ? Icons.person_outline : Icons.person,
-                        size: 22,
-                        color: Theme.of(context).colorScheme.primary,
-                      )
-                    : null,
+                backgroundImage:
+                    user?.photoURL != null
+                        ? NetworkImage(user!.photoURL!)
+                        : null,
+                child:
+                    user?.photoURL == null
+                        ? Icon(
+                          isGuest ? Icons.person_outline : Icons.person,
+                          size: 22,
+                          color: Theme.of(context).colorScheme.primary,
+                        )
+                        : null,
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Información del usuario
               Expanded(
                 child: Column(
@@ -133,7 +132,7 @@ class _UserDrawerState extends State<UserDrawer> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 4),
                     // Email del usuario
                     Text(
@@ -145,12 +144,15 @@ class _UserDrawerState extends State<UserDrawer> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    
+
                     const SizedBox(height: 6),
-                    
+
                     // Badge de cuenta
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: isGuest ? Colors.orange[300] : Colors.green[300],
                         borderRadius: BorderRadius.circular(8),
@@ -158,7 +160,8 @@ class _UserDrawerState extends State<UserDrawer> {
                       child: Text(
                         isGuest ? 'Invitado' : 'Conectado',
                         style: TextStyle(
-                          color: isGuest ? Colors.orange[800] : Colors.green[800],
+                          color:
+                              isGuest ? Colors.orange[800] : Colors.green[800],
                           fontSize: 9,
                           fontWeight: FontWeight.w500,
                         ),
@@ -173,7 +176,6 @@ class _UserDrawerState extends State<UserDrawer> {
       },
     );
   }
-
 
   Widget _buildSettingsSection(BuildContext context) {
     return ListTile(
@@ -194,19 +196,17 @@ class _UserDrawerState extends State<UserDrawer> {
         if (state is! AuthAuthenticated) {
           return const SizedBox.shrink();
         }
-        
+
         final isGuest = state.user.isGuest;
-        
+
         return ListTile(
           leading: Icon(
             isGuest ? Icons.login : Icons.logout,
             color: isGuest ? Colors.green[600] : Colors.red[600],
           ),
-          title: Text(
-            isGuest ? 'Iniciar sesión' : 'Cerrar sesión',
-          ),
+          title: Text(isGuest ? 'Iniciar sesión' : 'Cerrar sesión'),
           subtitle: Text(
-            isGuest 
+            isGuest
                 ? 'Conecta tu cuenta de Google'
                 : 'Salir de tu cuenta actual',
           ),
@@ -221,8 +221,9 @@ class _UserDrawerState extends State<UserDrawer> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceContainerHighest
-            .withValues(alpha: 0.5),
+        color: Theme.of(
+          context,
+        ).colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         border: Border(
           top: BorderSide(
             color: Theme.of(context).colorScheme.outlineVariant,
@@ -282,21 +283,22 @@ class _UserDrawerState extends State<UserDrawer> {
 
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => MultiBlocProvider(
-          providers: [
-            BlocProvider.value(value: settingsBloc),
-            BlocProvider.value(value: authBloc),
-            BlocProvider.value(value: InjectionContainer().habitBloc),
-          ],
-          child: const SettingsPage(),
-        ),
+        builder:
+            (context) => MultiBlocProvider(
+              providers: [
+                BlocProvider.value(value: settingsBloc),
+                BlocProvider.value(value: authBloc),
+                BlocProvider.value(value: InjectionContainer().habitBloc),
+              ],
+              child: const SettingsPage(),
+            ),
       ),
     );
   }
 
   void _handleAuthTap(BuildContext context, bool isGuest) async {
-    Navigator.pop(context); 
-    
+    Navigator.pop(context);
+
     final authBloc = BlocProvider.of<AuthBloc>(context, listen: false);
     if (isGuest) {
       authBloc.add(AuthLoginWithGoogleRequested());
@@ -311,23 +313,24 @@ class _UserDrawerState extends State<UserDrawer> {
   Future<bool?> _showLogoutConfirmation(BuildContext context) {
     return showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Cerrar sesión'),
-        content: const Text(
-          '¿Estás seguro de que quieres cerrar sesión? '
-          'Tus datos se mantendrán sincronizados en la nube.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancelar'),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Cerrar sesión'),
+            content: const Text(
+              '¿Estás seguro de que quieres cerrar sesión? '
+              'Tus datos se mantendrán sincronizados en la nube.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('Cerrar sesión'),
+              ),
+            ],
           ),
-          FilledButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Cerrar sesión'),
-          ),
-        ],
-      ),
     );
   }
 }

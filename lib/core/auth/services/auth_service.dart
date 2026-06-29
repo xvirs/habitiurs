@@ -23,7 +23,7 @@ class AuthService implements IAuthService {
   static const _guestIdKey = 'habitiurs_guest_id';
   static final AuthService _instance = AuthService._internal();
   factory AuthService() => _instance;
-  
+
   AuthService._internal() {
     _initializeServices();
   }
@@ -31,18 +31,15 @@ class AuthService implements IAuthService {
   void _initializeServices() {
     try {
       _firebaseAuth = firebase.FirebaseAuth.instance;
-      
+
       // ✅ CORREGIDO: Configuración más específica de GoogleSignIn
       _googleSignIn = GoogleSignIn(
         // Estos scopes son los mínimos necesarios
-        scopes: [
-          'email',
-          'profile',
-        ],
+        scopes: ['email', 'profile'],
         // ✅ IMPORTANTE: Configurar para desarrollo/debug
         signInOption: SignInOption.standard,
       );
-      
+
       _initialized = true;
       appLog('✅ [AuthService] Servicios inicializados correctamente');
     } catch (e) {
@@ -54,14 +51,20 @@ class AuthService implements IAuthService {
   @override
   Stream<User?> get authStateChanges {
     if (!_initialized || _firebaseAuth == null) {
-      appLog('❌ [AuthService] authStateChanges: No inicializado o firebaseAuth es null. Retornando stream vacío.'); // DEBUG LOG
+      appLog(
+        '❌ [AuthService] authStateChanges: No inicializado o firebaseAuth es null. Retornando stream vacío.',
+      ); // DEBUG LOG
       return Stream.value(null);
     }
-    
+
     try {
-      appLog('🔄 [AuthService] authStateChanges: Escuchando cambios en Firebase Auth.'); // DEBUG LOG
+      appLog(
+        '🔄 [AuthService] authStateChanges: Escuchando cambios en Firebase Auth.',
+      ); // DEBUG LOG
       return _firebaseAuth!.authStateChanges().map((firebaseUser) {
-        appLog('🔄 [AuthService] authStateChanges: Firebase User cambió a: ${firebaseUser?.email ?? 'null'}'); // DEBUG LOG
+        appLog(
+          '🔄 [AuthService] authStateChanges: Firebase User cambió a: ${firebaseUser?.email ?? 'null'}',
+        ); // DEBUG LOG
         return firebaseUser != null ? _mapFirebaseUser(firebaseUser) : null;
       });
     } catch (e) {
@@ -73,13 +76,17 @@ class AuthService implements IAuthService {
   @override
   User? get currentUser {
     if (!_initialized || _firebaseAuth == null) {
-      appLog('❌ [AuthService] currentUser: No inicializado o firebaseAuth es null. Retornando null.'); // DEBUG LOG
+      appLog(
+        '❌ [AuthService] currentUser: No inicializado o firebaseAuth es null. Retornando null.',
+      ); // DEBUG LOG
       return null;
     }
-    
+
     try {
       final firebaseUser = _firebaseAuth!.currentUser;
-      appLog('🔄 [AuthService] currentUser: Firebase User actual es: ${firebaseUser?.email ?? 'null'}'); // DEBUG LOG
+      appLog(
+        '🔄 [AuthService] currentUser: Firebase User actual es: ${firebaseUser?.email ?? 'null'}',
+      ); // DEBUG LOG
       return firebaseUser != null ? _mapFirebaseUser(firebaseUser) : null;
     } catch (e) {
       appLog('❌ [AuthService] Error obteniendo usuario actual: $e');
@@ -91,27 +98,31 @@ class AuthService implements IAuthService {
   Future<AuthResult<User>> signInWithGoogle() async {
     if (!_initialized) {
       return const AuthFailure(
-        UnknownAuthException('Servicio de autenticación no inicializado')
+        UnknownAuthException('Servicio de autenticación no inicializado'),
       );
     }
 
     try {
       if (_googleSignIn == null) {
         return const AuthFailure(
-          UnknownAuthException('Google Sign In no disponible')
+          UnknownAuthException('Google Sign In no disponible'),
         );
       }
 
       appLog('🔄 [AuthService] Iniciando Google Sign-In...');
 
       // ✅ MEJORADO: Limpiar sesión anterior si existe
-      appLog('🔄 [AuthService] Intentando signOut previo de GoogleSignIn...'); // DEBUG LOG
+      appLog(
+        '🔄 [AuthService] Intentando signOut previo de GoogleSignIn...',
+      ); // DEBUG LOG
       await _googleSignIn!.signOut();
-      appLog('✅ [AuthService] signOut previo de GoogleSignIn completado.'); // DEBUG LOG
-      
+      appLog(
+        '✅ [AuthService] signOut previo de GoogleSignIn completado.',
+      ); // DEBUG LOG
+
       // ✅ MEJORADO: Intentar sign in con manejo de errores más específico
       final GoogleSignInAccount? googleUser = await _googleSignIn!.signIn();
-      
+
       if (googleUser == null) {
         appLog('⚠️ [AuthService] Usuario canceló el login');
         return const AuthFailure(LoginCancelledException());
@@ -122,38 +133,48 @@ class AuthService implements IAuthService {
       // ✅ MEJORADO: Obtener autenticación con retry
       GoogleSignInAuthentication googleAuth;
       try {
-        appLog('🔄 [AuthService] Intentando obtener autenticación de Google...'); // DEBUG LOG
+        appLog(
+          '🔄 [AuthService] Intentando obtener autenticación de Google...',
+        ); // DEBUG LOG
         googleAuth = await googleUser.authentication;
-        appLog('✅ [AuthService] Autenticación de Google obtenida.'); // DEBUG LOG
+        appLog(
+          '✅ [AuthService] Autenticación de Google obtenida.',
+        ); // DEBUG LOG
       } catch (e) {
-        appLog('❌ [AuthService] Error obteniendo authentication: $e. Reintentando...'); // DEBUG LOG
+        appLog(
+          '❌ [AuthService] Error obteniendo authentication: $e. Reintentando...',
+        ); // DEBUG LOG
         // Intentar una segunda vez
         await Future.delayed(const Duration(seconds: 1));
         try {
           googleAuth = await googleUser.authentication;
-          appLog('✅ [AuthService] Autenticación de Google obtenida en segundo intento.'); // DEBUG LOG
+          appLog(
+            '✅ [AuthService] Autenticación de Google obtenida en segundo intento.',
+          ); // DEBUG LOG
         } catch (e2) {
           appLog('❌ [AuthService] Error en segundo intento: $e2');
           return const AuthFailure(
-            UnknownAuthException('No se pudo obtener autenticación de Google')
+            UnknownAuthException('No se pudo obtener autenticación de Google'),
           );
         }
       }
 
-      appLog('🔍 [AuthService] Tokens obtenidos - AccessToken: ${googleAuth.accessToken != null ? "SÍ" : "NO"}, IdToken: ${googleAuth.idToken != null ? "SÍ" : "NO"}');
+      appLog(
+        '🔍 [AuthService] Tokens obtenidos - AccessToken: ${googleAuth.accessToken != null ? "SÍ" : "NO"}, IdToken: ${googleAuth.idToken != null ? "SÍ" : "NO"}',
+      );
 
       // ✅ MEJORADO: Verificación más detallada de tokens
       if (googleAuth.accessToken == null || googleAuth.accessToken!.isEmpty) {
         appLog('❌ [AuthService] AccessToken es null o vacío');
         return const AuthFailure(
-          UnknownAuthException('No se pudo obtener Access Token de Google')
+          UnknownAuthException('No se pudo obtener Access Token de Google'),
         );
       }
 
       if (googleAuth.idToken == null || googleAuth.idToken!.isEmpty) {
         appLog('❌ [AuthService] IdToken es null o vacío');
         return const AuthFailure(
-          UnknownAuthException('No se pudo obtener ID Token de Google')
+          UnknownAuthException('No se pudo obtener ID Token de Google'),
         );
       }
 
@@ -165,7 +186,7 @@ class AuthService implements IAuthService {
 
       if (_firebaseAuth == null) {
         return const AuthFailure(
-          UnknownAuthException('Firebase Auth no disponible')
+          UnknownAuthException('Firebase Auth no disponible'),
         );
       }
 
@@ -175,17 +196,16 @@ class AuthService implements IAuthService {
       final firebase.UserCredential result = await _firebaseAuth!
           .signInWithCredential(credential)
           .timeout(const Duration(seconds: 30));
-      
+
       if (result.user != null) {
         final user = _mapFirebaseUser(result.user!);
         appLog('✅ [AuthService] Login exitoso para: ${user.email}');
         return AuthSuccess(user);
       }
-      
+
       return const AuthFailure(
-        UnknownAuthException('No se pudo obtener usuario después del login')
+        UnknownAuthException('No se pudo obtener usuario después del login'),
       );
-      
     } on firebase.FirebaseAuthException catch (e) {
       appLog('❌ [AuthService] Firebase Auth Error: ${e.code} - ${e.message}');
       return AuthFailure(_mapFirebaseAuthException(e));
@@ -225,10 +245,9 @@ class AuthService implements IAuthService {
         );
       }
 
-      final oauthCredential = firebase.OAuthProvider('apple.com').credential(
-        idToken: idToken,
-        rawNonce: rawNonce,
-      );
+      final oauthCredential = firebase.OAuthProvider(
+        'apple.com',
+      ).credential(idToken: idToken, rawNonce: rawNonce);
 
       final result = await _firebaseAuth!
           .signInWithCredential(oauthCredential)
@@ -247,9 +266,10 @@ class AuthService implements IAuthService {
       if ((result.user!.displayName == null ||
               result.user!.displayName!.isEmpty) &&
           (givenName != null || familyName != null)) {
-        final fullName = [givenName, familyName]
-            .where((p) => p != null && p.isNotEmpty)
-            .join(' ');
+        final fullName = [
+          givenName,
+          familyName,
+        ].where((p) => p != null && p.isNotEmpty).join(' ');
         if (fullName.isNotEmpty) {
           await result.user!.updateDisplayName(fullName);
           await result.user!.reload();
@@ -295,23 +315,25 @@ class AuthService implements IAuthService {
   Future<AuthResult<void>> signOut() async {
     if (!_initialized) {
       return const AuthFailure(
-        UnknownAuthException('Servicio de autenticación no inicializado')
+        UnknownAuthException('Servicio de autenticación no inicializado'),
       );
     }
 
     try {
       final futures = <Future>[];
-      
+
       if (_firebaseAuth != null) {
         appLog('### AuthService: Intentando signOut de Firebase.'); // DEBUG LOG
         futures.add(_firebaseAuth!.signOut());
       }
-      
+
       if (_googleSignIn != null) {
-        appLog('### AuthService: Intentando signOut de GoogleSignIn.'); // DEBUG LOG
+        appLog(
+          '### AuthService: Intentando signOut de GoogleSignIn.',
+        ); // DEBUG LOG
         futures.add(_googleSignIn!.signOut());
       }
-      
+
       await Future.wait(futures);
       appLog('✅ [AuthService] Logout exitoso');
       return const AuthSuccess(null);
@@ -338,7 +360,8 @@ class AuthService implements IAuthService {
         if (e.code != 'requires-recent-login') rethrow;
 
         appLog('🔄 [AuthService] Se requiere re-autenticación para eliminar.');
-        final googleUser = await _googleSignIn?.signInSilently() ??
+        final googleUser =
+            await _googleSignIn?.signInSilently() ??
             await _googleSignIn?.signIn();
         if (googleUser == null) {
           return const AuthFailure(LoginCancelledException());
@@ -410,8 +433,9 @@ class AuthService implements IAuthService {
         return true;
       }
       // Modo invitado: DNS lookup para verificar conectividad real
-      final result = await InternetAddress.lookup('google.com')
-          .timeout(const Duration(seconds: 5));
+      final result = await InternetAddress.lookup(
+        'google.com',
+      ).timeout(const Duration(seconds: 5));
       return result.isNotEmpty && result[0].rawAddress.isNotEmpty;
     } catch (e) {
       appLog('❌ [AuthService] Sin conexión: $e');
@@ -423,7 +447,9 @@ class AuthService implements IAuthService {
   Future<void> initGuestSession() async {
     final prefs = await SharedPreferences.getInstance();
     _persistedGuestId = prefs.getString(_guestIdKey);
-    appLog('🔄 [AuthService] Guest ID cargado: ${_persistedGuestId ?? "ninguno, se creará al primer uso"}');
+    appLog(
+      '🔄 [AuthService] Guest ID cargado: ${_persistedGuestId ?? "ninguno, se creará al primer uso"}',
+    );
   }
 
   @override
@@ -440,18 +466,17 @@ class AuthService implements IAuthService {
 
     try {
       appLog('🔍 [Debug] Verificando estado de GoogleSignIn...');
-      
+
       final isSignedIn = await _googleSignIn!.isSignedIn();
       appLog('🔍 [Debug] Ya está signed in: $isSignedIn');
-      
+
       if (isSignedIn) {
         final currentAccount = _googleSignIn!.currentUser;
         appLog('🔍 [Debug] Cuenta actual: ${currentAccount?.email}');
       }
-      
+
       // Verificar si hay cuentas disponibles
       appLog('🔍 [Debug] Intentando obtener cuenta...');
-      
     } catch (e) {
       appLog('❌ [Debug] Error en debug: $e');
     }
@@ -496,11 +521,15 @@ class AuthService implements IAuthService {
       case 'network-request-failed':
         return const NetworkAuthException();
       case 'too-many-requests':
-        return const UnknownAuthException('Demasiados intentos. Espera un momento.');
+        return const UnknownAuthException(
+          'Demasiados intentos. Espera un momento.',
+        );
       case 'user-disabled':
         return const UnknownAuthException('Esta cuenta ha sido deshabilitada');
       default:
-        return UnknownAuthException('Error de Firebase: ${e.message ?? e.code}');
+        return UnknownAuthException(
+          'Error de Firebase: ${e.message ?? e.code}',
+        );
     }
   }
 }

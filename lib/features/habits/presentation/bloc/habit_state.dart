@@ -27,7 +27,12 @@ class HabitLoaded extends HabitState {
   });
 
   @override
-  List<Object> get props => [habits, weekEntries, currentWeekStart, isRefreshing];
+  List<Object> get props => [
+    habits,
+    weekEntries,
+    currentWeekStart,
+    isRefreshing,
+  ];
 
   HabitLoaded copyWith({
     List<Habit>? habits,

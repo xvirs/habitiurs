@@ -4,4 +4,3 @@ abstract class AIAssistantEvent {}
 class LoadAIAssistantData extends AIAssistantEvent {}
 
 class RefreshAIRecommendation extends AIAssistantEvent {}
-

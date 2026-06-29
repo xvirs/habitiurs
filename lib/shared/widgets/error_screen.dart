@@ -6,7 +6,7 @@ class ErrorScreen extends StatelessWidget {
   final AppError error;
   final VoidCallback? onRetry;
   final VoidCallback? onOfflineMode;
-  
+
   const ErrorScreen({
     Key? key,
     required this.error,
@@ -23,11 +23,7 @@ class ErrorScreen extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
-                _getErrorIcon(),
-                size: 64,
-                color: _getErrorColor(),
-              ),
+              Icon(_getErrorIcon(), size: 64, color: _getErrorColor()),
               const SizedBox(height: 24),
               Text(
                 error.title,
@@ -47,7 +43,7 @@ class ErrorScreen extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 24),
-              
+
               _buildErrorDetails(context),
               const SizedBox(height: 32),
               _buildActionButtons(context),
@@ -137,10 +133,10 @@ class ErrorScreen extends StatelessWidget {
               child: const Text('Reintentar'),
             ),
           ),
-        
+
         if (onRetry != null && onOfflineMode != null)
           const SizedBox(height: 16),
-        
+
         if (onOfflineMode != null)
           SizedBox(
             width: double.infinity,

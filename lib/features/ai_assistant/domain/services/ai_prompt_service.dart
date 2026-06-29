@@ -6,9 +6,11 @@ class AIPromptService {
     required int currentStreak,
     required List<String> strugglingHabits,
   }) {
-    final avgCompletionRate = completionRates.values.isNotEmpty
-        ? completionRates.values.reduce((a, b) => a + b) / completionRates.values.length
-        : 0.0;
+    final avgCompletionRate =
+        completionRates.values.isNotEmpty
+            ? completionRates.values.reduce((a, b) => a + b) /
+                completionRates.values.length
+            : 0.0;
 
     return '''
 Eres un coach DIRECTO y HONESTO para Habitiurs (app de seguimiento de hábitos diarios).
