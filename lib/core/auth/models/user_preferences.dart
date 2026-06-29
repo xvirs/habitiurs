@@ -10,10 +10,7 @@ class UserPreferences {
     this.settings = const {},
   });
 
-  UserPreferences copyWith({
-    UserMode? mode,
-    Map<String, dynamic>? settings,
-  }) {
+  UserPreferences copyWith({UserMode? mode, Map<String, dynamic>? settings}) {
     return UserPreferences(
       mode: mode ?? this.mode,
       settings: settings ?? this.settings,

@@ -26,7 +26,8 @@ class SettingsService {
 
   // Getters
   bool get notificationsEnabled {
-    return _prefs?.getBool(_notificationsEnabledKey) ?? _defaultNotificationsEnabled;
+    return _prefs?.getBool(_notificationsEnabledKey) ??
+        _defaultNotificationsEnabled;
   }
 
   int get notificationHour {
@@ -40,19 +41,28 @@ class SettingsService {
   // Setters
   Future<void> setNotificationsEnabled(bool enabled) async {
     await _prefs?.setBool(_notificationsEnabledKey, enabled);
-    appLog('💾 [SettingsService] Notificaciones ${enabled ? 'habilitadas' : 'deshabilitadas'}');
+    appLog(
+      '💾 [SettingsService] Notificaciones ${enabled ? 'habilitadas' : 'deshabilitadas'}',
+    );
   }
 
   Future<void> setNotificationTime(int hour, int minute) async {
     await _prefs?.setInt(_notificationHourKey, hour);
     await _prefs?.setInt(_notificationMinuteKey, minute);
-    appLog('💾 [SettingsService] Hora de notificación: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}');
+    appLog(
+      '💾 [SettingsService] Hora de notificación: ${hour.toString().padLeft(2, '0')}:${minute.toString().padLeft(2, '0')}',
+    );
   }
 
   // Resetear a valores por defecto
   Future<void> resetToDefaults() async {
     await setNotificationsEnabled(_defaultNotificationsEnabled);
-    await setNotificationTime(_defaultNotificationHour, _defaultNotificationMinute);
-    appLog('🔄 [SettingsService] Configuración reseteada a valores por defecto');
+    await setNotificationTime(
+      _defaultNotificationHour,
+      _defaultNotificationMinute,
+    );
+    appLog(
+      '🔄 [SettingsService] Configuración reseteada a valores por defecto',
+    );
   }
 }

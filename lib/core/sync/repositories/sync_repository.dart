@@ -11,17 +11,17 @@ abstract class SyncRepository {
   Stream<SyncStatus> get syncStatus;
   Stream<bool> get isSyncing;
   Stream<DateTime?> get lastSyncTime;
-  
+
   Future<bool> syncAll();
   Future<bool> syncHabitsOnly();
   Future<bool> syncEntriesOnly();
   Future<void> requestSync();
-  
+
   Future<bool> hasInternetConnection();
   Future<DateTime?> getLastRemoteSync(String collectionType);
   Future<bool> hasConflicts(String collectionType, DateTime localLastSync);
-  
-  Future<void> deleteHabitRemotely(String userId, int habitId); 
+
+  Future<void> deleteHabitRemotely(String userId, int habitId);
 
   void pauseAutoSync();
   void resumeAutoSync();
@@ -55,7 +55,9 @@ class SyncRepositoryImpl implements SyncRepository {
     try {
       appLog('🔄 [SyncRepo] Iniciando sincronización completa...');
       final result = await _syncManager.syncAll();
-      appLog('✅ [SyncRepo] Sincronización completa: ${result ? "exitosa" : "fallida"}');
+      appLog(
+        '✅ [SyncRepo] Sincronización completa: ${result ? "exitosa" : "fallida"}',
+      );
       return result;
     } catch (e) {
       appLog('❌ [SyncRepo] Error en syncAll: $e');
@@ -81,7 +83,9 @@ class SyncRepositoryImpl implements SyncRepository {
     try {
       appLog('🔄 [SyncRepo] Iniciando sync solo de entradas...');
       final result = await _syncManager.syncEntriesOnly();
-      appLog('✅ [SyncRepo] Sync de entradas: ${result ? "exitoso" : "fallido"}');
+      appLog(
+        '✅ [SyncRepo] Sync de entradas: ${result ? "exitoso" : "fallido"}',
+      );
       return result;
     } catch (e) {
       appLog('❌ [SyncRepo] Error en syncEntriesOnly: $e');
@@ -115,8 +119,11 @@ class SyncRepositoryImpl implements SyncRepository {
     try {
       final user = _authService.currentUser;
       if (user == null || user.isGuest) return null;
-      
-      return await _firebaseService.getLastSyncTimestamp(user.id, collectionType);
+
+      return await _firebaseService.getLastSyncTimestamp(
+        user.id,
+        collectionType,
+      );
     } catch (e) {
       appLog('❌ [SyncRepo] Error obteniendo último sync remoto: $e');
       return null;
@@ -124,12 +131,19 @@ class SyncRepositoryImpl implements SyncRepository {
   }
 
   @override
-  Future<bool> hasConflicts(String collectionType, DateTime localLastSync) async {
+  Future<bool> hasConflicts(
+    String collectionType,
+    DateTime localLastSync,
+  ) async {
     try {
       final user = _authService.currentUser;
       if (user == null || user.isGuest) return false;
-      
-      return await _firebaseService.hasConflicts(user.id, collectionType, localLastSync);
+
+      return await _firebaseService.hasConflicts(
+        user.id,
+        collectionType,
+        localLastSync,
+      );
     } catch (e) {
       appLog('❌ [SyncRepo] Error verificando conflictos: $e');
       return false;
@@ -140,11 +154,15 @@ class SyncRepositoryImpl implements SyncRepository {
   Future<void> deleteHabitRemotely(String userId, int habitId) async {
     try {
       // Delega la eliminación física en Firestore al FirebaseService
-      await _firebaseService.deleteHabitInFirestore(userId, habitId); 
-      appLog('✅ [SyncRepo] Hábito $habitId eliminado remotamente en Firebase a través de SyncRepo.');
+      await _firebaseService.deleteHabitInFirestore(userId, habitId);
+      appLog(
+        '✅ [SyncRepo] Hábito $habitId eliminado remotamente en Firebase a través de SyncRepo.',
+      );
     } catch (e) {
-      appLog('❌ [SyncRepo] Error eliminando hábito $habitId remotamente en SyncRepo: $e');
-      rethrow; 
+      appLog(
+        '❌ [SyncRepo] Error eliminando hábito $habitId remotamente en SyncRepo: $e',
+      );
+      rethrow;
     }
   }
 

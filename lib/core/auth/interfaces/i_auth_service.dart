@@ -6,10 +6,10 @@ import '../models/auth_result.dart';
 abstract class IAuthService {
   /// Stream del estado de autenticación actual
   Stream<User?> get authStateChanges;
-  
+
   /// Usuario actual (null si no está autenticado)
   User? get currentUser;
-  
+
   /// Iniciar sesión con Google
   Future<AuthResult<User>> signInWithGoogle();
 
@@ -18,16 +18,16 @@ abstract class IAuthService {
 
   /// Cerrar sesión
   Future<AuthResult<void>> signOut();
-  
+
   /// Cargar el guest ID persistido (llamar una vez al inicializar)
   Future<void> initGuestSession();
 
   /// Crear usuario invitado temporal
   User createGuestUser();
-  
+
   /// Verificar si hay conexión para auth
   Future<bool> hasInternetConnection();
-  
+
   /// Cleanup resources
   void dispose();
 }

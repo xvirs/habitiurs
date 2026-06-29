@@ -19,15 +19,16 @@ class DeleteConfirmationDialog extends StatelessWidget {
     required VoidCallback onConfirm,
   }) async {
     await VibrationService.warning(); // Vibración al mostrar el diálogo
-    
+
     if (!context.mounted) return;
-    
+
     showDialog(
       context: context,
-      builder: (_) => DeleteConfirmationDialog(
-        habitName: habitName,
-        onConfirm: onConfirm,
-      ),
+      builder:
+          (_) => DeleteConfirmationDialog(
+            habitName: habitName,
+            onConfirm: onConfirm,
+          ),
     );
   }
 

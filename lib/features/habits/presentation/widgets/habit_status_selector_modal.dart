@@ -25,13 +25,14 @@ class HabitStatusSelectorModal extends StatelessWidget {
 
     return showDialog<HabitStatus>(
       context: context,
-      builder: (context) => HabitStatusSelectorModal(
-        habitName: habitName,
-        currentStatus: currentStatus,
-        onStatusSelected: (status) {
-          Navigator.of(context).pop(status);
-        },
-      ),
+      builder:
+          (context) => HabitStatusSelectorModal(
+            habitName: habitName,
+            currentStatus: currentStatus,
+            onStatusSelected: (status) {
+              Navigator.of(context).pop(status);
+            },
+          ),
     );
   }
 

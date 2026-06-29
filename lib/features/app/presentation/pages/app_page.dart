@@ -18,10 +18,7 @@ import '../../../ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 class AppPage extends StatefulWidget {
   final AppState appState;
 
-  const AppPage({
-    Key? key,
-    required this.appState,
-  }) : super(key: key);
+  const AppPage({Key? key, required this.appState}) : super(key: key);
 
   @override
   State<AppPage> createState() => _AppPageState();
@@ -68,9 +65,7 @@ class _AppPageState extends State<AppPage> {
 
   Widget _buildHome() {
     if (_isRetrying || _onboardingCompleted == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_appState.hasError) {
@@ -89,7 +84,10 @@ class _AppPageState extends State<AppPage> {
     return MultiBlocProvider(
       providers: [
         BlocProvider<AuthBloc>(
-          create: (context) => InjectionContainer().authBloc..add(AuthInitializationRequested()),
+          create:
+              (context) =>
+                  InjectionContainer().authBloc
+                    ..add(AuthInitializationRequested()),
         ),
         BlocProvider<HabitBloc>(
           // Solo inicializa el Bloc; LoadHabits se dispara desde AuthBloc

@@ -36,30 +36,32 @@ class StatSegmentedBar extends StatelessWidget {
       borderRadius: BorderRadius.circular(height / 2),
       child: SizedBox(
         height: height,
-        child: total == 0
-            ? Container(color: StatColors.pending(context))
-            : Row(
-                children: [
-                  if (completed > 0)
-                    Expanded(
-                      flex: completed,
-                      child: Container(color: StatColors.completed(context)),
-                    ),
-                  if (skipped > 0)
-                    Expanded(
-                      flex: skipped,
-                      child: Container(
-                        color: StatColors.skipped(context)
-                            .withValues(alpha: 0.85),
+        child:
+            total == 0
+                ? Container(color: StatColors.pending(context))
+                : Row(
+                  children: [
+                    if (completed > 0)
+                      Expanded(
+                        flex: completed,
+                        child: Container(color: StatColors.completed(context)),
                       ),
-                    ),
-                  if (pending > 0)
-                    Expanded(
-                      flex: pending,
-                      child: Container(color: StatColors.pending(context)),
-                    ),
-                ],
-              ),
+                    if (skipped > 0)
+                      Expanded(
+                        flex: skipped,
+                        child: Container(
+                          color: StatColors.skipped(
+                            context,
+                          ).withValues(alpha: 0.85),
+                        ),
+                      ),
+                    if (pending > 0)
+                      Expanded(
+                        flex: pending,
+                        child: Container(color: StatColors.pending(context)),
+                      ),
+                  ],
+                ),
       ),
     );
   }
@@ -93,13 +95,14 @@ class StatRow extends StatelessWidget {
     final hasData = total > 0;
     final rate = hasData ? completed / total * 100 : 0.0;
 
-    final trailingColor = !hasData
-        ? theme.colorScheme.outline
-        : rate >= 70
+    final trailingColor =
+        !hasData
+            ? theme.colorScheme.outline
+            : rate >= 70
             ? StatColors.completed(context)
             : rate >= 40
-                ? AppColors.warning(context)
-                : StatColors.skipped(context);
+            ? AppColors.warning(context)
+            : StatColors.skipped(context);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -167,7 +170,8 @@ class StatLegend extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    final items = entries ??
+    final items =
+        entries ??
         [
           StatLegendEntry(StatColors.completed(context), 'Completados'),
           StatLegendEntry(StatColors.skipped(context), 'No realizados'),

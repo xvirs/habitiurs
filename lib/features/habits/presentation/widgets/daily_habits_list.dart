@@ -30,10 +30,7 @@ class DailyHabitsList extends StatelessWidget {
       margin: const EdgeInsets.all(16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _HeaderSection(onAdd: onAdd),
-          Expanded(child: _buildBody()),
-        ],
+        children: [_HeaderSection(onAdd: onAdd), Expanded(child: _buildBody())],
       ),
     );
   }
@@ -62,7 +59,10 @@ class _HeaderSection extends StatelessWidget {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text('Hábitos de hoy', style: Theme.of(context).textTheme.titleMedium),
+          Text(
+            'Hábitos de hoy',
+            style: Theme.of(context).textTheme.titleMedium,
+          ),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
@@ -150,14 +150,14 @@ class _SwipeableHabitTileState extends State<_SwipeableHabitTile> {
       key: ValueKey('dismissible_${widget.habit.id}'),
       direction: DismissDirection.startToEnd,
       background: const _SwipeDeleteBackground(),
-      
+
       // Configuración para hacer el swipe menos sensible
       dismissThresholds: const {
         DismissDirection.startToEnd: 0.6, // Requiere 60% del ancho para activar
       },
       movementDuration: const Duration(milliseconds: 300),
       resizeDuration: const Duration(milliseconds: 200),
-      
+
       // Vibración progresiva basada en el progreso del swipe
       onUpdate: (details) {
         // Vibrar cuando se alcanza el 50% del threshold (30% del ancho total)
@@ -168,14 +168,14 @@ class _SwipeableHabitTileState extends State<_SwipeableHabitTile> {
           _hasVibrated = false;
         }
       },
-      
+
       confirmDismiss: (direction) async {
         // Vibración final al confirmar el swipe
         await VibrationService.warning();
         widget.onDelete(widget.habit.id!, widget.habit.name);
         return false; // La page decide si elimina realmente el item
       },
-      
+
       child: HabitTile(
         habit: widget.habit,
         index: widget.index,
@@ -204,10 +204,7 @@ class _SwipeDeleteBackground extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [
-            Colors.red[300]!,
-            Colors.red[500]!,
-          ],
+          colors: [Colors.red[300]!, Colors.red[500]!],
           begin: Alignment.centerLeft,
           end: Alignment.centerRight,
         ),
@@ -223,9 +220,9 @@ class _SwipeDeleteBackground extends StatelessWidget {
               borderRadius: BorderRadius.circular(20),
             ),
             child: const Icon(
-              Icons.delete_outline, 
-              color: Colors.white, 
-              size: 24
+              Icons.delete_outline,
+              color: Colors.white,
+              size: 24,
             ),
           ),
           const SizedBox(width: 12),
@@ -242,7 +239,6 @@ class _SwipeDeleteBackground extends StatelessWidget {
                     fontSize: 16,
                   ),
                 ),
-
               ],
             ),
           ),

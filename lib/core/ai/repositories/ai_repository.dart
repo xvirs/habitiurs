@@ -7,13 +7,13 @@ import 'package:habitiurs/core/utils/app_logger.dart';
 class AIRepository {
   final GeminiService _geminiService;
   final AIFallbackService _fallbackService;
-  
+
   static final AIRepository _instance = AIRepository._internal();
   factory AIRepository() => _instance;
-  
-  AIRepository._internal() 
-      : _geminiService = GeminiService(),
-        _fallbackService = AIFallbackService();
+
+  AIRepository._internal()
+    : _geminiService = GeminiService(),
+      _fallbackService = AIFallbackService();
 
   /// Método principal para cualquier request de IA.
   /// La `request` ya debe contener el prompt construido y la metadata relevante.
@@ -44,7 +44,7 @@ class AIRepository {
   /// Método genérico para la evaluación de hábitos.
   /// El prompt debe ser construido por la feature de hábitos.
   Future<AIResponse> evaluateHabit({
-    required String prompt, 
+    required String prompt,
     required Map<String, dynamic> metadata,
   }) async {
     final request = AIRequest(
@@ -58,7 +58,7 @@ class AIRepository {
   /// Método genérico para análisis de patrones de hábitos.
   /// El prompt y la metadata deben ser construidos por la feature de hábitos.
   Future<AIResponse> analyzeHabitPatterns({
-    required String prompt, 
+    required String prompt,
     required Map<String, dynamic> metadata,
   }) async {
     final request = AIRequest(
@@ -72,7 +72,7 @@ class AIRepository {
   /// Método genérico para sugerir mejoras en hábitos.
   /// El prompt y la metadata deben ser construidos por la feature de hábitos.
   Future<AIResponse> suggestHabitImprovements({
-    required String prompt, 
+    required String prompt,
     required Map<String, dynamic> metadata,
   }) async {
     final request = AIRequest(
@@ -86,7 +86,7 @@ class AIRepository {
   /// Método genérico para análisis de tendencias de estadísticas.
   /// El prompt y la metadata deben ser construidos por la feature de estadísticas.
   Future<AIResponse> analyzeStatisticsTrends({
-    required String prompt, 
+    required String prompt,
     required Map<String, dynamic> metadata,
   }) async {
     final request = AIRequest(
@@ -100,7 +100,7 @@ class AIRepository {
   /// Método genérico para predicción de éxito de hábitos.
   /// El prompt y la metadata deben ser construidos por la feature de estadísticas.
   Future<AIResponse> predictHabitSuccess({
-    required String prompt, 
+    required String prompt,
     required Map<String, dynamic> metadata,
   }) async {
     final request = AIRequest(
@@ -114,7 +114,7 @@ class AIRepository {
   /// Método genérico para análisis de patrones de tendencia.
   /// El prompt y la metadata deben ser construidos por la feature de estadísticas.
   Future<AIResponse> analyzeTrendPatterns({
-    required String prompt, 
+    required String prompt,
     required Map<String, dynamic> metadata,
   }) async {
     final request = AIRequest(
@@ -128,7 +128,7 @@ class AIRepository {
   /// Método genérico para obtener recomendación personalizada de IA.
   /// El prompt y la metadata deben ser construidos por la feature de AI Assistant.
   Future<AIResponse> getPersonalizedRecommendation({
-    required String prompt, 
+    required String prompt,
     required Map<String, dynamic> metadata,
   }) async {
     final request = AIRequest(
@@ -142,7 +142,7 @@ class AIRepository {
   /// Método genérico para obtener un mensaje motivacional.
   /// El prompt y la metadata deben ser construidos por la feature de AI Assistant.
   Future<AIResponse> getMotivationalMessage({
-    required String prompt, 
+    required String prompt,
     required Map<String, dynamic> metadata,
   }) async {
     final request = AIRequest(

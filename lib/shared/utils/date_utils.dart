@@ -6,7 +6,11 @@ class AppDateUtils {
     // Ajustar para que el Lunes sea el primer día (DateTime.monday = 1)
     // Tu implementación actual es correcta si asume Lunes=1.
     final daysFromMonday = date.weekday - 1;
-    return DateTime(date.year, date.month, date.day).subtract(Duration(days: daysFromMonday));
+    return DateTime(
+      date.year,
+      date.month,
+      date.day,
+    ).subtract(Duration(days: daysFromMonday));
   }
 
   static List<DateTime> getWeekDates(DateTime startOfWeek) {
@@ -16,7 +20,7 @@ class AppDateUtils {
   // Nombres de los días de la semana (Lunes a Domingo)
   // Tu lista actual es ['L', 'M', 'M', 'J', 'V', 'S', 'D']
   // Si deseas los nombres completos como en mi sugerencia anterior, cámbialos.
-  static List<String> get weekDayNames => ['L', 'M', 'M', 'J', 'V', 'S', 'D']; 
+  static List<String> get weekDayNames => ['L', 'M', 'M', 'J', 'V', 'S', 'D'];
 
   static bool isSameDay(DateTime date1, DateTime date2) {
     final normalized1 = getStartOfDay(date1);
@@ -46,7 +50,8 @@ class AppDateUtils {
   static DateTime getFirstMondayOfMonth(DateTime date) {
     final firstDay = DateTime(date.year, date.month, 1);
     DateTime monday = firstDay;
-    while (monday.weekday != 1) { // 1 = lunes
+    while (monday.weekday != 1) {
+      // 1 = lunes
       monday = monday.add(const Duration(days: 1));
     }
     return monday;

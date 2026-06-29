@@ -64,7 +64,7 @@ jobs:
           # ⚠️ 'alpha' = prueba cerrada. Subir a 'production' SOLO cuando Google te habilite
           # producción (cuentas personales: 12 testers / 14 días + solicitar acceso). Si no,
           # falla con "Precondition check failed". Verificá el track real con el script del setup.
-          track: ${{ github.event.inputs.track || 'alpha' }}
+          track: ${{ github.event.inputs.track || 'internal' }}
           status: completed
 
       - name: Upload AAB as artifact (backup)

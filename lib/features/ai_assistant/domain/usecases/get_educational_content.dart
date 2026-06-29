@@ -12,7 +12,9 @@ class GetEducationalContent {
     try {
       return await repository.getEducationalContent();
     } catch (e) {
-      throw CacheFailure('Error al obtener contenido educativo: ${e.toString()}');
+      throw CacheFailure(
+        'Error al obtener contenido educativo: ${e.toString()}',
+      );
     }
   }
 }

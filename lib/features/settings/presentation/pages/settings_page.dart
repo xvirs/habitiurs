@@ -24,161 +24,163 @@ class SettingsPage extends StatelessWidget {
       appBar: AppBar(title: const Text('Configuración'), elevation: 0),
       body: CenteredContent(
         child: BlocListener<SettingsBloc, SettingsState>(
-        listenWhen: (previous, current) {
-          // Solo reprogramar cuando la configuración realmente cambia,
-          // no en la carga inicial de la página.
-          if (current is! SettingsLoaded) return false;
-          if (previous is! SettingsLoaded) return false;
-          return previous.settings != current.settings;
-        },
-        listener: (context, state) {
-          if (state is SettingsLoaded) {
-            try {
-              context.read<HabitBloc>().add(RescheduleNotifications());
-            } catch (_) {}
-          }
-        },
-        child: BlocBuilder<SettingsBloc, SettingsState>(
-          builder: (context, state) {
-            if (state is SettingsLoading) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (state is SettingsError) {
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Text(
-                    state.message,
-                    style: const TextStyle(color: Colors.red),
-                    textAlign: TextAlign.center,
-                  ),
-                ),
-              );
-            }
-
+          listenWhen: (previous, current) {
+            // Solo reprogramar cuando la configuración realmente cambia,
+            // no en la carga inicial de la página.
+            if (current is! SettingsLoaded) return false;
+            if (previous is! SettingsLoaded) return false;
+            return previous.settings != current.settings;
+          },
+          listener: (context, state) {
             if (state is SettingsLoaded) {
-              final settings = state.settings;
+              try {
+                context.read<HabitBloc>().add(RescheduleNotifications());
+              } catch (_) {}
+            }
+          },
+          child: BlocBuilder<SettingsBloc, SettingsState>(
+            builder: (context, state) {
+              if (state is SettingsLoading) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-              return ListView(
-                children: [
-                  // Sección de Notificaciones
-                  const _SectionHeader(title: 'Notificaciones'),
-
-                  SwitchListTile(
-                    title: const Text('Recordatorio diario'),
-                    subtitle: const Text(
-                      'Recibir notificación con hábitos pendientes',
+              if (state is SettingsError) {
+                return Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      state.message,
+                      style: const TextStyle(color: Colors.red),
+                      textAlign: TextAlign.center,
                     ),
-                    value: settings.notificationsEnabled,
-                    onChanged: (value) {
-                      context.read<SettingsBloc>().add(
-                        ToggleNotifications(value),
-                      );
-                    },
                   ),
+                );
+              }
 
-                  if (settings.notificationsEnabled)
+              if (state is SettingsLoaded) {
+                final settings = state.settings;
+
+                return ListView(
+                  children: [
+                    // Sección de Notificaciones
+                    const _SectionHeader(title: 'Notificaciones'),
+
+                    SwitchListTile(
+                      title: const Text('Recordatorio diario'),
+                      subtitle: const Text(
+                        'Recibir notificación con hábitos pendientes',
+                      ),
+                      value: settings.notificationsEnabled,
+                      onChanged: (value) {
+                        context.read<SettingsBloc>().add(
+                          ToggleNotifications(value),
+                        );
+                      },
+                    ),
+
+                    if (settings.notificationsEnabled)
+                      ListTile(
+                        leading: const Icon(Icons.access_time),
+                        title: const Text('Hora de recordatorio'),
+                        subtitle: Text(settings.formattedNotificationTime),
+                        trailing: const Icon(Icons.chevron_right),
+                        onTap:
+                            () => _showTimePicker(
+                              context,
+                              settings.notificationHour,
+                              settings.notificationMinute,
+                            ),
+                      ),
+
+                    const Divider(),
+
+                    // Sección de Hábitos
+                    const _SectionHeader(title: 'Hábitos'),
+
                     ListTile(
-                      leading: const Icon(Icons.access_time),
-                      title: const Text('Hora de recordatorio'),
-                      subtitle: Text(settings.formattedNotificationTime),
+                      leading: const Icon(Icons.archive_outlined),
+                      title: const Text('Hábitos archivados'),
+                      subtitle: const Text('Restaurar o eliminar hábitos'),
                       trailing: const Icon(Icons.chevron_right),
+                      onTap: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const ArchivedHabitsPage(),
+                          ),
+                        );
+                      },
+                    ),
+
+                    const Divider(),
+
+                    // Sección Legal
+                    const _SectionHeader(title: 'Legal'),
+
+                    ListTile(
+                      leading: const Icon(Icons.privacy_tip_outlined),
+                      title: const Text('Política de privacidad'),
+                      trailing: const Icon(Icons.open_in_new, size: 18),
                       onTap:
-                          () => _showTimePicker(
+                          () => _openUrl(
                             context,
-                            settings.notificationHour,
-                            settings.notificationMinute,
+                            LegalConstants.privacyPolicyUrl,
                           ),
                     ),
 
-                  const Divider(),
-
-                  // Sección de Hábitos
-                  const _SectionHeader(title: 'Hábitos'),
-
-                  ListTile(
-                    leading: const Icon(Icons.archive_outlined),
-                    title: const Text('Hábitos archivados'),
-                    subtitle: const Text('Restaurar o eliminar hábitos'),
-                    trailing: const Icon(Icons.chevron_right),
-                    onTap: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => const ArchivedHabitsPage(),
-                        ),
-                      );
-                    },
-                  ),
-
-                  const Divider(),
-
-                  // Sección Legal
-                  const _SectionHeader(title: 'Legal'),
-
-                  ListTile(
-                    leading: const Icon(Icons.privacy_tip_outlined),
-                    title: const Text('Política de privacidad'),
-                    trailing: const Icon(Icons.open_in_new, size: 18),
-                    onTap: () => _openUrl(
-                      context,
-                      LegalConstants.privacyPolicyUrl,
+                    ListTile(
+                      leading: const Icon(Icons.description_outlined),
+                      title: const Text('Términos y condiciones'),
+                      trailing: const Icon(Icons.open_in_new, size: 18),
+                      onTap:
+                          () => _openUrl(
+                            context,
+                            LegalConstants.termsOfServiceUrl,
+                          ),
                     ),
-                  ),
 
-                  ListTile(
-                    leading: const Icon(Icons.description_outlined),
-                    title: const Text('Términos y condiciones'),
-                    trailing: const Icon(Icons.open_in_new, size: 18),
-                    onTap: () => _openUrl(
-                      context,
-                      LegalConstants.termsOfServiceUrl,
+                    const Divider(),
+
+                    // Sección de Información
+                    const _SectionHeader(title: 'Información'),
+
+                    const _VersionTile(),
+
+                    const Divider(),
+
+                    // Avanzado
+                    const _SectionHeader(title: 'Avanzado'),
+
+                    ListTile(
+                      leading: const Icon(Icons.restore, color: Colors.orange),
+                      title: const Text('Restablecer configuración'),
+                      subtitle: const Text('Volver a valores por defecto'),
+                      onTap: () => _showResetDialog(context),
                     ),
-                  ),
 
-                  const Divider(),
-
-                  // Sección de Información
-                  const _SectionHeader(title: 'Información'),
-
-                  const _VersionTile(),
-
-                  const Divider(),
-
-                  // Avanzado
-                  const _SectionHeader(title: 'Avanzado'),
-
-                  ListTile(
-                    leading: const Icon(Icons.restore, color: Colors.orange),
-                    title: const Text('Restablecer configuración'),
-                    subtitle: const Text('Volver a valores por defecto'),
-                    onTap: () => _showResetDialog(context),
-                  ),
-
-                  ListTile(
-                    leading: Icon(
-                      Icons.delete_forever_outlined,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    title: Text(
-                      'Eliminar cuenta',
-                      style: TextStyle(
+                    ListTile(
+                      leading: Icon(
+                        Icons.delete_forever_outlined,
                         color: Theme.of(context).colorScheme.error,
                       ),
+                      title: Text(
+                        'Eliminar cuenta',
+                        style: TextStyle(
+                          color: Theme.of(context).colorScheme.error,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Borra tu cuenta y todos tus datos de forma permanente',
+                      ),
+                      onTap: () => _showDeleteAccountDialog(context),
                     ),
-                    subtitle: const Text(
-                      'Borra tu cuenta y todos tus datos de forma permanente',
-                    ),
-                    onTap: () => _showDeleteAccountDialog(context),
-                  ),
 
-                  const SizedBox(height: 24),
-                ],
-              );
-            }
+                    const SizedBox(height: 24),
+                  ],
+                );
+              }
 
-            return const SizedBox.shrink();
-          },
+              return const SizedBox.shrink();
+            },
           ),
         ),
       ),
@@ -250,27 +252,28 @@ class SettingsPage extends StatelessWidget {
 
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('¿Eliminar cuenta?'),
-        content: const Text(
-          'Esta acción es permanente y no se puede deshacer.\n\n'
-          'Se eliminarán tu cuenta, todos tus hábitos, tu historial '
-          'y tus datos sincronizados en la nube.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
-          ),
-          FilledButton(
-            style: FilledButton.styleFrom(
-              backgroundColor: theme.colorScheme.error,
+      builder:
+          (dialogContext) => AlertDialog(
+            title: const Text('¿Eliminar cuenta?'),
+            content: const Text(
+              'Esta acción es permanente y no se puede deshacer.\n\n'
+              'Se eliminarán tu cuenta, todos tus hábitos, tu historial '
+              'y tus datos sincronizados en la nube.',
             ),
-            onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Eliminar para siempre'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(false),
+                child: const Text('Cancelar'),
+              ),
+              FilledButton(
+                style: FilledButton.styleFrom(
+                  backgroundColor: theme.colorScheme.error,
+                ),
+                onPressed: () => Navigator.of(dialogContext).pop(true),
+                child: const Text('Eliminar para siempre'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
 
     if (confirmed != true || !context.mounted) return;

@@ -92,61 +92,61 @@ class _ArchivedHabitsPageState extends State<ArchivedHabitsPage> {
 
           return CenteredContent(
             child: ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: habits.length,
-            separatorBuilder: (_, __) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final habit = habits[index];
-              return Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 8,
-                ),
-                decoration: BoxDecoration(
-                  border: Border.all(color: theme.colorScheme.outlineVariant),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 28,
-                      height: 28,
-                      decoration: BoxDecoration(
-                        color: Color(habit.colorValue),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Icon(
-                        HabitAppearance.iconFor(habit.iconKey),
-                        color: Colors.white,
-                        size: 16,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        habit.name,
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w500,
+              padding: const EdgeInsets.all(16),
+              itemCount: habits.length,
+              separatorBuilder: (_, __) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final habit = habits[index];
+                return Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    border: Border.all(color: theme.colorScheme.outlineVariant),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 28,
+                        height: 28,
+                        decoration: BoxDecoration(
+                          color: Color(habit.colorValue),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Icon(
+                          HabitAppearance.iconFor(habit.iconKey),
+                          color: Colors.white,
+                          size: 16,
                         ),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.unarchive_outlined),
-                      tooltip: 'Restaurar',
-                      onPressed: () => _restore(habit),
-                    ),
-                    IconButton(
-                      icon: Icon(
-                        Icons.delete_outline,
-                        color: theme.colorScheme.error,
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          habit.name,
+                          style: theme.textTheme.bodyMedium?.copyWith(
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
                       ),
-                      tooltip: 'Eliminar',
-                      onPressed: () => _delete(habit),
-                    ),
-                  ],
-                ),
-              );
-            },
+                      IconButton(
+                        icon: const Icon(Icons.unarchive_outlined),
+                        tooltip: 'Restaurar',
+                        onPressed: () => _restore(habit),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.delete_outline,
+                          color: theme.colorScheme.error,
+                        ),
+                        tooltip: 'Eliminar',
+                        onPressed: () => _delete(habit),
+                      ),
+                    ],
+                  ),
+                );
+              },
             ),
           );
         },

@@ -15,18 +15,12 @@ class AppTheme {
   static ThemeData _build(Brightness brightness) {
     final isDark = brightness == Brightness.dark;
 
-    var scheme = ColorScheme.fromSeed(
-      seedColor: _seed,
-      brightness: brightness,
-    );
+    var scheme = ColorScheme.fromSeed(seedColor: _seed, brightness: brightness);
 
     // En oscuro, M3 aclara el primario (queda celeste/fluorescente). Lo
     // forzamos al azul de marca para que se vea igual de sólido que en claro.
     if (isDark) {
-      scheme = scheme.copyWith(
-        primary: _brandBlue,
-        onPrimary: Colors.white,
-      );
+      scheme = scheme.copyWith(primary: _brandBlue, onPrimary: Colors.white);
     }
 
     return ThemeData(

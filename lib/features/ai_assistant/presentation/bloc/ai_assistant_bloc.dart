@@ -16,10 +16,10 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
     required GetEducationalContent getEducationalContent,
     required GetAppGuides getAppGuides,
     required GetAIRecommendation getAIRecommendation,
-  })  : _getEducationalContent = getEducationalContent,
-        _getAppGuides = getAppGuides,
-        _getAIRecommendation = getAIRecommendation,
-        super(AIAssistantInitial()) {
+  }) : _getEducationalContent = getEducationalContent,
+       _getAppGuides = getAppGuides,
+       _getAIRecommendation = getAIRecommendation,
+       super(AIAssistantInitial()) {
     on<LoadAIAssistantData>(_onLoadAIAssistantData);
     on<RefreshAIRecommendation>(_onRefreshAIRecommendation);
   }
@@ -34,34 +34,46 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
     try {
       final educationalContent = await _getEducationalContent();
       final appGuides = await _getAppGuides();
-      appLog('✅ [AIAssistantBloc] Contenido educativo (${educationalContent.length}) y guías (${appGuides.length}) cargados');
+      appLog(
+        '✅ [AIAssistantBloc] Contenido educativo (${educationalContent.length}) y guías (${appGuides.length}) cargados',
+      );
 
-      emit(AIAssistantLoaded(
-        educationalContent: educationalContent,
-        appGuides: appGuides,
-        isRecommendationLoading: true,
-      ));
+      emit(
+        AIAssistantLoaded(
+          educationalContent: educationalContent,
+          appGuides: appGuides,
+          isRecommendationLoading: true,
+        ),
+      );
 
-      appLog('🤖 [AIAssistantBloc] Solicitando recomendación personalizada a IA...');
+      appLog(
+        '🤖 [AIAssistantBloc] Solicitando recomendación personalizada a IA...',
+      );
       try {
         final aiResponse = await _getAIRecommendation();
-        appLog('✅ [AIAssistantBloc] Recomendación obtenida — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}');
+        appLog(
+          '✅ [AIAssistantBloc] Recomendación obtenida — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}',
+        );
 
-        emit(AIAssistantLoaded(
-          educationalContent: educationalContent,
-          appGuides: appGuides,
-          currentRecommendation: aiResponse,
-          isRecommendationLoading: false,
-          hasInternetConnection: aiResponse.isFromAI,
-        ));
+        emit(
+          AIAssistantLoaded(
+            educationalContent: educationalContent,
+            appGuides: appGuides,
+            currentRecommendation: aiResponse,
+            isRecommendationLoading: false,
+            hasInternetConnection: aiResponse.isFromAI,
+          ),
+        );
       } catch (e) {
         appLog('⚠️ [AIAssistantBloc] No se pudo obtener recomendación IA: $e');
-        emit(AIAssistantLoaded(
-          educationalContent: educationalContent,
-          appGuides: appGuides,
-          isRecommendationLoading: false,
-          hasInternetConnection: false,
-        ));
+        emit(
+          AIAssistantLoaded(
+            educationalContent: educationalContent,
+            appGuides: appGuides,
+            isRecommendationLoading: false,
+            hasInternetConnection: false,
+          ),
+        );
       }
     } catch (e) {
       appLog('❌ [AIAssistantBloc] Error al cargar contenido del asistente: $e');
@@ -80,19 +92,25 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
 
       try {
         final aiResponse = await _getAIRecommendation();
-        appLog('✅ [AIAssistantBloc] Recomendación actualizada — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}');
+        appLog(
+          '✅ [AIAssistantBloc] Recomendación actualizada — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}',
+        );
 
-        emit(currentState.copyWith(
-          currentRecommendation: aiResponse,
-          isRecommendationLoading: false,
-          hasInternetConnection: aiResponse.isFromAI,
-        ));
+        emit(
+          currentState.copyWith(
+            currentRecommendation: aiResponse,
+            isRecommendationLoading: false,
+            hasInternetConnection: aiResponse.isFromAI,
+          ),
+        );
       } catch (e) {
         appLog('❌ [AIAssistantBloc] Error al actualizar recomendación: $e');
-        emit(currentState.copyWith(
-          isRecommendationLoading: false,
-          hasInternetConnection: false,
-        ));
+        emit(
+          currentState.copyWith(
+            isRecommendationLoading: false,
+            hasInternetConnection: false,
+          ),
+        );
       }
     }
   }

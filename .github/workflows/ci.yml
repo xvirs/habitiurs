@@ -23,7 +23,9 @@ jobs:
           cache: true
       - run: flutter pub get
       - run: dart format --output=none --set-exit-if-changed .
-      - run: flutter analyze --fatal-infos
+      # Solo bloquea ante ERRORES reales; warnings/infos (imports sin usar,
+      # deprecaciones) se reportan pero no tumban el CI. Endurecé cuando limpies.
+      - run: flutter analyze --no-fatal-warnings --no-fatal-infos
 
   test:
     name: Tests

@@ -70,7 +70,11 @@ class HabitStatusStyles {
     HabitStatus status, {
     double size = 18,
   }) {
-    return Icon(getIcon(status), color: getIconColor(context, status), size: size);
+    return Icon(
+      getIcon(status),
+      color: getIconColor(context, status),
+      size: size,
+    );
   }
 
   /// Decoración de toggle pre-configurada.
@@ -91,14 +95,12 @@ class HabitStatusStyles {
     HabitStatus status,
   ) {
     return BoxDecoration(
-      border: Border.all(
-        color: getTileBorderColor(context, status),
-        width: 1,
-      ),
+      border: Border.all(color: getTileBorderColor(context, status), width: 1),
       borderRadius: BorderRadius.circular(8),
-      color: status == HabitStatus.completed
-          ? AppColors.completed(context).withValues(alpha: 0.06)
-          : null,
+      color:
+          status == HabitStatus.completed
+              ? AppColors.completed(context).withValues(alpha: 0.06)
+              : null,
     );
   }
 
@@ -111,9 +113,8 @@ class HabitStatusStyles {
     final isCompleted = status == HabitStatus.completed;
     return baseStyle.copyWith(
       decoration: isCompleted ? TextDecoration.lineThrough : null,
-      color: isCompleted
-          ? Theme.of(context).colorScheme.onSurfaceVariant
-          : null,
+      color:
+          isCompleted ? Theme.of(context).colorScheme.onSurfaceVariant : null,
       fontWeight: FontWeight.w500,
     );
   }

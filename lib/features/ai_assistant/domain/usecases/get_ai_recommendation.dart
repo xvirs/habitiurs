@@ -12,7 +12,9 @@ class GetAIRecommendation {
     try {
       return await repository.getAIRecommendation();
     } catch (e) {
-      throw CacheFailure('Error al obtener recomendación de IA: ${e.toString()}');
+      throw CacheFailure(
+        'Error al obtener recomendación de IA: ${e.toString()}',
+      );
     }
   }
 }

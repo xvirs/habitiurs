@@ -53,16 +53,17 @@ class AddHabitBottomSheet extends StatefulWidget {
       backgroundColor: Colors.transparent,
       enableDrag: true,
       isDismissible: true,
-      builder: (context) => BlocProvider<HabitEvaluationCubit>(
-        create: (ctx) => InjectionContainer().habitEvaluationCubit,
-        child: _AdaptiveBottomSheet(
-          child: AddHabitBottomSheet(
-            onSubmit: onSubmit,
-            initial: initial,
-            onArchive: onArchive,
+      builder:
+          (context) => BlocProvider<HabitEvaluationCubit>(
+            create: (ctx) => InjectionContainer().habitEvaluationCubit,
+            child: _AdaptiveBottomSheet(
+              child: AddHabitBottomSheet(
+                onSubmit: onSubmit,
+                initial: initial,
+                onArchive: onArchive,
+              ),
+            ),
           ),
-        ),
-      ),
     );
   }
 }
@@ -109,10 +110,11 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
     return TimeOfDay(hour: hour, minute: minute);
   }
 
-  String? get _reminderAsString => _reminderTime == null
-      ? null
-      : '${_reminderTime!.hour.toString().padLeft(2, '0')}:'
-          '${_reminderTime!.minute.toString().padLeft(2, '0')}';
+  String? get _reminderAsString =>
+      _reminderTime == null
+          ? null
+          : '${_reminderTime!.hour.toString().padLeft(2, '0')}:'
+              '${_reminderTime!.minute.toString().padLeft(2, '0')}';
 
   @override
   void dispose() {
@@ -124,7 +126,7 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
 
   void _onTextChangedListener() {
     final currentCubitState = context.read<HabitEvaluationCubit>().state;
-    
+
     // Si la evaluación está mostrándose (Success, Loading o Error) y el texto cambia,
     // o si el texto es muy corto, ocultarla para permitir re-evaluar o limpiar.
     if (currentCubitState is HabitEvaluationSuccess ||
@@ -158,13 +160,15 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
     if (_formKey.currentState?.validate() ?? false) {
       _focusNode.unfocus();
       final days = _selectedWeekdays.toList()..sort();
-      widget.onSubmit(HabitFormResult(
-        name: _controller.text.trim(),
-        colorValue: _selectedColor,
-        iconKey: _selectedIcon,
-        weekdays: days.isEmpty ? Habit.allWeekdays : days,
-        reminderTime: _reminderAsString,
-      ));
+      widget.onSubmit(
+        HabitFormResult(
+          name: _controller.text.trim(),
+          colorValue: _selectedColor,
+          iconKey: _selectedIcon,
+          weekdays: days.isEmpty ? Habit.allWeekdays : days,
+          reminderTime: _reminderAsString,
+        ),
+      );
       Navigator.of(context).pop();
     }
   }
@@ -198,7 +202,8 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
         behavior: HitTestBehavior.translucent,
         child: BlocBuilder<HabitEvaluationCubit, HabitEvaluationState>(
           builder: (context, state) {
-            bool showEvaluationSection = state is HabitEvaluationSuccess ||
+            bool showEvaluationSection =
+                state is HabitEvaluationSuccess ||
                 state is HabitEvaluationLoading ||
                 state is HabitEvaluationError;
             bool isEvaluating = state is HabitEvaluationLoading;
@@ -207,7 +212,8 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
               evaluationText = state.evaluationText;
             }
             if (state is HabitEvaluationError) evaluationText = state.message;
-            if (state is HabitEvaluationLoading) evaluationText = 'Analizando...';
+            if (state is HabitEvaluationLoading)
+              evaluationText = 'Analizando...';
 
             return _BottomSheetContent(
               hasKeyboard: hasKeyboard,
@@ -226,21 +232,22 @@ class _AddHabitBottomSheetState extends State<AddHabitBottomSheet> {
               isEditing: _isEditing,
               onArchive: widget.onArchive,
               customization: _CustomizationSection(
-              selectedColor: _selectedColor,
-              selectedIcon: _selectedIcon,
-              selectedWeekdays: _selectedWeekdays,
-              reminderTime: _reminderTime,
-              onColorChanged: (c) => setState(() => _selectedColor = c),
-              onIconChanged: (i) => setState(() => _selectedIcon = i),
-              onWeekdayToggled: (d) => setState(() {
-                if (_selectedWeekdays.contains(d)) {
-                  _selectedWeekdays.remove(d);
-                } else {
-                  _selectedWeekdays.add(d);
-                }
-              }),
-              onPickReminder: _pickReminderTime,
-              onClearReminder: () => setState(() => _reminderTime = null),
+                selectedColor: _selectedColor,
+                selectedIcon: _selectedIcon,
+                selectedWeekdays: _selectedWeekdays,
+                reminderTime: _reminderTime,
+                onColorChanged: (c) => setState(() => _selectedColor = c),
+                onIconChanged: (i) => setState(() => _selectedIcon = i),
+                onWeekdayToggled:
+                    (d) => setState(() {
+                      if (_selectedWeekdays.contains(d)) {
+                        _selectedWeekdays.remove(d);
+                      } else {
+                        _selectedWeekdays.add(d);
+                      }
+                    }),
+                onPickReminder: _pickReminderTime,
+                onClearReminder: () => setState(() => _reminderTime = null),
               ),
             );
           },
@@ -264,10 +271,7 @@ class _BottomSheetContainer extends StatelessWidget {
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
-        children: [
-          _buildHandle(context),
-          Expanded(child: child),
-        ],
+        children: [_buildHandle(context), Expanded(child: child)],
       ),
     );
   }
@@ -500,9 +504,8 @@ class _WeekdaySelector extends StatelessWidget {
               color: isSelected ? accentColor : Colors.transparent,
               shape: BoxShape.circle,
               border: Border.all(
-                color: isSelected
-                    ? accentColor
-                    : theme.colorScheme.outlineVariant,
+                color:
+                    isSelected ? accentColor : theme.colorScheme.outlineVariant,
               ),
             ),
             child: Center(
@@ -511,9 +514,10 @@ class _WeekdaySelector extends StatelessWidget {
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 14,
-                  color: isSelected
-                      ? Colors.white
-                      : theme.colorScheme.onSurfaceVariant,
+                  color:
+                      isSelected
+                          ? Colors.white
+                          : theme.colorScheme.onSurfaceVariant,
                 ),
               ),
             ),
@@ -550,9 +554,10 @@ class _ColorPicker extends StatelessWidget {
                 color: Color(colorValue),
                 shape: BoxShape.circle,
               ),
-              child: isSelected
-                  ? const Icon(Icons.check, color: Colors.white, size: 18)
-                  : null,
+              child:
+                  isSelected
+                      ? const Icon(Icons.check, color: Colors.white, size: 18)
+                      : null,
             ),
           );
         },
@@ -592,22 +597,25 @@ class _IconPicker extends StatelessWidget {
               width: 38,
               height: 38,
               decoration: BoxDecoration(
-                color: isSelected
-                    ? accentColor.withValues(alpha: 0.15)
-                    : Colors.transparent,
+                color:
+                    isSelected
+                        ? accentColor.withValues(alpha: 0.15)
+                        : Colors.transparent,
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: isSelected
-                      ? accentColor
-                      : theme.colorScheme.outlineVariant,
+                  color:
+                      isSelected
+                          ? accentColor
+                          : theme.colorScheme.outlineVariant,
                 ),
               ),
               child: Icon(
                 HabitAppearance.icons[key],
                 size: 20,
-                color: isSelected
-                    ? accentColor
-                    : theme.colorScheme.onSurfaceVariant,
+                color:
+                    isSelected
+                        ? accentColor
+                        : theme.colorScheme.onSurfaceVariant,
               ),
             ),
           );
@@ -766,15 +774,19 @@ class _InfoSection extends StatelessWidget {
     // dejaba la tarjeta en opacidad 0).
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 200),
-      child: showEvaluation
-          ? _EvaluationCard(
-              key: const ValueKey('eval'),
-              hasKeyboard: hasKeyboard,
-              isEvaluating: isEvaluating,
-              evaluationText: evaluationText,
-              onClose: onClose,
-            )
-          : _TipsCard(key: const ValueKey('tips'), hasKeyboard: hasKeyboard),
+      child:
+          showEvaluation
+              ? _EvaluationCard(
+                key: const ValueKey('eval'),
+                hasKeyboard: hasKeyboard,
+                isEvaluating: isEvaluating,
+                evaluationText: evaluationText,
+                onClose: onClose,
+              )
+              : _TipsCard(
+                key: const ValueKey('tips'),
+                hasKeyboard: hasKeyboard,
+              ),
     );
   }
 }
@@ -836,10 +848,7 @@ class _TipsCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            tip.emoji,
-            style: TextStyle(fontSize: hasKeyboard ? 12 : 11),
-          ),
+          Text(tip.emoji, style: TextStyle(fontSize: hasKeyboard ? 12 : 11)),
           SizedBox(width: hasKeyboard ? 8 : 6),
           Expanded(
             child: Text(
@@ -909,11 +918,7 @@ class _EvaluationCard extends StatelessWidget {
             ),
           )
         else
-          Icon(
-            Icons.auto_awesome,
-            color: green,
-            size: hasKeyboard ? 18 : 16,
-          ),
+          Icon(Icons.auto_awesome, color: green, size: hasKeyboard ? 18 : 16),
         const SizedBox(width: 8),
         Text(
           isEvaluating ? 'Analizando...' : 'Evaluación IA',
@@ -927,36 +932,36 @@ class _EvaluationCard extends StatelessWidget {
         if (!isEvaluating)
           GestureDetector(
             onTap: onClose,
-            child: Icon(
-              Icons.close,
-              size: hasKeyboard ? 16 : 14,
-              color: green,
-            ),
+            child: Icon(Icons.close, size: hasKeyboard ? 16 : 14, color: green),
           ),
       ],
     );
   }
 
   Widget _buildEvaluationContent(
-      BuildContext context, String text, bool hasKeyboard) {
+    BuildContext context,
+    String text,
+    bool hasKeyboard,
+  ) {
     final lines = text.split('\n');
     final color = Theme.of(context).colorScheme.onSurface;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
-      children: lines.map((line) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 2.0),
-          child: Text(
-            line.trim(),
-            style: TextStyle(
-              fontSize: hasKeyboard ? 12 : 11,
-              color: color,
-              height: 1.2,
-            ),
-          ),
-        );
-      }).toList(),
+      children:
+          lines.map((line) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 2.0),
+              child: Text(
+                line.trim(),
+                style: TextStyle(
+                  fontSize: hasKeyboard ? 12 : 11,
+                  color: color,
+                  height: 1.2,
+                ),
+              ),
+            );
+          }).toList(),
     );
   }
 }
@@ -996,18 +1001,17 @@ class _HabitTextField extends StatelessWidget {
             hintStyle: TextStyle(
               color: theme.colorScheme.onSurfaceVariant.withValues(alpha: 0.7),
             ),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-            suffixIcon: controller.text.isNotEmpty
-                ? IconButton(
-                    icon: const Icon(Icons.clear, size: 18),
-                    onPressed: () {
-                      controller.clear();
-                      onClear();
-                    },
-                  )
-                : null,
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+            suffixIcon:
+                controller.text.isNotEmpty
+                    ? IconButton(
+                      icon: const Icon(Icons.clear, size: 18),
+                      onPressed: () {
+                        controller.clear();
+                        onClear();
+                      },
+                    )
+                    : null,
             contentPadding: EdgeInsets.symmetric(
               horizontal: 16,
               vertical: hasKeyboard ? 14 : 12,
@@ -1018,7 +1022,13 @@ class _HabitTextField extends StatelessWidget {
           onFieldSubmitted: (_) => onSubmitted(),
           onChanged: onChanged,
           maxLength: 60,
-          buildCounter: (context, {required currentLength, required isFocused, maxLength}) => null,
+          buildCounter:
+              (
+                context, {
+                required currentLength,
+                required isFocused,
+                maxLength,
+              }) => null,
         );
       },
     );
@@ -1064,9 +1074,10 @@ class _EvaluateButton extends StatelessWidget {
             borderRadius: BorderRadius.circular(10),
           ),
           side: BorderSide(
-            color: canEvaluate
-                ? green.withValues(alpha: 0.3)
-                : theme.colorScheme.outlineVariant,
+            color:
+                canEvaluate
+                    ? green.withValues(alpha: 0.3)
+                    : theme.colorScheme.outlineVariant,
           ),
         ),
       ),
@@ -1103,10 +1114,7 @@ class _ActionButtons extends StatelessWidget {
                   borderRadius: BorderRadius.circular(12),
                 ),
               ),
-              child: const Text(
-                'Cancelar',
-                style: TextStyle(fontSize: 15),
-              ),
+              child: const Text('Cancelar', style: TextStyle(fontSize: 15)),
             ),
           ),
         ),
@@ -1149,14 +1157,10 @@ class _AdaptiveBottomSheet extends StatelessWidget {
     final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
     final screenHeight = MediaQuery.of(context).size.height;
 
-    final height = keyboardHeight > 0
-        ? screenHeight * 0.92
-        : screenHeight * 0.78;
+    final height =
+        keyboardHeight > 0 ? screenHeight * 0.92 : screenHeight * 0.78;
 
-    return SizedBox(
-      height: height,
-      child: child,
-    );
+    return SizedBox(height: height, child: child);
   }
 }
 
@@ -1169,8 +1173,15 @@ class _TipModel {
 
 class _TipsData {
   static const List<_TipModel> tips = [
-    _TipModel(emoji: '📅', text: 'Define una acción clara que puedas marcar como "hecha" hoy. No más de una frase.'),
-    _TipModel(emoji: '🎯', text: 'Lo importante es la constancia diaria. No te exijas perfección.'),
+    _TipModel(
+      emoji: '📅',
+      text:
+          'Define una acción clara que puedas marcar como "hecha" hoy. No más de una frase.',
+    ),
+    _TipModel(
+      emoji: '🎯',
+      text: 'Lo importante es la constancia diaria. No te exijas perfección.',
+    ),
   ];
 }
 

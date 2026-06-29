@@ -82,8 +82,7 @@ class CurrentMonthSummary extends StatelessWidget {
   }
 
   Widget _buildWeekItem(BuildContext context, WeeklyStatistics week) {
-    final total =
-        week.completedCount + week.skippedCount + week.pendingCount;
+    final total = week.completedCount + week.skippedCount + week.pendingCount;
     return StatRow(
       label: 'Semana ${week.weekNumber}',
       completed: week.completedCount,

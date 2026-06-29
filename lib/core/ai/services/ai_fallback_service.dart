@@ -2,10 +2,9 @@
 import 'package:habitiurs/core/ai/models/ai_response_model.dart';
 
 import '../models/ai_request_model.dart';
- 
+
 /// Servicioque proporciona respuestas offline inteligentes
 class AIFallbackService {
-  
   Future<AIResponse> generateFallbackResponse(AIRequest request) async {
     // Simular delay para UX realista
     await Future.delayed(const Duration(milliseconds: 500));
@@ -27,7 +26,10 @@ class AIFallbackService {
     );
   }
 
-  String _getFallbackContent(AIRequestType type, Map<String, dynamic> metadata) {
+  String _getFallbackContent(
+    AIRequestType type,
+    Map<String, dynamic> metadata,
+  ) {
     switch (type) {
       case AIRequestType.habitEvaluation:
         return _getHabitEvaluationFallback(metadata);
@@ -60,7 +62,10 @@ class AIFallbackService {
     }
 
     // Detectar texto sin sentido (solo consonantes repetidas, teclado random, etc.)
-    final hasVowels = RegExp(r'[aeiouáéíóú]', caseSensitive: false).hasMatch(habit);
+    final hasVowels = RegExp(
+      r'[aeiouáéíóú]',
+      caseSensitive: false,
+    ).hasMatch(habit);
     final tooManyRepeatedChars = RegExp(r'(.)\1{3,}').hasMatch(habit);
 
     if (!hasVowels || tooManyRepeatedChars) {
@@ -69,30 +74,74 @@ class AIFallbackService {
 
     // Detectar metas grandiosas (no son acciones diarias repetibles)
     final grandGoals = [
-      'conquistar', 'mundo', 'dominar', 'universo', 'ganar', 'lotería',
-      'rico', 'millonario', 'famoso', 'estrella', 'triunfar', 'éxito'
+      'conquistar',
+      'mundo',
+      'dominar',
+      'universo',
+      'ganar',
+      'lotería',
+      'rico',
+      'millonario',
+      'famoso',
+      'estrella',
+      'triunfar',
+      'éxito',
     ];
     if (grandGoals.any((word) => habit.contains(word))) {
       return '❌ No válido. Es una meta grandiosa, no una acción diaria repetible.';
     }
 
     // Detectar estados emocionales o abstractos (no son acciones medibles)
-    final emotionalStates = ['ser', 'estar', 'sentir', 'feliz', 'mejor', 'bueno', 'malo', 'bien', 'mal', 'motivado', 'positivo'];
+    final emotionalStates = [
+      'ser',
+      'estar',
+      'sentir',
+      'feliz',
+      'mejor',
+      'bueno',
+      'malo',
+      'bien',
+      'mal',
+      'motivado',
+      'positivo',
+    ];
     final words = habit.split(' ');
-    if (emotionalStates.any((state) => words.contains(state)) && words.length <= 3) {
+    if (emotionalStates.any((state) => words.contains(state)) &&
+        words.length <= 3) {
       return '❌ No válido. Es un estado emocional, no una acción medible.';
     }
 
     // Detectar cantidades no sostenibles de sueño
-    if (habit.contains('dormir') && (habit.contains('3') || habit.contains('4') || habit.contains('tres') || habit.contains('cuatro'))) {
+    if (habit.contains('dormir') &&
+        (habit.contains('3') ||
+            habit.contains('4') ||
+            habit.contains('tres') ||
+            habit.contains('cuatro'))) {
       return '❌ No válido. No es saludable ni sostenible a largo plazo.';
     }
 
     // Detectar acciones específicas y concretas (verbos de acción + objeto)
     final actionVerbs = [
-      'leer', 'escribir', 'correr', 'caminar', 'meditar', 'estudiar', 'practicar',
-      'beber', 'tomar', 'comer', 'hacer', 'realizar', 'completar', 'revisar',
-      'aprender', 'repasar', 'ejercitar', 'entrenar', 'llamar', 'contactar'
+      'leer',
+      'escribir',
+      'correr',
+      'caminar',
+      'meditar',
+      'estudiar',
+      'practicar',
+      'beber',
+      'tomar',
+      'comer',
+      'hacer',
+      'realizar',
+      'completar',
+      'revisar',
+      'aprender',
+      'repasar',
+      'ejercitar',
+      'entrenar',
+      'llamar',
+      'contactar',
     ];
 
     final hasActionVerb = actionVerbs.any((verb) => habit.contains(verb));
@@ -112,9 +161,10 @@ class AIFallbackService {
   }
 
   String _getHabitAnalysisFallback(Map<String, dynamic> metadata) {
-    final completionRates = metadata['completion_rates'] as Map<String, dynamic>?;
+    final completionRates =
+        metadata['completion_rates'] as Map<String, dynamic>?;
     final strugglingHabits = metadata['struggling_habits'] as List<dynamic>?;
-    
+
     if (strugglingHabits?.isNotEmpty == true) {
       return 'Basándome en tus patrones, los hábitos "${strugglingHabits!.join(', ')}" necesitan atención extra. Te sugiero reducir su complejidad y establecer recordatorios específicos. Enfócate en consistencia antes que en perfección.';
     } else {
@@ -134,7 +184,7 @@ class AIFallbackService {
   // STATISTICS FALLBACKS
   String _getStatsAnalysisFallback(Map<String, dynamic> metadata) {
     final monthlyRate = metadata['monthly_completion_rate'] as double?;
-    
+
     if (monthlyRate != null) {
       if (monthlyRate >= 70) {
         return 'Tu progreso muestra una excelente tendencia con ${monthlyRate.toInt()}% de constancia. Las semanas de mayor éxito coinciden con rutinas estructuradas. Mantén este momentum y considera agregar gradualmente nuevos desafíos.';
@@ -144,32 +194,32 @@ class AIFallbackService {
         return 'Con ${monthlyRate.toInt()}% de constancia, hay oportunidad de crecimiento. Enfócate en simplificar tus hábitos y establecer rutinas más pequeñas pero consistentes. El progreso incremental es clave.';
       }
     }
-    
+
     return 'Tu progreso muestra una tendencia positiva. Las semanas con mayor éxito coinciden con rutinas más estructuradas. Enfócate en replicar esas condiciones exitosas y mantén expectativas realistas.';
   }
 
   String _getPredictionFallback(Map<String, dynamic> metadata) {
     final currentTrend = metadata['current_trend'] as double?;
     final dataPoints = metadata['data_points_count'] as int?;
-    
+
     if (currentTrend != null && currentTrend > 0) {
       return 'Con tu tendencia actual positiva (+${currentTrend.toStringAsFixed(1)}%), tienes buenas probabilidades de mantener el progreso. Continúa con tu rutina actual y ajusta gradualmente si es necesario.';
     } else if (currentTrend != null && currentTrend < 0) {
       return 'Tu tendencia muestra una leve disminución (${currentTrend.toStringAsFixed(1)}%). Es normal tener fluctuaciones. Revisa qué cambió en tu rutina y considera simplificar temporalmente tus hábitos.';
     }
-    
+
     return 'Con tu tendencia actual, tienes buenas probabilidades de mantener el progreso. Los hábitos más nuevos necesitan atención extra. Considera ajustar metas si la constancia baja del 60%.';
   }
 
   String _getTrendAnalysisFallback(Map<String, dynamic> metadata) {
     final trendDirection = metadata['trend_direction'] as String?;
-    
+
     if (trendDirection == 'improving') {
       return 'Tu patrón muestra una mejora consistente a lo largo del tiempo. Los factores clave incluyen rutinas matutinas y preparación previa. Mantén estos elementos y escala gradualmente.';
     } else if (trendDirection == 'declining') {
       return 'Tu patrón muestra algunos desafíos recientes. Los fines de semana y cambios de rutina son puntos débiles comunes. Prepara estrategias específicas para estos momentos vulnerables.';
     }
-    
+
     return 'Tu patrón de constancia muestra mejora gradual. Los fines de semana son tu punto más débil. Te sugiero preparar estrategias específicas para mantener momentum durante esos días.';
   }
 
@@ -179,10 +229,12 @@ class AIFallbackService {
     final currentStreak = metadata['current_streak'] as int? ?? 0;
     final habitNames = metadata['habit_names'] as List?;
     final strugglingHabits = metadata['struggling_habits'] as List?;
-    final avgCompletionRate = metadata['average_completion_rate'] as double? ?? 0.0;
+    final avgCompletionRate =
+        metadata['average_completion_rate'] as double? ?? 0.0;
 
     final hasHabits = habitNames != null && habitNames.isNotEmpty;
-    final hasStrugglingHabits = strugglingHabits != null && strugglingHabits.isNotEmpty;
+    final hasStrugglingHabits =
+        strugglingHabits != null && strugglingHabits.isNotEmpty;
     final habitCount = habitNames?.length ?? 0;
 
     // Caso: Sin hábitos aún
@@ -192,29 +244,33 @@ class AIFallbackService {
 
     // Caso: Excelente rendimiento (≥80%)
     if (performanceLevel == 'excellent' || avgCompletionRate >= 0.8) {
-      final alert = hasStrugglingHabits
-          ? '\n\n**⚠️ Alerta:** "${strugglingHabits.first}" está fallando. Revisa si es demasiado ambicioso o necesita simplificarse.'
-          : '';
+      final alert =
+          hasStrugglingHabits
+              ? '\n\n**⚠️ Alerta:** "${strugglingHabits.first}" está fallando. Revisa si es demasiado ambicioso o necesita simplificarse.'
+              : '';
       return '**🔥 Estado:** Excelente constancia (${(avgCompletionRate * 100).toStringAsFixed(0)}%). ${currentStreak > 0 ? "Racha de $currentStreak días." : ""}\n\n**💡 Acción clave:** Mantén el momentum. Considera agregar UN nuevo hábito pequeño si te sientes cómodo.$alert';
     }
 
     // Caso: Buen rendimiento (60-79%)
     if (performanceLevel == 'good' || avgCompletionRate >= 0.6) {
-      final alert = hasStrugglingHabits
-          ? '\n\n**⚠️ Alerta:** "${strugglingHabits.first}" necesita atención. Reduce su complejidad o vinculalo con una rutina existente.'
-          : '';
+      final alert =
+          hasStrugglingHabits
+              ? '\n\n**⚠️ Alerta:** "${strugglingHabits.first}" necesita atención. Reduce su complejidad o vinculalo con una rutina existente.'
+              : '';
       return '**💪 Estado:** Buen ritmo (${(avgCompletionRate * 100).toStringAsFixed(0)}%). ${currentStreak > 0 ? "Racha: $currentStreak días." : "Sin racha activa."}\n\n**💡 Acción clave:** Identifica QUÉ días fallas más y prepara un plan B para esos días específicos.$alert';
     }
 
     // Caso: Rendimiento regular (40-59%)
     if (performanceLevel == 'improving' || avgCompletionRate >= 0.4) {
-      final mainHabit = hasStrugglingHabits ? strugglingHabits.first : habitNames.first;
+      final mainHabit =
+          hasStrugglingHabits ? strugglingHabits.first : habitNames.first;
       return '**📈 Estado:** En desarrollo (${(avgCompletionRate * 100).toStringAsFixed(0)}%). ${currentStreak > 0 ? "Racha: $currentStreak días." : "Necesitas construir racha."}\n\n**💡 Acción clave:** Enfócate SOLO en "$mainHabit" esta semana. Ignora el resto temporalmente.\n\n**⚠️ Alerta:** Con $habitCount hábitos activos, estás dispersando tu energía. La calidad supera la cantidad.';
     }
 
     // Caso: Necesita atención urgente (<40%)
     if (avgCompletionRate < 0.4) {
-      final mainHabit = hasStrugglingHabits ? strugglingHabits.first : habitNames.first;
+      final mainHabit =
+          hasStrugglingHabits ? strugglingHabits.first : habitNames.first;
       return '**⚡ Estado:** Necesitas reenfoque urgente (${(avgCompletionRate * 100).toStringAsFixed(0)}%). ${currentStreak > 0 ? "Racha: $currentStreak días." : "Sin racha."}\n\n**💡 Acción clave:** PAUSA todos los hábitos excepto 1. Enfócate solo en "$mainHabit" durante 7 días.\n\n**⚠️ Alerta:** Con $habitCount hábitos y baja constancia, estás sobrecargado. Simplifica radicalmente o perderás momentum.';
     }
 
@@ -224,7 +280,7 @@ class AIFallbackService {
 
   String _getMotivationalMessageFallback(Map<String, dynamic> metadata) {
     final encouragementType = metadata['encouragement_type'] as String?;
-    
+
     switch (encouragementType) {
       case 'celebration':
         return '¡Increíble progreso! Tu dedicación está dando frutos. Cada día que apareces estás construyendo una versión más fuerte de ti mismo. ¡Sigue brillando!';

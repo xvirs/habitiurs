@@ -101,7 +101,10 @@ class _EmptyContent extends StatelessWidget {
       ),
       child: Text(
         'No se pudo obtener una recomendación en este momento. Intenta refrescar.',
-        style: TextStyle(fontSize: 13, color: theme.colorScheme.onSurfaceVariant),
+        style: TextStyle(
+          fontSize: 13,
+          color: theme.colorScheme.onSurfaceVariant,
+        ),
         textAlign: TextAlign.center,
       ),
     );
@@ -166,9 +169,7 @@ class _MarkdownText extends StatelessWidget {
       spans.add(TextSpan(text: text.substring(last)));
     }
 
-    return RichText(
-      text: TextSpan(style: baseStyle, children: spans),
-    );
+    return RichText(text: TextSpan(style: baseStyle, children: spans));
   }
 }
 
@@ -182,11 +183,7 @@ class _RecommendationHeader extends StatelessWidget {
     final theme = Theme.of(context);
     return Row(
       children: [
-        Icon(
-          Icons.auto_awesome,
-          size: 16,
-          color: theme.colorScheme.primary,
-        ),
+        Icon(Icons.auto_awesome, size: 16, color: theme.colorScheme.primary),
         const SizedBox(width: 6),
         Text(
           'Recomendación de IA',

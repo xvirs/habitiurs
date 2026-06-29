@@ -65,7 +65,9 @@ class HistoricalChart extends StatelessWidget {
               completedColor: StatColors.completed(context),
               skippedColor: StatColors.skipped(context).withValues(alpha: 0.85),
               lineColor: theme.colorScheme.primary,
-              gridColor: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+              gridColor: theme.colorScheme.outlineVariant.withValues(
+                alpha: 0.4,
+              ),
               labelColor: theme.colorScheme.outline,
             ),
           ),
@@ -75,11 +77,7 @@ class HistoricalChart extends StatelessWidget {
           entries: [
             StatLegendEntry(StatColors.completed(context), 'Completados'),
             StatLegendEntry(StatColors.skipped(context), 'No realizados'),
-            StatLegendEntry(
-              theme.colorScheme.primary,
-              '% Logro',
-              isLine: true,
-            ),
+            StatLegendEntry(theme.colorScheme.primary, '% Logro', isLine: true),
           ],
         ),
       ],
@@ -117,7 +115,6 @@ class HistoricalChart extends StatelessWidget {
       ],
     );
   }
-
 }
 
 class _HistoricalChartPainter extends CustomPainter {

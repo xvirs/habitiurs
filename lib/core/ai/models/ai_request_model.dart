@@ -27,15 +27,14 @@ enum AIRequestType {
   habitEvaluation,
   habitAnalysis,
   habitSuggestion,
-  
-  // STATISTICS  
+
+  // STATISTICS
   statisticsAnalysis,
   successPrediction,
   trendAnalysis,
-  
+
   // AI ASSISTANT
   personalRecommendation,
   generalAdvice,
   motivationalMessage,
 }
-

@@ -38,8 +38,8 @@ class AppSettings extends Equatable {
 
   @override
   List<Object?> get props => [
-        notificationsEnabled,
-        notificationHour,
-        notificationMinute,
-      ];
+    notificationsEnabled,
+    notificationHour,
+    notificationMinute,
+  ];
 }

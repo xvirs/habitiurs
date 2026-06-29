@@ -341,7 +341,9 @@ class _StatusCell extends StatelessWidget {
       return Container(
         margin: const EdgeInsets.symmetric(horizontal: 1),
         decoration: BoxDecoration(
-          color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
+          color: theme.colorScheme.surfaceContainerHighest.withValues(
+            alpha: 0.4,
+          ),
           borderRadius: BorderRadius.circular(4),
         ),
         child: Center(
@@ -378,7 +380,10 @@ class _StatusCell extends StatelessWidget {
     );
   }
 
-  Future<void> _handleLongPress(BuildContext context, HabitStatus currentStatus) async {
+  Future<void> _handleLongPress(
+    BuildContext context,
+    HabitStatus currentStatus,
+  ) async {
     if (!context.mounted) return;
 
     // Mostrar modal de selección (la vibración se hace dentro del modal)

@@ -7,7 +7,6 @@ import '../bloc/auth_bloc.dart';
 import '../bloc/auth_event.dart';
 import '../bloc/auth_state.dart';
 
-
 class LoginPage extends StatelessWidget {
   const LoginPage({Key? key}) : super(key: key);
 
@@ -114,49 +113,53 @@ class LoginPage extends StatelessWidget {
     ];
 
     return Column(
-      children: features.map((feature) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 16),
-          child: Row(
-            children: [
-              Container(
-                width: 48,
-                height: 48,
-                decoration: BoxDecoration(
-                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  feature['icon'] as IconData,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      feature['title'] as String,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
+      children:
+          features.map((feature) {
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: Row(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    Text(
-                      feature['description'] as String,
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                        fontSize: 14,
-                      ),
+                    child: Icon(
+                      feature['icon'] as IconData,
+                      color: Theme.of(context).colorScheme.primary,
                     ),
-                  ],
-                ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          feature['title'] as String,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          feature['description'] as String,
+                          style: TextStyle(
+                            color:
+                                Theme.of(context).colorScheme.onSurfaceVariant,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
-            ],
-          ),
-        );
-      }).toList(),
+            );
+          }).toList(),
     );
   }
 
@@ -164,27 +167,37 @@ class LoginPage extends StatelessWidget {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         final isLoading = state is AuthLoading;
-        
+
         return Column(
           children: [
             SizedBox(
               width: double.infinity,
               height: 50,
               child: FilledButton.icon(
-                onPressed: isLoading ? null : () {
-                  context.read<AuthBloc>().add(AuthLoginWithGoogleRequested());
-                },
-                icon: isLoading 
-                    ? const SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        ),
-                      )
-                    : const Icon(Icons.login),
-                label: Text(isLoading ? 'Iniciando sesión...' : 'Continuar con Google'),
+                onPressed:
+                    isLoading
+                        ? null
+                        : () {
+                          context.read<AuthBloc>().add(
+                            AuthLoginWithGoogleRequested(),
+                          );
+                        },
+                icon:
+                    isLoading
+                        ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                        : const Icon(Icons.login),
+                label: Text(
+                  isLoading ? 'Iniciando sesión...' : 'Continuar con Google',
+                ),
               ),
             ),
 
@@ -199,13 +212,14 @@ class LoginPage extends StatelessWidget {
                     backgroundColor: Colors.black,
                     foregroundColor: Colors.white,
                   ),
-                  onPressed: isLoading
-                      ? null
-                      : () {
-                          context
-                              .read<AuthBloc>()
-                              .add(AuthLoginWithAppleRequested());
-                        },
+                  onPressed:
+                      isLoading
+                          ? null
+                          : () {
+                            context.read<AuthBloc>().add(
+                              AuthLoginWithAppleRequested(),
+                            );
+                          },
                   icon: const Icon(Icons.apple),
                   label: const Text('Continuar con Apple'),
                 ),
@@ -217,36 +231,41 @@ class LoginPage extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: OutlinedButton(
-                onPressed: isLoading ? null : () {
-                  showDialog<void>(
-                    context: context,
-                    builder: (dialogContext) => AlertDialog(
-                      title: const Text('Modo sin cuenta'),
-                      content: const Text(
-                        'Tus hábitos se guardarán solo en este dispositivo. '
-                        'No podrás sincronizarlos ni acceder desde otros dispositivos.\n\n'
-                        'Si más adelante inicias sesión con Google, tus hábitos '
-                        'se migrarán automáticamente a tu cuenta.\n\n'
-                        '¿Deseas continuar?',
-                      ),
-                      actions: [
-                        TextButton(
-                          onPressed: () => Navigator.pop(dialogContext),
-                          child: const Text('Cancelar'),
-                        ),
-                        FilledButton(
-                          onPressed: () {
-                            Navigator.pop(dialogContext);
-                            context
-                                .read<AuthBloc>()
-                                .add(AuthGuestSessionRequested());
-                          },
-                          child: const Text('Continuar'),
-                        ),
-                      ],
-                    ),
-                  );
-                },
+                onPressed:
+                    isLoading
+                        ? null
+                        : () {
+                          showDialog<void>(
+                            context: context,
+                            builder:
+                                (dialogContext) => AlertDialog(
+                                  title: const Text('Modo sin cuenta'),
+                                  content: const Text(
+                                    'Tus hábitos se guardarán solo en este dispositivo. '
+                                    'No podrás sincronizarlos ni acceder desde otros dispositivos.\n\n'
+                                    'Si más adelante inicias sesión con Google, tus hábitos '
+                                    'se migrarán automáticamente a tu cuenta.\n\n'
+                                    '¿Deseas continuar?',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed:
+                                          () => Navigator.pop(dialogContext),
+                                      child: const Text('Cancelar'),
+                                    ),
+                                    FilledButton(
+                                      onPressed: () {
+                                        Navigator.pop(dialogContext);
+                                        context.read<AuthBloc>().add(
+                                          AuthGuestSessionRequested(),
+                                        );
+                                      },
+                                      child: const Text('Continuar'),
+                                    ),
+                                  ],
+                                ),
+                          );
+                        },
                 child: const Text('Continuar sin cuenta'),
               ),
             ),

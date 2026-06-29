@@ -8,12 +8,18 @@ class ToggleHabitEntry {
 
   ToggleHabitEntry(this.repository);
 
-  Future<void> call(int habitId, DateTime date, HabitStatus currentStatus) async {
+  Future<void> call(
+    int habitId,
+    DateTime date,
+    HabitStatus currentStatus,
+  ) async {
     final today = DateTime.now();
     final isToday = AppDateUtils.isSameDay(date, today);
 
     if (!isToday) {
-      appLog('⚠️ [ToggleHabitEntry] Ignorado: la fecha no es hoy (habitId: $habitId)');
+      appLog(
+        '⚠️ [ToggleHabitEntry] Ignorado: la fecha no es hoy (habitId: $habitId)',
+      );
       return;
     }
 
@@ -31,8 +37,12 @@ class ToggleHabitEntry {
         break;
     }
 
-    appLog('🔄 [ToggleHabitEntry] Hábito $habitId: ${currentStatus.name} → ${nextStatus.name}');
+    appLog(
+      '🔄 [ToggleHabitEntry] Hábito $habitId: ${currentStatus.name} → ${nextStatus.name}',
+    );
     await repository.updateHabitEntryStatus(habitId, date, nextStatus);
-    appLog('✅ [ToggleHabitEntry] Estado actualizado: habitId=$habitId → ${nextStatus.name}');
+    appLog(
+      '✅ [ToggleHabitEntry] Estado actualizado: habitId=$habitId → ${nextStatus.name}',
+    );
   }
 }

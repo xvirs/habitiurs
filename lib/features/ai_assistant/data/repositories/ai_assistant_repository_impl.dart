@@ -21,9 +21,9 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
     required OfflineContentDatasource offlineContentDatasource,
     required AIRepository aiRepository,
     required HabitRepository habitRepository,
-  })  : _offlineContentDatasource = offlineContentDatasource,
-        _aiRepository = aiRepository,
-        _habitRepository = habitRepository;
+  }) : _offlineContentDatasource = offlineContentDatasource,
+       _aiRepository = aiRepository,
+       _habitRepository = habitRepository;
 
   @override
   Future<List<EducationalContent>> getEducationalContent() async {
@@ -45,25 +45,37 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
     appLog('🤖 [AIAssistant] Generando contexto de usuario...');
     try {
       final userContext = await _generateUserContext();
-      appLog('🤖 [AIAssistant] Contexto listo — hábitos: ${(userContext['habit_names'] as List?)?.length ?? 0}, racha actual: ${userContext['current_streak']}, días rastreados: ${userContext['total_days_tracked']}');
+      appLog(
+        '🤖 [AIAssistant] Contexto listo — hábitos: ${(userContext['habit_names'] as List?)?.length ?? 0}, racha actual: ${userContext['current_streak']}, días rastreados: ${userContext['total_days_tracked']}',
+      );
 
       final aiContext = AIContextBuilder.buildPersonalRecommendationContext(
         habitNames: userContext['habit_names'] ?? [],
-        completionRates: Map<String, double>.from(userContext['completion_rates'] ?? {}),
+        completionRates: Map<String, double>.from(
+          userContext['completion_rates'] ?? {},
+        ),
         currentStreak: userContext['current_streak'] ?? 0,
         longestStreak: userContext['longest_streak'] ?? 0,
-        strugglingHabits: List<String>.from(userContext['struggling_habits'] ?? []),
+        strugglingHabits: List<String>.from(
+          userContext['struggling_habits'] ?? [],
+        ),
         totalDaysTracked: userContext['total_days_tracked'] ?? 0,
-        lastActiveDate: DateTime.parse(userContext['last_active_date'] ?? DateTime.now().toIso8601String()),
+        lastActiveDate: DateTime.parse(
+          userContext['last_active_date'] ?? DateTime.now().toIso8601String(),
+        ),
       );
 
       final request = AIRequest(
         type: AIRequestType.personalRecommendation,
         prompt: AIPromptService.buildPersonalRecommendationPrompt(
           habitNames: userContext['habit_names'] ?? [],
-          completionRates: Map<String, double>.from(userContext['completion_rates'] ?? {}),
+          completionRates: Map<String, double>.from(
+            userContext['completion_rates'] ?? {},
+          ),
           currentStreak: userContext['current_streak'] ?? 0,
-          strugglingHabits: List<String>.from(userContext['struggling_habits'] ?? []),
+          strugglingHabits: List<String>.from(
+            userContext['struggling_habits'] ?? [],
+          ),
         ),
         metadata: aiContext,
       );
@@ -90,19 +102,24 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
 
       final now = DateTime.now();
       final startDate = now.subtract(const Duration(days: 30));
-      final entries = await _habitRepository.getHabitEntriesForDateRange(startDate, now);
+      final entries = await _habitRepository.getHabitEntriesForDateRange(
+        startDate,
+        now,
+      );
 
       final completionRates = <String, double>{};
       final strugglingHabits = <String>[];
 
       for (final habit in habits) {
-        final habitEntries = entries.where((e) => e.habitId == habit.id).toList();
-        final completedCount = habitEntries.where((e) => e.status == HabitStatus.completed).length;
+        final habitEntries =
+            entries.where((e) => e.habitId == habit.id).toList();
+        final completedCount =
+            habitEntries.where((e) => e.status == HabitStatus.completed).length;
         final totalCount = habitEntries.length;
-        
+
         final rate = totalCount > 0 ? completedCount / totalCount : 0.0;
         completionRates[habit.name] = rate;
-        
+
         if (rate < 0.4 && totalCount > 7) {
           strugglingHabits.add(habit.name);
         }
@@ -110,9 +127,12 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
 
       final currentStreak = _calculateCurrentStreak(entries);
       final longestStreak = _calculateLongestStreak(entries);
-      final lastActiveDate = entries.isNotEmpty 
-          ? entries.map((e) => e.date).reduce((a, b) => a.isAfter(b) ? a : b)
-          : now;
+      final lastActiveDate =
+          entries.isNotEmpty
+              ? entries
+                  .map((e) => e.date)
+                  .reduce((a, b) => a.isAfter(b) ? a : b)
+              : now;
 
       return {
         'habit_names': habitNames,
@@ -177,7 +197,7 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
     if (entries.isEmpty) return 0;
 
     final Map<String, bool> dayCompletions = {};
-    
+
     for (final entry in entries) {
       final dateStr = entry.date.toIso8601String().split('T')[0];
       if (entry.status == HabitStatus.completed) {
@@ -187,14 +207,14 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
 
     int maxStreak = 0;
     int currentStreak = 0;
-    
+
     final dates = dayCompletions.keys.map((d) => DateTime.parse(d)).toList();
     dates.sort();
 
     DateTime? lastDate;
     for (final date in dates) {
       final dateStr = date.toIso8601String().split('T')[0];
-      
+
       if (dayCompletions[dateStr] == true) {
         if (lastDate == null || date.difference(lastDate).inDays == 1) {
           currentStreak++;
@@ -213,8 +233,9 @@ class AIAssistantRepositoryImpl implements AIAssistantRepository {
 
   int _calculateTotalDaysTracked(List entries) {
     if (entries.isEmpty) return 0;
-    
-    final uniqueDates = entries.map((e) => e.date.toIso8601String().split('T')[0]).toSet();
+
+    final uniqueDates =
+        entries.map((e) => e.date.toIso8601String().split('T')[0]).toSet();
     return uniqueDates.length;
   }
 }

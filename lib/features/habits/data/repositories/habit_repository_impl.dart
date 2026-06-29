@@ -19,7 +19,9 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<List<Habit>> getAllHabits() async {
     final habits = await localDataSource.getAllHabits(includeInactive: false);
-    appLog('📋 [HabitRepository] ${habits.length} hábito(s) activo(s) cargados de BD local');
+    appLog(
+      '📋 [HabitRepository] ${habits.length} hábito(s) activo(s) cargados de BD local',
+    );
     return habits;
   }
 
@@ -53,13 +55,16 @@ class HabitRepositoryImpl implements HabitRepository {
     // 2. Eliminar remotamente de forma best-effort (no bloquea, no lanza)
     // Guests y usuarios offline no tienen acceso a Firestore — es correcto ignorar el error.
     // En el próximo syncAll los cambios locales se propagan.
-    _syncRepository.deleteHabitRemotely(userId, id).then((_) {
-      appLog('✅ [HabitRepository] Hábito $id eliminado remotamente.');
-    }).catchError((e) {
-      appLog(
-        '⚠️ [HabitRepository] Eliminación remota de hábito $id no completada (se reintentará): $e',
-      );
-    });
+    _syncRepository
+        .deleteHabitRemotely(userId, id)
+        .then((_) {
+          appLog('✅ [HabitRepository] Hábito $id eliminado remotamente.');
+        })
+        .catchError((e) {
+          appLog(
+            '⚠️ [HabitRepository] Eliminación remota de hábito $id no completada (se reintentará): $e',
+          );
+        });
   }
 
   @override
@@ -91,7 +96,9 @@ class HabitRepositoryImpl implements HabitRepository {
     );
 
     final dateStr = normalizedDate.toIso8601String().split('T')[0];
-    appLog('🔄 [HabitRepository] Actualizando entrada — habitId: $habitId, fecha: $dateStr, estado: ${status.name}');
+    appLog(
+      '🔄 [HabitRepository] Actualizando entrada — habitId: $habitId, fecha: $dateStr, estado: ${status.name}',
+    );
 
     if (existingEntry != null) {
       final updatedEntry = HabitEntryModel(
@@ -102,7 +109,9 @@ class HabitRepositoryImpl implements HabitRepository {
         lastModified: DateTime.now(),
       );
       await localDataSource.updateHabitEntry(updatedEntry);
-      appLog('✅ [HabitRepository] Entrada actualizada — habitId: $habitId, $dateStr → ${status.name}');
+      appLog(
+        '✅ [HabitRepository] Entrada actualizada — habitId: $habitId, $dateStr → ${status.name}',
+      );
     } else {
       // Solo crear entrada si el estado es diferente a pending
       if (status != HabitStatus.pending) {
@@ -113,9 +122,13 @@ class HabitRepositoryImpl implements HabitRepository {
           lastModified: DateTime.now(),
         );
         await localDataSource.insertHabitEntry(newEntry);
-        appLog('✅ [HabitRepository] Entrada creada — habitId: $habitId, $dateStr → ${status.name}');
+        appLog(
+          '✅ [HabitRepository] Entrada creada — habitId: $habitId, $dateStr → ${status.name}',
+        );
       } else {
-        appLog('ℹ️ [HabitRepository] Sin entrada creada — estado pending no requiere registro (habitId: $habitId, $dateStr)');
+        appLog(
+          'ℹ️ [HabitRepository] Sin entrada creada — estado pending no requiere registro (habitId: $habitId, $dateStr)',
+        );
       }
     }
 

@@ -12,9 +12,9 @@ class VibrationService {
   /// Verifica si es seguro vibrar (evita spam)
   static bool _canVibrate() {
     if (kIsWeb) return false;
-    
+
     final now = DateTime.now();
-    if (_lastVibration != null && 
+    if (_lastVibration != null &&
         now.difference(_lastVibration!) < _minInterval) {
       return false;
     }
@@ -25,7 +25,7 @@ class VibrationService {
   /// Vibración ligera para toggles/completar hábitos (éxito)
   static Future<void> success() async {
     if (!_canVibrate()) return;
-    
+
     try {
       await HapticFeedback.lightImpact();
     } catch (e) {
@@ -36,7 +36,7 @@ class VibrationService {
   /// Vibración media para acciones importantes (crear hábito)
   static Future<void> medium() async {
     if (!_canVibrate()) return;
-    
+
     try {
       await HapticFeedback.mediumImpact();
     } catch (e) {
@@ -47,7 +47,7 @@ class VibrationService {
   /// Vibración fuerte para advertencias (eliminar)
   static Future<void> warning() async {
     if (!_canVibrate()) return;
-    
+
     try {
       // Vibración más agresiva - doble heavy impact
       await HapticFeedback.heavyImpact();
@@ -61,7 +61,7 @@ class VibrationService {
   /// Vibración de selección para navegación
   static Future<void> selection() async {
     if (!_canVibrate()) return;
-    
+
     try {
       await HapticFeedback.selectionClick();
     } catch (e) {
@@ -72,7 +72,7 @@ class VibrationService {
   /// Vibración personalizada para errores (doble vibración)
   static Future<void> error() async {
     if (kIsWeb) return;
-    
+
     try {
       // Vibración muy agresiva - triple pattern
       await HapticFeedback.heavyImpact();
@@ -90,7 +90,7 @@ class VibrationService {
   /// Vibración EXTRA agresiva para confirmación de eliminación
   static Future<void> deleteConfirmation() async {
     if (kIsWeb) return;
-    
+
     try {
       // Patrón muy agresivo: heavy-pause-heavy-pause-heavy-pause-medium
       await HapticFeedback.heavyImpact();
@@ -110,7 +110,7 @@ class VibrationService {
   /// Vibración suave para feedback general
   static Future<void> gentle() async {
     if (!_canVibrate()) return;
-    
+
     try {
       await HapticFeedback.selectionClick();
     } catch (e) {

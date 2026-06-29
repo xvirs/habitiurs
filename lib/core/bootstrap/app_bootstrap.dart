@@ -20,11 +20,10 @@ class AppBootstrap {
 
       appLog('✅ [Bootstrap] Inicialización exitosa');
       return AppState.success();
-      
     } catch (e, stackTrace) {
       appLog('❌ [Bootstrap] Error crítico: $e');
       appLog('Stack trace: $stackTrace');
-      
+
       return AppState.error(
         title: 'Error de inicialización',
         message: 'La aplicación no pudo inicializarse correctamente',
@@ -52,9 +51,10 @@ class AppBootstrap {
       await FirebaseAppCheck.instance.activate(
         androidProvider:
             kDebugMode ? AndroidProvider.debug : AndroidProvider.playIntegrity,
-        appleProvider: kDebugMode
-            ? AppleProvider.debug
-            : AppleProvider.appAttestWithDeviceCheckFallback,
+        appleProvider:
+            kDebugMode
+                ? AppleProvider.debug
+                : AppleProvider.appAttestWithDeviceCheckFallback,
       );
       appLog('✅ [Bootstrap] App Check activado');
     } catch (e) {

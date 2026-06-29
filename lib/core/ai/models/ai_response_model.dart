@@ -43,9 +43,10 @@ class AIResponse {
       metadata: Map<String, dynamic>.from(json['metadata'] ?? {}),
       timestamp: DateTime.parse(json['timestamp']),
       isFromAI: json['is_from_ai'] ?? true,
-      confidence: json['confidence'] != null 
-          ? AIResponseConfidence.fromJson(json['confidence'])
-          : null,
+      confidence:
+          json['confidence'] != null
+              ? AIResponseConfidence.fromJson(json['confidence'])
+              : null,
     );
   }
 
@@ -80,11 +81,7 @@ class AIResponseConfidence {
   });
 
   Map<String, dynamic> toJson() {
-    return {
-      'score': score,
-      'level': level,
-      'factors': factors,
-    };
+    return {'score': score, 'level': level, 'factors': factors};
   }
 
   factory AIResponseConfidence.fromJson(Map<String, dynamic> json) {
@@ -95,4 +92,3 @@ class AIResponseConfidence {
     );
   }
 }
-
