@@ -55,11 +55,13 @@ class HabitListRemoteViewsFactory(
                 R.id.item_check,
                 if (status == 1) R.drawable.ic_check_done else R.drawable.ic_check_todo,
             )
-            // Atenuar el nombre si está completado.
+            // Color del nombre adaptado al tema; atenuado si está completado.
             views.setInt(
                 R.id.item_name,
                 "setTextColor",
-                if (status == 1) 0x80FFFFFF.toInt() else 0xF2FFFFFF.toInt(),
+                context.getColor(
+                    if (status == 1) R.color.w_on_surface_var else R.color.w_on_surface,
+                ),
             )
 
             // Click en la fila → marca/desmarca (rellena la URI del template).

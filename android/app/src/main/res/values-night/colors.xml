@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Variante OSCURA de los colores de widgets (sigue el tema del sistema). -->
+    <color name="w_surface">#FF16202B</color>
+    <color name="w_on_surface">#FFECEFF3</color>
+    <color name="w_on_surface_var">#FF9AA4AE</color>
+    <color name="w_accent">#FF7FB3FF</color>
+    <color name="w_done">#FF66BB6A</color>
+    <color name="w_track">#FF2A323C</color>
+    <color name="w_check_todo">#FF8A99A8</color>
+</resources>

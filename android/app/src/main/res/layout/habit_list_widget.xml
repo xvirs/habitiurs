@@ -4,15 +4,14 @@
     android:layout_height="match_parent"
     android:orientation="vertical"
     android:padding="14dp"
-    android:background="@drawable/widget_list_bg">
+    android:background="@drawable/widget_card_bg">
 
     <LinearLayout
         android:id="@+id/widget_header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingBottom="6dp">
+        android:gravity="center_vertical">
 
         <TextView
             android:id="@+id/widget_list_title"
@@ -20,7 +19,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:text="Hábitos de hoy"
-            android:textColor="#FFFFFFFF"
+            android:textColor="@color/w_on_surface"
             android:textStyle="bold"
             android:textSize="15sp" />
 
@@ -29,18 +28,29 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:text="0/0"
-            android:textColor="#7FB3FF"
+            android:textColor="@color/w_accent"
             android:textStyle="bold"
             android:textSize="14sp" />
     </LinearLayout>
+
+    <ProgressBar
+        android:id="@+id/widget_list_progress"
+        style="?android:attr/progressBarStyleHorizontal"
+        android:layout_width="match_parent"
+        android:layout_height="5dp"
+        android:layout_marginTop="7dp"
+        android:layout_marginBottom="4dp"
+        android:max="100"
+        android:progress="0"
+        android:progressDrawable="@drawable/widget_progress" />
 
     <ListView
         android:id="@+id/widget_list"
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
-        android:divider="#1AFFFFFF"
-        android:dividerHeight="1dp" />
+        android:divider="@null"
+        android:dividerHeight="0dp" />
 
     <TextView
         android:id="@+id/widget_empty"
@@ -49,7 +59,7 @@
         android:layout_weight="1"
         android:gravity="center"
         android:text="Sin hábitos para hoy 🎉"
-        android:textColor="#99FFFFFF"
+        android:textColor="@color/w_on_surface_var"
         android:textSize="14sp" />
 
 </LinearLayout>

@@ -32,6 +32,14 @@ class HabitListWidgetProvider : HomeWidgetProvider() {
                 R.id.widget_list_count,
                 widgetData.getString("today_summary", "0/0") ?: "0/0",
             )
+            val total = widgetData.getInt("today_total", 0)
+            val completed = widgetData.getInt("today_completed", 0)
+            views.setProgressBar(
+                R.id.widget_list_progress,
+                if (total == 0) 1 else total,
+                completed,
+                false,
+            )
 
             val serviceIntent = Intent(context, HabitListRemoteViewsService::class.java).apply {
                 putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)

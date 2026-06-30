@@ -7,13 +7,13 @@
     android:gravity="center_vertical"
     android:paddingTop="9dp"
     android:paddingBottom="9dp"
-    android:paddingStart="4dp"
-    android:paddingEnd="4dp">
+    android:paddingStart="2dp"
+    android:paddingEnd="2dp">
 
     <ImageView
         android:id="@+id/item_dot"
-        android:layout_width="12dp"
-        android:layout_height="12dp"
+        android:layout_width="11dp"
+        android:layout_height="11dp"
         android:src="@drawable/widget_dot"
         android:layout_marginEnd="12dp"
         android:contentDescription="@null" />
@@ -25,7 +25,7 @@
         android:layout_weight="1"
         android:maxLines="1"
         android:ellipsize="end"
-        android:textColor="#F2FFFFFF"
+        android:textColor="@color/w_on_surface"
         android:textSize="15sp" />
 
     <ImageView

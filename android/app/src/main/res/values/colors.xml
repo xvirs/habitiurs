@@ -50,4 +50,13 @@
     <color name="widget_text_secondary_dark">@color/grey_400</color>
 
 	<color name="ic_launcher_background">#FFFFFF</color>
+
+    <!-- Widgets de pantalla de inicio (valores CLAROS; oscuros en values-night) -->
+    <color name="w_surface">#FFFFFFFF</color>
+    <color name="w_on_surface">#FF1A1C1E</color>
+    <color name="w_on_surface_var">#FF5F6B7A</color>
+    <color name="w_accent">#FF1565C0</color>
+    <color name="w_done">#FF2E7D32</color>
+    <color name="w_track">#FFE4E8EE</color>
+    <color name="w_check_todo">#FF9AA0A6</color>
 </resources>
