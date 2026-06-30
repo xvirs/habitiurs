@@ -111,6 +111,9 @@ Future<void> homeWidgetBackgroundCallback(Uri? uri) async {
     final next = current == 1 ? 0 : 1; // completed→pending, resto→completed
 
     // 2. Persistir en sqflite (mismo archivo que usa la app).
+    // IMPORTANTE: no cerramos la base. sqflite comparte el handle nativo por
+    // ruta; cerrarlo acá cerraría la conexión que usa la app en primer plano
+    // (causa el error "database_closed"). El isolate de fondo se destruye solo.
     final dbPath = p.join(await getDatabasesPath(), 'habitiurs.db');
     final db = await openDatabase(dbPath);
     final todayStr = DateTime.now().toIso8601String().split('T')[0];
@@ -135,7 +138,6 @@ Future<void> homeWidgetBackgroundCallback(Uri? uri) async {
         'last_modified': nowIso,
       });
     }
-    await db.close();
 
     // 3. Actualizar el JSON del widget y refrescar.
     list[idx]['status'] = next;

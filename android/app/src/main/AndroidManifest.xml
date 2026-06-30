@@ -53,6 +53,24 @@
                 android:resource="@xml/habit_summary_widget_info" />
         </receiver>
 
+        <!-- Widget: Lista de hoy (interactiva) -->
+        <receiver
+            android:name=".HabitListWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_list_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/habit_list_widget_info" />
+        </receiver>
+
+        <service
+            android:name=".HabitListRemoteViewsService"
+            android:permission="android.permission.BIND_REMOTEVIEWS"
+            android:exported="false" />
+
         <!-- Receptor de interactividad de home_widget (marcar sin abrir la app) -->
         <receiver
             android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
