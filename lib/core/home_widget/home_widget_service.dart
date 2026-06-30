@@ -24,10 +24,11 @@ class HomeWidgetService {
   // App Group para iOS (debe coincidir con el entitlement de la extensión).
   static const String appGroupId = 'group.com.habitiurs.app';
 
-  // Nombres de los providers Android y del widget iOS.
+  // Nombres de los providers Android y de los widgets iOS (kind de WidgetKit).
   static const String androidSummaryProvider = 'HabitSummaryWidgetProvider';
   static const String androidListProvider = 'HabitListWidgetProvider';
-  static const String iosWidgetName = 'HabitiursWidget';
+  static const String iosSummaryWidget = 'HabitiursSummaryWidget';
+  static const String iosListWidget = 'HabitiursListWidget';
 
   /// Llamar una vez al inicializar la app.
   static Future<void> init() async {
@@ -82,11 +83,11 @@ class HomeWidgetService {
   static Future<void> _refreshAll() async {
     await HomeWidget.updateWidget(
       androidName: androidSummaryProvider,
-      iOSName: iosWidgetName,
+      iOSName: iosSummaryWidget,
     );
     await HomeWidget.updateWidget(
       androidName: androidListProvider,
-      iOSName: iosWidgetName,
+      iOSName: iosListWidget,
     );
   }
 }
@@ -152,11 +153,11 @@ Future<void> homeWidgetBackgroundCallback(Uri? uri) async {
 
     await HomeWidget.updateWidget(
       androidName: HomeWidgetService.androidSummaryProvider,
-      iOSName: HomeWidgetService.iosWidgetName,
+      iOSName: HomeWidgetService.iosSummaryWidget,
     );
     await HomeWidget.updateWidget(
       androidName: HomeWidgetService.androidListProvider,
-      iOSName: HomeWidgetService.iosWidgetName,
+      iOSName: HomeWidgetService.iosListWidget,
     );
   } catch (e) {
     appLog('⚠️ [HomeWidget] toggle headless falló: $e');
