@@ -90,7 +90,7 @@ struct HabitSummaryWidget: Widget {
         }
         .configurationDisplayName("Resumen del día")
         .description("Tu progreso de hábitos de hoy de un vistazo.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemMedium])
     }
 }
 
