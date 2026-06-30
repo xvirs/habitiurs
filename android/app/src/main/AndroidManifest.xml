@@ -39,5 +39,27 @@
         <meta-data
             android:name="flutterEmbedding"
             android:value="2" />
+
+        <!-- Widget: Resumen del día -->
+        <receiver
+            android:name=".HabitSummaryWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_summary_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/habit_summary_widget_info" />
+        </receiver>
+
+        <!-- Receptor de interactividad de home_widget (marcar sin abrir la app) -->
+        <receiver
+            android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="es.antonborri.home_widget.action.BACKGROUND" />
+            </intent-filter>
+        </receiver>
     </application>
 </manifest>

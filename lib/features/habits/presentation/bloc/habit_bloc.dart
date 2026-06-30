@@ -17,6 +17,7 @@ import '../../../../core/notifications/notification_service.dart';
 import 'habit_event.dart';
 import 'habit_state.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
+import 'package:habitiurs/core/home_widget/home_widget_service.dart';
 
 class HabitBloc extends Bloc<HabitEvent, HabitState> {
   final GetAllHabits _getAllHabits;
@@ -326,6 +327,9 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     // Programar notificación para hábitos pendientes del día actual
     _scheduleDailyNotification(validationResult.validHabits, allEntries);
 
+    // Exportar los hábitos de hoy a los widgets de pantalla de inicio.
+    _exportToHomeWidget(validationResult.validHabits, allEntries, now);
+
     // Limpiar cache del WeeklyGrid para forzar actualización
     try {
       // Si el import está disponible
@@ -340,6 +344,21 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
         isRefreshing: isRefreshing,
       ),
     );
+  }
+
+  /// Calcula el estado de hoy de cada hábito y lo manda a los widgets.
+  void _exportToHomeWidget(
+    List<Habit> habits,
+    List<HabitEntry> entries,
+    DateTime now,
+  ) {
+    final todayStatus = <int, HabitStatus>{};
+    for (final e in entries) {
+      if (e.habitId != 0 && AppDateUtils.isSameDay(e.date, now)) {
+        todayStatus[e.habitId] = e.status;
+      }
+    }
+    HomeWidgetService.update(habits, todayStatus);
   }
 
   /// Programa la notificación diaria con los hábitos pendientes
