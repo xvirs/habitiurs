@@ -438,15 +438,13 @@ class _StatusCell extends StatelessWidget {
   }
 
   HabitStatus _getDisplayStatus(HabitEntry? entry) {
-    // Si hay una entrada explícita, usar su estado
-    if (entry != null) return entry.status;
+    // Día futuro: respetar la entrada si existe, si no pending (gris).
+    if (AppDateUtils.isFutureDate(date)) {
+      return entry?.status ?? HabitStatus.pending;
+    }
 
-    // Si es un día futuro, mostrar como pending
-    if (AppDateUtils.isFutureDate(date)) return HabitStatus.pending;
-
-    // LÓGICA DE INCORPORACIÓN: GRIS ANTES DE CREAR
-    // Si la fecha es anterior a la creación del hábito, mostrar como pending (Gris),
-    // no como skipped (Rojo).
+    // LÓGICA DE INCORPORACIÓN: GRIS ANTES DE CREAR.
+    // Antes de la fecha de creación del hábito → pending (Gris), nunca rojo.
     if (createdAt != null) {
       final normalizedCreatedAt = AppDateUtils.getStartOfDay(createdAt!);
       final normalizedDate = AppDateUtils.getStartOfDay(date);
@@ -455,13 +453,22 @@ class _StatusCell extends StatelessWidget {
       }
     }
 
-    // Si es el día actual sin entrada, mostrar como pending
-    if (AppDateUtils.isToday(date)) return HabitStatus.pending;
+    // Día actual: usar la entrada si existe, si no pending.
+    if (AppDateUtils.isToday(date)) {
+      return entry?.status ?? HabitStatus.pending;
+    }
 
-    // Si es un día pasado sin entrada (y posterior a la creación), mostrar como skipped (Rojo)
-    if (AppDateUtils.isPastDate(date)) return HabitStatus.skipped;
+    // Día PASADO (y posterior a la creación): solo es verde si quedó COMPLETADO.
+    // Cualquier otra cosa —sin entrada, o una entrada 'pending' que quedó de ese
+    // día— cuenta como NO hecho → rojo (skipped). Esto es lo que arregla el bug
+    // de que un pending viejo se quedaba gris en vez de marcarse en rojo.
+    if (AppDateUtils.isPastDate(date)) {
+      return entry?.status == HabitStatus.completed
+          ? HabitStatus.completed
+          : HabitStatus.skipped;
+    }
 
-    return HabitStatus.pending;
+    return entry?.status ?? HabitStatus.pending;
   }
 
   Color _getStatusColor(BuildContext context, HabitStatus status) {
