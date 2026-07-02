@@ -10,6 +10,8 @@ class HabitModel extends Habit {
     super.iconKey,
     super.weekdays,
     super.reminderTime,
+    super.isDeleted,
+    super.lastModified,
   });
 
   /// Acepta tanto filas de sqflite como documentos de Firestore.
@@ -24,7 +26,21 @@ class HabitModel extends Habit {
       iconKey: (json['icon'] as String?) ?? Habit.defaultIcon,
       weekdays: parseWeekdays(json['weekdays']),
       reminderTime: json['reminder_time'] as String?,
+      isDeleted: _parseBoolFalseDefault(json['is_deleted']),
+      lastModified: _parseDate(json['last_modified']),
     );
+  }
+
+  static bool _parseBoolFalseDefault(dynamic value) {
+    if (value is bool) return value;
+    if (value is int) return value == 1;
+    return false;
+  }
+
+  static DateTime? _parseDate(dynamic value) {
+    if (value == null) return null;
+    if (value is String) return DateTime.tryParse(value);
+    return null;
   }
 
   static bool _parseBool(dynamic value) {
@@ -63,7 +79,7 @@ class HabitModel extends Habit {
 
   static String weekdaysToDb(List<int> weekdays) => weekdays.join(',');
 
-  /// Mapa para sqflite.
+  /// Mapa para sqflite. Si no hay lastModified, usa "ahora".
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -74,6 +90,8 @@ class HabitModel extends Habit {
       'icon': iconKey,
       'weekdays': weekdaysToDb(weekdays),
       'reminder_time': reminderTime,
+      'is_deleted': isDeleted ? 1 : 0,
+      'last_modified': (lastModified ?? DateTime.now()).toIso8601String(),
     };
   }
 
@@ -88,6 +106,8 @@ class HabitModel extends Habit {
       'icon': iconKey,
       'weekdays': weekdays,
       'reminder_time': reminderTime,
+      'is_deleted': isDeleted ? 1 : 0,
+      'last_modified': (lastModified ?? DateTime.now()).toIso8601String(),
     };
   }
 
@@ -101,6 +121,8 @@ class HabitModel extends Habit {
       iconKey: habit.iconKey,
       weekdays: habit.weekdays,
       reminderTime: habit.reminderTime,
+      isDeleted: habit.isDeleted,
+      lastModified: habit.lastModified,
     );
   }
 
@@ -115,6 +137,8 @@ class HabitModel extends Habit {
     String? iconKey,
     List<int>? weekdays,
     String? reminderTime,
+    bool? isDeleted,
+    DateTime? lastModified,
   }) {
     return HabitModel(
       id: id ?? this.id,
@@ -125,6 +149,8 @@ class HabitModel extends Habit {
       iconKey: iconKey ?? this.iconKey,
       weekdays: weekdays ?? this.weekdays,
       reminderTime: reminderTime ?? this.reminderTime,
+      isDeleted: isDeleted ?? this.isDeleted,
+      lastModified: lastModified ?? this.lastModified,
     );
   }
 }

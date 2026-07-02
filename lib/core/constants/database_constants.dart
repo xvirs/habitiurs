@@ -1,6 +1,6 @@
 class DatabaseConstants {
   static const String databaseName = 'habitiurs.db';
-  static const int databaseVersion = 6;
+  static const int databaseVersion = 7;
 
   static const String habitsTable = 'habits';
   static const String habitEntriesTable = 'habit_entries';
@@ -14,7 +14,9 @@ class DatabaseConstants {
       color INTEGER,
       icon TEXT,
       weekdays TEXT,
-      reminder_time TEXT
+      reminder_time TEXT,
+      is_deleted INTEGER NOT NULL DEFAULT 0,
+      last_modified TEXT
     )
   ''';
 
@@ -24,6 +26,16 @@ class DatabaseConstants {
     'ALTER TABLE $habitsTable ADD COLUMN icon TEXT',
     'ALTER TABLE $habitsTable ADD COLUMN weekdays TEXT',
     'ALTER TABLE $habitsTable ADD COLUMN reminder_time TEXT',
+  ];
+
+  /// Migración v7: tombstones para sincronizar borrados entre dispositivos.
+  /// is_deleted = borrado lógico; last_modified = resolución de conflictos.
+  /// A las filas existentes se les setea last_modified = created_at para que
+  /// cualquier cambio nuevo (con timestamp actual) gane en el merge.
+  static const List<String> addHabitTombstoneColumns = [
+    'ALTER TABLE $habitsTable ADD COLUMN is_deleted INTEGER NOT NULL DEFAULT 0',
+    'ALTER TABLE $habitsTable ADD COLUMN last_modified TEXT',
+    'UPDATE $habitsTable SET last_modified = created_at WHERE last_modified IS NULL',
   ];
 
   static const String createHabitEntriesTable = '''

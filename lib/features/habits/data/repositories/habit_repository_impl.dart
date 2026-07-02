@@ -34,7 +34,10 @@ class HabitRepositoryImpl implements HabitRepository {
   @override
   Future<int> createHabit(Habit habit) async {
     appLog('🔄 [HabitRepository] Insertando hábito: "${habit.name}"');
-    final habitModel = HabitModel.fromEntity(habit);
+    // Estampar lastModified=ahora: es un cambio del usuario y debe ganar el merge.
+    final habitModel = HabitModel.fromEntity(
+      habit.copyWith(lastModified: DateTime.now()),
+    );
     final id = await localDataSource.insertHabit(habitModel);
     appLog('✅ [HabitRepository] Hábito insertado con ID: $id');
     return id;
@@ -42,7 +45,10 @@ class HabitRepositoryImpl implements HabitRepository {
 
   @override
   Future<void> updateHabit(Habit habit) async {
-    final habitModel = HabitModel.fromEntity(habit);
+    // Estampar lastModified=ahora: cambio del usuario, gana sobre versiones viejas.
+    final habitModel = HabitModel.fromEntity(
+      habit.copyWith(lastModified: DateTime.now()),
+    );
     await localDataSource.updateHabit(habitModel);
   }
 

@@ -68,6 +68,8 @@ class FirebaseService {
           'icon': habit['icon'],
           'weekdays': habit['weekdays'],
           'reminder_time': habit['reminder_time'],
+          'is_deleted': habit['is_deleted'] ?? 0,
+          'last_modified': habit['last_modified'],
           'user_id': userId,
           'last_sync': FieldValue.serverTimestamp(),
           'device_sync_time': DateTime.now().toIso8601String(),
@@ -103,6 +105,8 @@ class FirebaseService {
               'icon': data['icon'],
               'weekdays': data['weekdays'],
               'reminder_time': data['reminder_time'],
+              'is_deleted': data['is_deleted'] ?? 0,
+              'last_modified': data['last_modified'],
               'last_sync': data['last_sync'],
               'firestore_id': doc.id,
             };
@@ -167,46 +171,27 @@ class FirebaseService {
     }
   }
 
-  // NUEVO: Método para eliminar físicamente un hábito y sus entradas relacionadas en Firestore
+  // BORRADO LÓGICO (tombstone) en Firestore: en vez de borrar el documento —lo
+  // que hacía que el otro dispositivo lo re-subiera y "resucitara"— marcamos el
+  // hábito como is_deleted=1. La marca queda como fuente de verdad y se propaga.
   Future<void> deleteHabitInFirestore(String userId, int habitId) async {
     try {
-      final userHabitsRef = _firestore
+      final habitDocRef = _firestore
           .collection(_usersCollection)
           .doc(userId)
-          .collection(_habitsCollection);
+          .collection(_habitsCollection)
+          .doc(habitId.toString());
 
-      final userEntriesRef = _firestore
-          .collection(_usersCollection)
-          .doc(userId)
-          .collection(_habitEntriesCollection);
+      await habitDocRef.set({
+        'is_deleted': 1,
+        'is_active': 0,
+        'last_modified': DateTime.now().toIso8601String(),
+        'last_sync': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
 
-      final batch = _firestore.batch();
-
-      // 1. Eliminar todas las entradas de hábito relacionadas
-      final entriesToDeleteSnapshot =
-          await userEntriesRef.where('habit_id', isEqualTo: habitId).get();
-
-      for (final doc in entriesToDeleteSnapshot.docs) {
-        batch.delete(doc.reference);
-      }
-      appLog(
-        'DEBUG: Preparadas ${entriesToDeleteSnapshot.docs.length} entradas para eliminación en Firebase.',
-      );
-
-      // 2. Eliminar el documento del hábito principal
-      final habitDocRef = userHabitsRef.doc(habitId.toString());
-      batch.delete(habitDocRef);
-      appLog('DEBUG: Hábito $habitId preparado para eliminación en Firebase.');
-
-      // 3. Ejecutar el batch
-      await batch.commit();
-      appLog(
-        '✅ [Firebase] Hábito $habitId y sus entradas relacionadas eliminados físicamente de Firestore.',
-      );
+      appLog('✅ [Firebase] Hábito $habitId marcado como borrado (tombstone).');
     } catch (e) {
-      throw FirebaseException(
-        'Error eliminando hábito $habitId y sus entradas en Firestore: $e',
-      );
+      throw FirebaseException('Error borrando hábito $habitId en Firestore: $e');
     }
   }
 

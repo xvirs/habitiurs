@@ -218,123 +218,131 @@ class SyncManager {
       appLog(
         '🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE HÁBITOS ===',
       );
+
+      // ORDEN IMPORTANTE: primero DESCARGAR + MERGEAR (respetando tombstones y
+      // last_modified), y recién después SUBIR el estado ya resuelto. Si se
+      // subiera primero, un dispositivo con data vieja pisaría el borrado del
+      // otro y el hábito "resucitaría".
+
+      // Incluye inactivos Y borrados: el sync necesita ver los tombstones.
       final localHabits = await _habitDataSource.getAllHabits(
         includeInactive: true,
+        includeDeleted: true,
       );
-      appLog(
-        '📱 [SyncManager] Hábitos locales encontrados: ${localHabits.length}',
-      );
-      if (localHabits.isNotEmpty) {
-        final habitsData =
-            localHabits.map((habit) => habit.toFirestoreMap()).toList();
-        await _firebaseService.syncHabits(userId, habitsData);
-        appLog(
-          '⬆️ [SyncManager] ${habitsData.length} hábitos subidos a Firebase',
-        );
-      }
+      final Map<int, HabitModel> localHabitsMap = {
+        for (var h in localHabits) h.id!: h,
+      };
 
       final remoteHabits = await _firebaseService.getHabits(userId);
       appLog(
-        '☁️ [SyncManager] Hábitos remotos encontrados: ${remoteHabits.length}',
+        '☁️ [SyncManager] Remotos: ${remoteHabits.length} · 📱 Locales: ${localHabits.length}',
       );
 
       int newHabitsAdded = 0;
       int conflictsResolved = 0;
-      final Map<int, HabitModel> localHabitsMap = {
-        for (var h in localHabits) h.id!: h,
-      };
+
       for (final remoteHabit in remoteHabits) {
         final remoteId = remoteHabit['id'] as int?;
         final remoteName = remoteHabit['name'] as String? ?? '';
-        final remoteCreatedAt =
-            remoteHabit['created_at'] as String? ??
-            DateTime.now().toIso8601String();
-        final remoteIsActive = (remoteHabit['is_active'] as int? ?? 1) == 1;
         if (remoteId == null || remoteName.isEmpty) {
           appLog('⚠️ [SyncManager] Hábito remoto inválido, saltando...');
           continue;
         }
 
+        final remoteCreatedAt =
+            remoteHabit['created_at'] as String? ??
+            DateTime.now().toIso8601String();
+        final remoteIsActive = (remoteHabit['is_active'] as int? ?? 1) == 1;
+        final remoteIsDeleted = (remoteHabit['is_deleted'] as int? ?? 0) == 1;
         final remoteColor = remoteHabit['color'] as int?;
         final remoteIcon = remoteHabit['icon'] as String?;
-        final remoteWeekdays = HabitModel.parseWeekdays(
-          remoteHabit['weekdays'],
-        );
+        final remoteWeekdays = HabitModel.parseWeekdays(remoteHabit['weekdays']);
         final remoteReminder = remoteHabit['reminder_time'] as String?;
+        final remoteLastModified =
+            remoteHabit['last_modified'] is String
+                ? DateTime.tryParse(remoteHabit['last_modified'] as String)
+                : null;
 
         final localHabit = localHabitsMap[remoteId];
+
         if (localHabit == null) {
-          if (remoteIsActive) {
+          // No existe local. Solo insertar si el remoto está vivo (no borrado).
+          if (remoteIsActive && !remoteIsDeleted) {
             try {
-              final newHabit = HabitModel(
-                id: remoteId,
-                name: remoteName,
-                createdAt: DateTime.parse(remoteCreatedAt),
-                isActive: remoteIsActive,
-                colorValue: remoteColor ?? Habit.defaultColor,
-                iconKey: remoteIcon ?? Habit.defaultIcon,
-                weekdays: remoteWeekdays,
-                reminderTime: remoteReminder,
+              await _habitDataSource.insertHabitWithId(
+                HabitModel(
+                  id: remoteId,
+                  name: remoteName,
+                  createdAt: DateTime.parse(remoteCreatedAt),
+                  isActive: remoteIsActive,
+                  colorValue: remoteColor ?? Habit.defaultColor,
+                  iconKey: remoteIcon ?? Habit.defaultIcon,
+                  weekdays: remoteWeekdays,
+                  reminderTime: remoteReminder,
+                  isDeleted: false,
+                  lastModified: remoteLastModified,
+                ),
               );
-              await _habitDataSource.insertHabitWithId(newHabit);
               newHabitsAdded++;
-              appLog(
-                '➕ [SyncManager] Nuevo hábito agregado desde remoto: "$remoteName" (ID: $remoteId)',
-              );
+              appLog('➕ [SyncManager] Nuevo desde remoto: "$remoteName" ($remoteId)');
             } catch (e) {
-              appLog(
-                '❌ [SyncManager] Error agregando hábito remoto "$remoteName": $e',
-              );
+              appLog('❌ [SyncManager] Error agregando "$remoteName": $e');
             }
           } else {
             appLog(
-              'ℹ️ [SyncManager] Hábito remoto $remoteId está inactivo, no se agrega localmente.',
+              'ℹ️ [SyncManager] Remoto $remoteId borrado/inactivo y no local: se ignora.',
             );
           }
-        } else {
-          bool needsUpdate = false;
-          HabitModel updatedHabit = localHabit;
+          continue;
+        }
 
-          if (localHabit.name != remoteName) {
-            appLog(
-              '🔀 [SyncManager] Conflicto de nombre en hábito ID $remoteId: Local="${localHabit.name}" vs Remoto="$remoteName"',
+        // Existe en ambos: gana el más reciente por last_modified.
+        final localLm = localHabit.lastModified;
+        final remoteWins =
+            remoteLastModified != null &&
+            (localLm == null || remoteLastModified.isAfter(localLm));
+
+        if (remoteWins) {
+          try {
+            final merged = localHabit.copyWithModel(
+              name: remoteName,
+              isActive: remoteIsActive,
+              isDeleted: remoteIsDeleted,
+              colorValue: remoteColor ?? localHabit.colorValue,
+              iconKey: remoteIcon ?? localHabit.iconKey,
+              weekdays: remoteWeekdays,
+              reminderTime: remoteReminder,
+              lastModified: remoteLastModified,
             );
-            updatedHabit = updatedHabit.copyWithModel(name: remoteName);
-            needsUpdate = true;
-          }
-
-          if (localHabit.isActive != remoteIsActive) {
-            appLog(
-              '🔀 [SyncManager] Conflicto de estado (activo/inactivo) en hábito ID $remoteId: Local=${localHabit.isActive} vs Remoto=$remoteIsActive',
-            );
-            updatedHabit = updatedHabit.copyWithModel(isActive: remoteIsActive);
-            needsUpdate = true;
-          }
-
-          if (needsUpdate) {
-            try {
-              await _habitDataSource.updateHabit(updatedHabit);
-              conflictsResolved++;
-              appLog(
-                '🔄 [SyncManager] Conflicto resuelto para hábito "$remoteName" (ID: $remoteId)',
-              );
-            } catch (e) {
-              appLog(
-                '❌ [SyncManager] Error resolviendo conflicto para hábito ID $remoteId: $e',
-              );
+            await _habitDataSource.updateHabit(merged);
+            conflictsResolved++;
+            if (remoteIsDeleted) {
+              appLog('🗑️ [SyncManager] Hábito $remoteId borrado por remoto (tombstone).');
+            } else {
+              appLog('🔄 [SyncManager] Hábito "$remoteName" ($remoteId) actualizado desde remoto.');
             }
+          } catch (e) {
+            appLog('❌ [SyncManager] Error resolviendo conflicto $remoteId: $e');
           }
         }
+        // Si local es más reciente, se mantiene y se subirá abajo.
       }
 
-      appLog('✅ [SyncManager] Hábitos sincronizados exitosamente:');
-      appLog('   📱 Local: ${localHabits.length}');
-      appLog('   ☁️ Remoto: ${remoteHabits.length}');
-      appLog('   ➕ Nuevos agregados: $newHabitsAdded');
-      appLog('   🔄 Conflicto de hábitos resueltos: $conflictsResolved');
-      appLog(
-        '   ℹ️ Hábitos remotos inactivos ignorados o actualizados localmente.',
+      // Subir el estado local ya mergeado (incluye tombstones para propagarlos).
+      final merged = await _habitDataSource.getAllHabits(
+        includeInactive: true,
+        includeDeleted: true,
       );
+      if (merged.isNotEmpty) {
+        await _firebaseService.syncHabits(
+          userId,
+          merged.map((h) => h.toFirestoreMap()).toList(),
+        );
+        appLog('⬆️ [SyncManager] ${merged.length} hábitos subidos (con tombstones).');
+      }
+
+      appLog('✅ [SyncManager] Hábitos sincronizados:');
+      appLog('   ➕ Nuevos: $newHabitsAdded · 🔄 Resueltos: $conflictsResolved');
     } catch (e) {
       throw Exception('Error en sincronización bidireccional de hábitos: $e');
     }
