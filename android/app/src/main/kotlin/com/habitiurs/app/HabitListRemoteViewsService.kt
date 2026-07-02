@@ -63,6 +63,12 @@ class HabitListRemoteViewsFactory(
                     if (status == 1) R.color.w_on_surface_var else R.color.w_on_surface,
                 ),
             )
+            // Feedback: fondo sutil en las filas completadas (0 = sin fondo).
+            views.setInt(
+                R.id.item_root,
+                "setBackgroundResource",
+                if (status == 1) R.drawable.widget_row_done_bg else 0,
+            )
 
             // Click en la fila → marca/desmarca (rellena la URI del template).
             val fillIn = Intent().apply {

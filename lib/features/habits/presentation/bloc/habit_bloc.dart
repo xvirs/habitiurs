@@ -264,6 +264,9 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     Emitter<HabitState> emit, {
     bool isRefreshing = false,
   }) async {
+    // iOS: aplicar a la BD los toggles hechos desde el widget antes de leer.
+    await HomeWidgetService.applyPendingIosToggles();
+
     final habits = await _getAllHabits();
     final now = DateTime.now();
     final weekEntries = await _getWeekEntries(now);

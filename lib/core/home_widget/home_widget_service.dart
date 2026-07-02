@@ -80,6 +80,58 @@ class HomeWidgetService {
     }
   }
 
+  /// iOS: aplica a la BD los toggles hechos desde el widget (que se guardaron en
+  /// `pending_toggles` del App Group porque la extensión no puede tocar la BD de
+  /// la app). Devuelve true si aplicó algún cambio. Es no-op en Android.
+  static Future<bool> applyPendingIosToggles() async {
+    try {
+      final raw = await HomeWidget.getWidgetData<String>('pending_toggles');
+      if (raw == null || raw.isEmpty || raw == '{}') return false;
+      final Map<String, dynamic> pending =
+          jsonDecode(raw) as Map<String, dynamic>;
+      if (pending.isEmpty) return false;
+
+      // Misma base que usa la app. No la cerramos (handle compartido).
+      final dbPath = p.join(await getDatabasesPath(), 'habitiurs.db');
+      final db = await openDatabase(dbPath);
+      final todayStr = DateTime.now().toIso8601String().split('T')[0];
+      final nowIso = DateTime.now().toIso8601String();
+
+      for (final entry in pending.entries) {
+        final id = int.tryParse(entry.key);
+        final status = (entry.value as num?)?.toInt();
+        if (id == null || status == null) continue;
+        final existing = await db.query(
+          'habit_entries',
+          where: 'habit_id = ? AND date = ?',
+          whereArgs: [id, todayStr],
+        );
+        if (existing.isNotEmpty) {
+          await db.update(
+            'habit_entries',
+            {'status': status, 'last_modified': nowIso},
+            where: 'habit_id = ? AND date = ?',
+            whereArgs: [id, todayStr],
+          );
+        } else {
+          await db.insert('habit_entries', {
+            'habit_id': id,
+            'date': todayStr,
+            'status': status,
+            'last_modified': nowIso,
+          });
+        }
+      }
+
+      await HomeWidget.saveWidgetData<String>('pending_toggles', '{}');
+      appLog('✅ [HomeWidget] ${pending.length} toggle(s) de iOS aplicados a la BD');
+      return true;
+    } catch (e) {
+      appLog('⚠️ [HomeWidget] reconciliación iOS falló: $e');
+      return false;
+    }
+  }
+
   static Future<void> _refreshAll() async {
     await HomeWidget.updateWidget(
       androidName: androidSummaryProvider,

@@ -130,24 +130,44 @@ struct ListEntryView: View {
                 Spacer()
             } else {
                 ForEach(Array(d.items.prefix(maxRows))) { item in
-                    HStack(spacing: 10) {
-                        Circle().fill(colorFromARGB(item.color)).frame(width: 10, height: 10)
-                        Text(item.name)
-                            .font(.system(size: 14))
-                            .foregroundColor(item.status == 1 ? .secondary : .primary)
-                            .lineLimit(1)
-                        Spacer()
-                        Image(systemName: item.status == 1 ? "checkmark.circle.fill" : "circle")
-                            .font(.system(size: 19))
-                            .foregroundColor(item.status == 1 ? WColors.done(scheme) : .secondary)
-                    }
-                    .padding(.vertical, 3)
+                    habitRow(item)
                 }
                 Spacer(minLength: 0)
             }
         }
         .padding(14)
         .modifier(CardBackground(scheme: scheme))
+    }
+
+    // Fila de un hábito. En iOS 17+ es un botón que dispara el App Intent y
+    // marca sin abrir la app; en versiones previas es solo lectura.
+    @ViewBuilder
+    func habitRow(_ item: HabitItem) -> some View {
+        if #available(iOS 17.0, *) {
+            Button(intent: ToggleHabitIntent(id: item.id)) {
+                rowContent(item)
+            }
+            .buttonStyle(.plain)
+        } else {
+            rowContent(item)
+        }
+    }
+
+    @ViewBuilder
+    func rowContent(_ item: HabitItem) -> some View {
+        HStack(spacing: 10) {
+            Circle().fill(colorFromARGB(item.color)).frame(width: 10, height: 10)
+            Text(item.name)
+                .font(.system(size: 14))
+                .foregroundColor(item.status == 1 ? .secondary : .primary)
+                .lineLimit(1)
+            Spacer()
+            Image(systemName: item.status == 1 ? "checkmark.circle.fill" : "circle")
+                .font(.system(size: 19))
+                .foregroundColor(item.status == 1 ? WColors.done(scheme) : .secondary)
+        }
+        .padding(.vertical, 3)
+        .contentShape(Rectangle())
     }
 }
 

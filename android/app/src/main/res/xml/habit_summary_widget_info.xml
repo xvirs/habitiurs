@@ -10,6 +10,7 @@
     android:maxResizeHeight="110dp"
     android:updatePeriodMillis="0"
     android:initialLayout="@layout/habit_summary_widget"
+    android:previewLayout="@layout/widget_summary_preview"
     android:previewImage="@drawable/example_appwidget_preview"
     android:description="@string/widget_summary_description"
     android:resizeMode="horizontal|vertical"

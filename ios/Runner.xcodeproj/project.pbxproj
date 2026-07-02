@@ -14,6 +14,7 @@
 		5A38C2DD62560AF42B9C00B6 /* HabitData.swift in Sources */ = {isa = PBXBuildFile; fileRef = 45EE7329A9DE1F369DA33FBE /* HabitData.swift */; };
 		5A3D40B12F47DB16FDAF8519 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8122BC7DA9ED8CBD6962BD55 /* Foundation.framework */; };
 		74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74858FAE1ED2DC5600515810 /* AppDelegate.swift */; };
+		7513BCFABEC5CED8699E34FB /* ToggleHabitIntent.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9B3FC0DBCBBE1C2FB966B83 /* ToggleHabitIntent.swift */; };
 		82EAC2EA36A700B838D99B64 /* Pods_Runner.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 19066C7AD03599EB5762EBD2 /* Pods_Runner.framework */; };
 		8F21144525C45D3AC056F3E3 /* HabitWidgets.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8DB1DC43E42F63F6F95ABB18 /* HabitWidgets.swift */; };
 		96CD01903E3D91903BF500BE /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = F8E6EBD44675812ACCB0BDF2 /* GoogleService-Info.plist */; };
@@ -93,6 +94,7 @@
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		9CE6B35ED401960F5A72F4F6 /* HabitiursWidget.entitlements */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.entitlements; path = HabitiursWidget.entitlements; sourceTree = "<group>"; };
 		B2B2807E8C25D85C401187DC /* Pods-Runner.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Runner.debug.xcconfig"; path = "Target Support Files/Pods-Runner/Pods-Runner.debug.xcconfig"; sourceTree = "<group>"; };
+		C9B3FC0DBCBBE1C2FB966B83 /* ToggleHabitIntent.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ToggleHabitIntent.swift; sourceTree = "<group>"; };
 		DB08D0DFCACB18203E45D93E /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		F3DE7CF913A2B36FC965E547 /* Pods_RunnerTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_RunnerTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		F8E6EBD44675812ACCB0BDF2 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; name = "GoogleService-Info.plist"; path = "Runner/GoogleService-Info.plist"; sourceTree = "<group>"; };
@@ -151,6 +153,7 @@
 				F9ED04C40B1660A2BC8EAF22 /* HabitiursWidgetBundle.swift */,
 				DB08D0DFCACB18203E45D93E /* Info.plist */,
 				9CE6B35ED401960F5A72F4F6 /* HabitiursWidget.entitlements */,
+				C9B3FC0DBCBBE1C2FB966B83 /* ToggleHabitIntent.swift */,
 			);
 			name = HabitiursWidget;
 			path = HabitiursWidget;
@@ -490,6 +493,7 @@
 				5A38C2DD62560AF42B9C00B6 /* HabitData.swift in Sources */,
 				8F21144525C45D3AC056F3E3 /* HabitWidgets.swift in Sources */,
 				A76FEDD23DF83D1A1E571600 /* HabitiursWidgetBundle.swift in Sources */,
+				7513BCFABEC5CED8699E34FB /* ToggleHabitIntent.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

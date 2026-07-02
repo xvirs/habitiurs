@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo sutil para las filas de hábitos ya completados en el widget de lista. -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+    <solid android:color="@color/w_row_done" />
+    <corners android:radius="10dp" />
+</shape>

@@ -8,4 +8,5 @@
     <color name="w_done">#FF66BB6A</color>
     <color name="w_track">#FF2A323C</color>
     <color name="w_check_todo">#FF8A99A8</color>
+    <color name="w_row_done">#1A66BB6A</color>
 </resources>

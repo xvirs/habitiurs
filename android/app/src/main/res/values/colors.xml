@@ -59,4 +59,5 @@
     <color name="w_done">#FF2E7D32</color>
     <color name="w_track">#FFE4E8EE</color>
     <color name="w_check_todo">#FF9AA0A6</color>
+    <color name="w_row_done">#142E7D32</color>
 </resources>
