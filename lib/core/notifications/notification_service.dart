@@ -4,6 +4,7 @@ import 'package:timezone/timezone.dart' as tz;
 
 import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
+import 'package:habitiurs/core/notifications/motivational_phrases.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -59,7 +60,39 @@ class NotificationService {
     // Solicitar permisos (iOS)
     await _requestPermissions();
 
+    // Crear los canales de Android por adelantado. Es imprescindible para las
+    // notificaciones PROGRAMADAS: cuando la alarma dispara, el receiver corre
+    // en background y NO crea el canal; si el canal no existe, Android descarta
+    // la notificación en silencio. Creándolos acá, quedan listos siempre.
+    await _createAndroidChannels();
+
     _initialized = true;
+  }
+
+  /// Crea (idempotente) los canales de notificación en Android.
+  Future<void> _createAndroidChannels() async {
+    final android =
+        _notifications
+            .resolvePlatformSpecificImplementation<
+              AndroidFlutterLocalNotificationsPlugin
+            >();
+    if (android == null) return;
+
+    const daily = AndroidNotificationChannel(
+      'daily_habit_reminder_v2',
+      'Recordatorio Diario de Hábitos',
+      description: 'Notificación diaria para recordar hábitos pendientes',
+      importance: Importance.max,
+    );
+    const perHabit = AndroidNotificationChannel(
+      'habit_reminder',
+      'Recordatorios de hábitos',
+      description: 'Recordatorio individual de cada hábito',
+      importance: Importance.high,
+    );
+
+    await android.createNotificationChannel(daily);
+    await android.createNotificationChannel(perHabit);
   }
 
   /// Solicita permisos en iOS
@@ -82,8 +115,9 @@ class NotificationService {
 
     if (androidPlatform != null) {
       await androidPlatform.requestNotificationsPermission();
-      // Usamos alarmas inexactas (no requieren SCHEDULE_EXACT_ALARM), así que
-      // no pedimos el permiso de alarmas exactas.
+      // Las alarmas exactas se conceden automáticamente por declarar
+      // USE_EXACT_ALARM (Android 13+) y SCHEDULE_EXACT_ALARM (Android 12) en
+      // el manifest; no hace falta pedirlas en runtime.
     }
   }
 
@@ -126,13 +160,14 @@ class NotificationService {
       scheduledDate = scheduledDate.add(const Duration(days: 1));
     }
 
-    // Crear mensaje personalizado
-    final title =
-        pendingHabitsCount == 1
-            ? '¡Tienes 1 hábito pendiente!'
-            : '¡Tienes $pendingHabitsCount hábitos pendientes!';
-
-    final body = _buildNotificationBody(pendingHabitsCount, pendingHabitNames);
+    // Título motivacional (rota por día) + cuerpo con los pendientes de hoy.
+    final today = DateTime.now();
+    final title = MotivationalPhrases.titleFor(today);
+    final body = _buildNotificationBody(
+      pendingHabitsCount,
+      pendingHabitNames,
+      today,
+    );
 
     // Detalles de Android
     const androidDetails = AndroidNotificationDetails(
@@ -143,6 +178,7 @@ class NotificationService {
       importance: Importance.max, // Forzar importancia máxima
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
+      styleInformation: BigTextStyleInformation(''), // muestra el texto completo
     );
 
     // Detalles de iOS
@@ -157,15 +193,15 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // Programar notificación con alarma inexacta (no requiere
-    // SCHEDULE_EXACT_ALARM; el aviso puede llegar dentro de una ventana corta).
+    // Alarma exacta: el recordatorio llega a la hora puesta aunque el equipo
+    // esté en reposo (requiere SCHEDULE_EXACT_ALARM/USE_EXACT_ALARM en el manifest).
     await _notifications.zonedSchedule(
       0, // ID de la notificación
       title,
       body,
       scheduledDate,
       details,
-      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents:
@@ -181,24 +217,30 @@ class NotificationService {
     appLog('   ⌚ Hora actual referencia: $now');
   }
 
-  /// Construye el cuerpo del mensaje según la cantidad de hábitos
-  String _buildNotificationBody(int count, List<String> habitNames) {
+  /// Construye el cuerpo del mensaje: hábitos pendientes + cierre motivacional.
+  String _buildNotificationBody(
+    int count,
+    List<String> habitNames,
+    DateTime date,
+  ) {
     if (count == 0) return '';
 
+    final closer = MotivationalPhrases.closerFor(date);
+    final String pending;
+
     if (count == 1) {
-      return 'Aún te falta: "${habitNames.first}". ¡Tú puedes!';
+      pending = 'Te falta: "${habitNames.first}".';
+    } else if (count == 2) {
+      pending = 'Te faltan: "${habitNames[0]}" y "${habitNames[1]}".';
+    } else if (count == 3) {
+      pending =
+          'Te faltan: "${habitNames[0]}", "${habitNames[1]}" y "${habitNames[2]}".';
+    } else {
+      pending =
+          'Te faltan "${habitNames[0]}", "${habitNames[1]}" y ${count - 2} más.';
     }
 
-    if (count == 2) {
-      return 'Te faltan: "${habitNames[0]}" y "${habitNames[1]}". ¡Vamos!';
-    }
-
-    if (count <= 3) {
-      return 'Te faltan: ${habitNames.take(count).map((name) => '"$name"').join(', ')}. ¡No te rindas!';
-    }
-
-    // Si son más de 3, mostrar solo los primeros 2
-    return 'Te faltan: "${habitNames[0]}", "${habitNames[1]}" y ${count - 2} más. ¡Tú puedes completarlos!';
+    return '$pending $closer';
   }
 
   /// Cancela todas las notificaciones programadas
@@ -269,7 +311,7 @@ class NotificationService {
         'Es momento de cumplir tu hábito. ¡Tú puedes!',
         scheduledDate,
         details,
-        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,

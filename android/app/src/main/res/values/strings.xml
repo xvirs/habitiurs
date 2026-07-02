@@ -4,4 +4,8 @@
     <string name="appwidget_text">¡Tu hábito del día!</string>
     <string name="app_widget_description">Widget de hábitos diarios para Habitiurs</string>
     <string name="weekly_habits_widget_label">Hábitos Semanales</string>
+    <string name="widget_summary_label">Habitiurs · Resumen del día</string>
+    <string name="widget_summary_description">Progreso de tus hábitos de hoy de un vistazo</string>
+    <string name="widget_list_label">Habitiurs · Hábitos de hoy</string>
+    <string name="widget_list_description">Marca tus hábitos de hoy sin abrir la app</string>
 </resources>

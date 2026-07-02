@@ -366,9 +366,15 @@ class _LoadedView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // En la lista de hoy solo aparecen los hábitos programados para hoy
-    final todayHabits =
-        state.habits.where((h) => h.isScheduledOn(DateTime.now())).toList();
+    // Se muestran TODOS los hábitos activos para poder editarlos/eliminarlos
+    // cualquier día. Los programados para hoy van primero; los que no tocan hoy
+    // van después (atenuados y sin permitir marcar su estado — ver HabitTile).
+    final now = DateTime.now();
+    final scheduledToday =
+        state.habits.where((h) => h.isScheduledOn(now)).toList();
+    final notScheduledToday =
+        state.habits.where((h) => !h.isScheduledOn(now)).toList();
+    final todayHabits = [...scheduledToday, ...notScheduledToday];
 
     return CenteredContent(
       child: Column(
