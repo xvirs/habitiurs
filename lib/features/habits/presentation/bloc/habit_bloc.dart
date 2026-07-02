@@ -17,6 +17,7 @@ import '../../../../core/notifications/notification_service.dart';
 import 'habit_event.dart';
 import 'habit_state.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
+import 'package:habitiurs/core/home_widget/home_widget_service.dart';
 
 class HabitBloc extends Bloc<HabitEvent, HabitState> {
   final GetAllHabits _getAllHabits;
@@ -263,6 +264,9 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     Emitter<HabitState> emit, {
     bool isRefreshing = false,
   }) async {
+    // iOS: aplicar a la BD los toggles hechos desde el widget antes de leer.
+    await HomeWidgetService.applyPendingIosToggles();
+
     final habits = await _getAllHabits();
     final now = DateTime.now();
     final weekEntries = await _getWeekEntries(now);
@@ -289,10 +293,42 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       return;
     }
 
+    // Normalizar: una entrada 'pending' de un día PASADO significa que ese día
+    // no se cumplió → se convierte a 'skipped' (rojo). Se persiste para que la
+    // vista, las estadísticas, la IA y los widgets queden consistentes. Es
+    // idempotente: una vez convertida ya no vuelve a entrar acá.
+    final today = AppDateUtils.getStartOfDay(now);
+    final normalizedEntries = <HabitEntry>[];
+    for (final entry in validationResult.validEntries) {
+      final isPastPending =
+          entry.status == HabitStatus.pending &&
+          AppDateUtils.getStartOfDay(entry.date).isBefore(today);
+      if (isPastPending) {
+        normalizedEntries.add(
+          HabitEntry(
+            id: entry.id,
+            habitId: entry.habitId,
+            date: entry.date,
+            status: HabitStatus.skipped,
+          ),
+        );
+        // Persistir la corrección en segundo plano (no bloquea la vista).
+        _updatePastHabitEntry(
+          entry.habitId,
+          entry.date,
+          HabitStatus.skipped,
+        ).catchError(
+          (e) => appLog('⚠️ [HabitBloc] No se pudo convertir pending→skipped: $e'),
+        );
+      } else {
+        normalizedEntries.add(entry);
+      }
+    }
+
     // Generar entradas faltantes para días pasados (auto-skip)
     final missingEntries = HabitValidationService.generateMissingEntries(
       validationResult.validHabits,
-      validationResult.validEntries,
+      normalizedEntries,
       currentWeekStart,
     );
 
@@ -300,8 +336,8 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     // Las entradas existentes (de BD) tienen prioridad sobre las generadas
     final entriesMap = <String, HabitEntry>{};
 
-    // Primero agregar las entradas válidas (de BD) - tienen prioridad
-    for (final entry in validationResult.validEntries) {
+    // Primero agregar las entradas válidas (de BD, ya normalizadas) - prioridad
+    for (final entry in normalizedEntries) {
       final key =
           '${entry.habitId}_${AppDateUtils.formatToYYYYMMDD(entry.date)}';
       entriesMap[key] = entry;
@@ -326,6 +362,9 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     // Programar notificación para hábitos pendientes del día actual
     _scheduleDailyNotification(validationResult.validHabits, allEntries);
 
+    // Exportar los hábitos de hoy a los widgets de pantalla de inicio.
+    _exportToHomeWidget(validationResult.validHabits, allEntries, now);
+
     // Limpiar cache del WeeklyGrid para forzar actualización
     try {
       // Si el import está disponible
@@ -340,6 +379,21 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
         isRefreshing: isRefreshing,
       ),
     );
+  }
+
+  /// Calcula el estado de hoy de cada hábito y lo manda a los widgets.
+  void _exportToHomeWidget(
+    List<Habit> habits,
+    List<HabitEntry> entries,
+    DateTime now,
+  ) {
+    final todayStatus = <int, HabitStatus>{};
+    for (final e in entries) {
+      if (e.habitId != 0 && AppDateUtils.isSameDay(e.date, now)) {
+        todayStatus[e.habitId] = e.status;
+      }
+    }
+    HomeWidgetService.update(habits, todayStatus);
   }
 
   /// Programa la notificación diaria con los hábitos pendientes

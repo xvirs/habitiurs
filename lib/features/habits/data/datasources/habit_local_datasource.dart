@@ -6,7 +6,10 @@ import '../models/habit_entry_model.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
 
 abstract class HabitLocalDataSource {
-  Future<List<HabitModel>> getAllHabits({bool includeInactive = false});
+  Future<List<HabitModel>> getAllHabits({
+    bool includeInactive = false,
+    bool includeDeleted = false,
+  });
   Future<int> insertHabit(HabitModel habit);
   Future<void> insertHabitWithId(HabitModel habit);
   Future<void> updateHabit(HabitModel habit);
@@ -27,21 +30,32 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   HabitLocalDataSourceImpl(this._databaseHelper);
 
   @override
-  Future<List<HabitModel>> getAllHabits({bool includeInactive = false}) async {
+  Future<List<HabitModel>> getAllHabits({
+    bool includeInactive = false,
+    bool includeDeleted = false,
+  }) async {
     final db = await _databaseHelper.database;
     List<Map<String, dynamic>> maps;
 
     try {
-      if (includeInactive) {
-        maps = await db.query('habits', orderBy: 'created_at DESC');
-      } else {
-        maps = await db.query(
-          'habits',
-          where: 'is_active = ?',
-          whereArgs: [1],
-          orderBy: 'created_at DESC',
-        );
+      // Los borrados (tombstones) se excluyen de la UI, pero el sync los pide
+      // con includeDeleted=true para propagar la marca de borrado.
+      final conditions = <String>[];
+      final args = <dynamic>[];
+      if (!includeDeleted) {
+        conditions.add('is_deleted = ?');
+        args.add(0);
       }
+      if (!includeInactive) {
+        conditions.add('is_active = ?');
+        args.add(1);
+      }
+      maps = await db.query(
+        'habits',
+        where: conditions.isEmpty ? null : conditions.join(' AND '),
+        whereArgs: args.isEmpty ? null : args,
+        orderBy: 'created_at DESC',
+      );
       return List.generate(maps.length, (i) => HabitModel.fromJson(maps[i]));
     } catch (e, stackTrace) {
       appLog(
@@ -71,8 +85,8 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
       await db.execute(
         '''
         INSERT OR REPLACE INTO habits
-          (id, name, created_at, is_active, color, icon, weekdays, reminder_time)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+          (id, name, created_at, is_active, color, icon, weekdays, reminder_time, is_deleted, last_modified)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ''',
         [
           habit.id,
@@ -83,6 +97,8 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
           habit.iconKey,
           HabitModel.weekdaysToDb(habit.weekdays),
           habit.reminderTime,
+          habit.isDeleted ? 1 : 0,
+          (habit.lastModified ?? DateTime.now()).toIso8601String(),
         ],
       );
     } catch (e, stackTrace) {
@@ -115,20 +131,19 @@ class HabitLocalDataSourceImpl implements HabitLocalDataSource {
   Future<void> deleteHabit(int id) async {
     final db = await _databaseHelper.database;
     try {
-      // Se utiliza una transacción para asegurar que ambas eliminaciones (entradas y hábito)
-      // se realicen de forma atómica. Si una falla, se revierte toda la operación.
-      await db.transaction((txn) async {
-        // Eliminar todas las entradas de hábito relacionadas con este hábito primero
-        await txn.delete(
-          'habit_entries',
-          where: 'habit_id = ?',
-          whereArgs: [id],
-        );
-        appLog('DEBUG: Eliminadas entradas para hábito $id de la DB local.');
-        // Luego eliminar el hábito de la tabla principal
-        await txn.delete('habits', where: 'id = ?', whereArgs: [id]);
-        appLog('DEBUG: Hábito $id eliminado físicamente de la DB local.');
-      });
+      // BORRADO LÓGICO (tombstone): en vez de eliminar la fila, la marcamos como
+      // borrada con timestamp. Así el borrado se propaga por el sync a los otros
+      // dispositivos (con hard delete "resucitaba" al re-subir desde el otro).
+      final now = DateTime.now().toIso8601String();
+      await db.update(
+        'habits',
+        {'is_deleted': 1, 'is_active': 0, 'last_modified': now},
+        where: 'id = ?',
+        whereArgs: [id],
+      );
+      // Las entradas del hábito borrado se quedan (inofensivas: el hábito ya no
+      // se muestra). No las borramos para no perder historial si se reactiva.
+      appLog('DEBUG: Hábito $id marcado como borrado (tombstone).');
     } catch (e, stackTrace) {
       // Se captura cualquier excepción durante la transacción y se relanza
       appLog(

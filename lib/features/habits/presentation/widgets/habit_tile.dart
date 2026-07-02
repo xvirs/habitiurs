@@ -32,23 +32,67 @@ class HabitTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Un hábito programado solo ciertos días no se puede MARCAR los días que no
+    // toca (pero sí editar con long-press y borrar con swipe). Se muestra
+    // atenuado y con un indicador de "no programado hoy".
+    final scheduledToday = habit.isScheduledOn(DateTime.now());
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: () => onToggle(habit.id!, status),
+        onTap:
+            scheduledToday
+                ? () => onToggle(habit.id!, status)
+                : () {
+                  ScaffoldMessenger.of(context)
+                    ..hideCurrentSnackBar()
+                    ..showSnackBar(
+                      const SnackBar(
+                        content: Text(
+                          'Este hábito no está programado para hoy',
+                        ),
+                        duration: Duration(seconds: 2),
+                      ),
+                    );
+                },
         onLongPress: onEdit == null ? null : () => onEdit!(habit),
         borderRadius: BorderRadius.circular(8),
-        child: Container(
-          padding: const EdgeInsets.all(12),
-          decoration: HabitStatusStyles.buildTileDecoration(context, status),
-          child: Row(
-            children: [
-              _HabitBadge(habit: habit),
-              const SizedBox(width: 12),
-              Expanded(child: _HabitName(name: habit.name, status: status)),
-              _StatusToggle(status: status),
-            ],
+        child: Opacity(
+          opacity: scheduledToday ? 1.0 : 0.5,
+          child: Container(
+            padding: const EdgeInsets.all(12),
+            decoration: HabitStatusStyles.buildTileDecoration(context, status),
+            child: Row(
+              children: [
+                _HabitBadge(habit: habit),
+                const SizedBox(width: 12),
+                Expanded(child: _HabitName(name: habit.name, status: status)),
+                scheduledToday
+                    ? _StatusToggle(status: status)
+                    : const _NotScheduledIndicator(),
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Indicador para hábitos no programados hoy (no se pueden marcar).
+class _NotScheduledIndicator extends StatelessWidget {
+  const _NotScheduledIndicator();
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: 32,
+      height: 32,
+      child: Center(
+        child: Icon(
+          Icons.event_busy_outlined,
+          size: 20,
+          color: Theme.of(context).colorScheme.outline,
         ),
       ),
     );

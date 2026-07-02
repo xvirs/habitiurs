@@ -26,7 +26,7 @@ class MainPage extends StatefulWidget {
   State<MainPage> createState() => _MainPageState();
 }
 
-class _MainPageState extends State<MainPage> {
+class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   int _currentIndex = 1;
   StreamSubscription? _authBlocSyncSubscription;
   final Set<int> _visitedTabs = {1};
@@ -41,13 +41,27 @@ class _MainPageState extends State<MainPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _setupAuthSyncSubscription();
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _authBlocSyncSubscription?.cancel();
     super.dispose();
+  }
+
+  /// Al volver del segundo plano, recarga los datos en silencio (toma cambios
+  /// hechos desde el widget de pantalla de inicio u otro dispositivo).
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    final authState = context.read<AuthBloc>().state;
+    if (authState is! AuthAuthenticated) return;
+    context.read<HabitBloc>().add(RefreshData());
+    context.read<StatisticsBloc>().add(RefreshStatisticsQuiet());
   }
 
   void _setupAuthSyncSubscription() {

@@ -104,6 +104,26 @@ class SqliteDatabaseHelper implements DatabaseHelper {
     if (oldVersion < 6) {
       await _migrateToVersion6(db);
     }
+    if (oldVersion < 7) {
+      await _migrateToVersion7(db);
+    }
+  }
+
+  Future<void> _migrateToVersion7(Database db) async {
+    appLog(
+      '🔄 [Database] Migrando a versión 7: tombstones (is_deleted, last_modified) en habits.',
+    );
+    final tableInfo = await db.rawQuery("PRAGMA table_info(habits)");
+    final existing = tableInfo.map((col) => col['name']).toSet();
+    for (final statement in DatabaseConstants.addHabitTombstoneColumns) {
+      // Los ALTER se saltan si la columna ya existe; el UPDATE corre siempre.
+      if (statement.contains('ADD COLUMN')) {
+        final columnName = statement.split('ADD COLUMN ')[1].split(' ')[0];
+        if (existing.contains(columnName)) continue;
+      }
+      await db.execute(statement);
+    }
+    appLog('✅ [Database] Migración a versión 7 completada.');
   }
 
   Future<void> _migrateToVersion6(Database db) async {

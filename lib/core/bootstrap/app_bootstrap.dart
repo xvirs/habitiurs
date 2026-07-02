@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/foundation.dart';
 import 'package:habitiurs/core/errors/app_error.dart';
 import '../di/injection_container.dart';
+import '../home_widget/home_widget_service.dart';
 import '../notifications/notification_service.dart';
 import '../../firebase_options.dart';
 import 'app_state.dart';
@@ -17,6 +18,7 @@ class AppBootstrap {
       await _initializeFirebase();
       await _initializeDependencies();
       await _initializeNotifications();
+      await HomeWidgetService.init();
 
       appLog('✅ [Bootstrap] Inicialización exitosa');
       return AppState.success();

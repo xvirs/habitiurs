@@ -19,6 +19,12 @@ class Habit extends Equatable {
   /// Hora del recordatorio propio en formato 'HH:mm', o null si no tiene.
   final String? reminderTime;
 
+  /// Tombstone: borrado lógico que se propaga entre dispositivos.
+  final bool isDeleted;
+
+  /// Timestamp del último cambio, para resolver conflictos en el sync.
+  final DateTime? lastModified;
+
   const Habit({
     this.id,
     required this.name,
@@ -28,6 +34,8 @@ class Habit extends Equatable {
     this.iconKey = defaultIcon,
     this.weekdays = allWeekdays,
     this.reminderTime,
+    this.isDeleted = false,
+    this.lastModified,
   });
 
   static const int defaultColor = 0xFF1565C0;
@@ -49,6 +57,8 @@ class Habit extends Equatable {
     List<int>? weekdays,
     String? reminderTime,
     bool clearReminder = false,
+    bool? isDeleted,
+    DateTime? lastModified,
   }) {
     return Habit(
       id: id ?? this.id,
@@ -59,6 +69,8 @@ class Habit extends Equatable {
       iconKey: iconKey ?? this.iconKey,
       weekdays: weekdays ?? this.weekdays,
       reminderTime: clearReminder ? null : (reminderTime ?? this.reminderTime),
+      isDeleted: isDeleted ?? this.isDeleted,
+      lastModified: lastModified ?? this.lastModified,
     );
   }
 
@@ -72,6 +84,8 @@ class Habit extends Equatable {
     iconKey,
     weekdays,
     reminderTime,
+    isDeleted,
+    lastModified,
   ];
 
   @override
