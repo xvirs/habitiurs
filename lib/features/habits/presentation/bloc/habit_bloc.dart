@@ -318,7 +318,8 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
           entry.date,
           HabitStatus.skipped,
         ).catchError(
-          (e) => appLog('⚠️ [HabitBloc] No se pudo convertir pending→skipped: $e'),
+          (e) =>
+              appLog('⚠️ [HabitBloc] No se pudo convertir pending→skipped: $e'),
         );
       } else {
         normalizedEntries.add(entry);

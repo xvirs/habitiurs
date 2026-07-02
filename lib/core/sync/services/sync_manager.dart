@@ -256,7 +256,9 @@ class SyncManager {
         final remoteIsDeleted = (remoteHabit['is_deleted'] as int? ?? 0) == 1;
         final remoteColor = remoteHabit['color'] as int?;
         final remoteIcon = remoteHabit['icon'] as String?;
-        final remoteWeekdays = HabitModel.parseWeekdays(remoteHabit['weekdays']);
+        final remoteWeekdays = HabitModel.parseWeekdays(
+          remoteHabit['weekdays'],
+        );
         final remoteReminder = remoteHabit['reminder_time'] as String?;
         final remoteLastModified =
             remoteHabit['last_modified'] is String
@@ -284,7 +286,9 @@ class SyncManager {
                 ),
               );
               newHabitsAdded++;
-              appLog('➕ [SyncManager] Nuevo desde remoto: "$remoteName" ($remoteId)');
+              appLog(
+                '➕ [SyncManager] Nuevo desde remoto: "$remoteName" ($remoteId)',
+              );
             } catch (e) {
               appLog('❌ [SyncManager] Error agregando "$remoteName": $e');
             }
@@ -317,9 +321,13 @@ class SyncManager {
             await _habitDataSource.updateHabit(merged);
             conflictsResolved++;
             if (remoteIsDeleted) {
-              appLog('🗑️ [SyncManager] Hábito $remoteId borrado por remoto (tombstone).');
+              appLog(
+                '🗑️ [SyncManager] Hábito $remoteId borrado por remoto (tombstone).',
+              );
             } else {
-              appLog('🔄 [SyncManager] Hábito "$remoteName" ($remoteId) actualizado desde remoto.');
+              appLog(
+                '🔄 [SyncManager] Hábito "$remoteName" ($remoteId) actualizado desde remoto.',
+              );
             }
           } catch (e) {
             appLog('❌ [SyncManager] Error resolviendo conflicto $remoteId: $e');
@@ -338,7 +346,9 @@ class SyncManager {
           userId,
           merged.map((h) => h.toFirestoreMap()).toList(),
         );
-        appLog('⬆️ [SyncManager] ${merged.length} hábitos subidos (con tombstones).');
+        appLog(
+          '⬆️ [SyncManager] ${merged.length} hábitos subidos (con tombstones).',
+        );
       }
 
       appLog('✅ [SyncManager] Hábitos sincronizados:');

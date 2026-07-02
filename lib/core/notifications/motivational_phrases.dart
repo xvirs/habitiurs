@@ -41,7 +41,8 @@ class MotivationalPhrases {
     return dayOfYear % length;
   }
 
-  static String titleFor(DateTime date) => _titles[_index(date, _titles.length)];
+  static String titleFor(DateTime date) =>
+      _titles[_index(date, _titles.length)];
 
   static String closerFor(DateTime date) =>
       _closers[_index(date, _closers.length)];

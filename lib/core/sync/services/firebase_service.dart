@@ -191,7 +191,9 @@ class FirebaseService {
 
       appLog('✅ [Firebase] Hábito $habitId marcado como borrado (tombstone).');
     } catch (e) {
-      throw FirebaseException('Error borrando hábito $habitId en Firestore: $e');
+      throw FirebaseException(
+        'Error borrando hábito $habitId en Firestore: $e',
+      );
     }
   }
 

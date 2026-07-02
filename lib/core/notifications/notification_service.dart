@@ -178,7 +178,9 @@ class NotificationService {
       importance: Importance.max, // Forzar importancia máxima
       priority: Priority.high,
       icon: '@mipmap/ic_launcher',
-      styleInformation: BigTextStyleInformation(''), // muestra el texto completo
+      styleInformation: BigTextStyleInformation(
+        '',
+      ), // muestra el texto completo
     );
 
     // Detalles de iOS
