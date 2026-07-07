@@ -2,7 +2,7 @@ name: habitiurs
 description: "App de seguimiento de hábitos con IA integrada, auth y sincronización"
 publish_to: 'none'
 
-version: 1.1.0+5
+version: 1.1.1+6
 
 environment:
   sdk: ^3.7.2
