@@ -14,7 +14,8 @@ import '../utils/app_logger.dart';
 
 /// Claves compartidas con los widgets nativos.
 class _Keys {
-  static const todayHabits = 'today_habits'; // JSON: [{id,name,color,icon,status}]
+  static const todayHabits =
+      'today_habits'; // JSON: [{id,name,color,icon,status}]
   static const summary = 'today_summary'; // "3/5"
   static const completed = 'today_completed'; // int
   static const total = 'today_total'; // int
@@ -52,16 +53,17 @@ class HomeWidgetService {
               .where((h) => h.isActive && h.id != null && h.isScheduledOn(now))
               .toList();
 
-      final items = todayHabits.map((h) {
-        final status = todayStatus[h.id] ?? HabitStatus.pending;
-        return {
-          'id': h.id,
-          'name': h.name,
-          'color': h.colorValue,
-          'icon': h.iconKey,
-          'status': status.index, // 0=pending 1=completed 2=skipped
-        };
-      }).toList();
+      final items =
+          todayHabits.map((h) {
+            final status = todayStatus[h.id] ?? HabitStatus.pending;
+            return {
+              'id': h.id,
+              'name': h.name,
+              'color': h.colorValue,
+              'icon': h.iconKey,
+              'status': status.index, // 0=pending 1=completed 2=skipped
+            };
+          }).toList();
 
       final completed = items.where((e) => e['status'] == 1).length;
       final total = items.length;
@@ -70,7 +72,10 @@ class HomeWidgetService {
         _Keys.todayHabits,
         jsonEncode(items),
       );
-      await HomeWidget.saveWidgetData<String>(_Keys.summary, '$completed/$total');
+      await HomeWidget.saveWidgetData<String>(
+        _Keys.summary,
+        '$completed/$total',
+      );
       await HomeWidget.saveWidgetData<int>(_Keys.completed, completed);
       await HomeWidget.saveWidgetData<int>(_Keys.total, total);
 
@@ -124,7 +129,9 @@ class HomeWidgetService {
       }
 
       await HomeWidget.saveWidgetData<String>('pending_toggles', '{}');
-      appLog('✅ [HomeWidget] ${pending.length} toggle(s) de iOS aplicados a la BD');
+      appLog(
+        '✅ [HomeWidget] ${pending.length} toggle(s) de iOS aplicados a la BD',
+      );
       return true;
     } catch (e) {
       appLog('⚠️ [HomeWidget] reconciliación iOS falló: $e');
@@ -195,7 +202,10 @@ Future<void> homeWidgetBackgroundCallback(Uri? uri) async {
     // 3. Actualizar el JSON del widget y refrescar.
     list[idx]['status'] = next;
     final completed = list.where((e) => e['status'] == 1).length;
-    await HomeWidget.saveWidgetData<String>(_Keys.todayHabits, jsonEncode(list));
+    await HomeWidget.saveWidgetData<String>(
+      _Keys.todayHabits,
+      jsonEncode(list),
+    );
     await HomeWidget.saveWidgetData<String>(
       _Keys.summary,
       '$completed/${list.length}',

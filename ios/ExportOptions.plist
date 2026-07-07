@@ -14,6 +14,8 @@
 	<dict>
 		<key>com.habitiurs.app</key>
 		<string>Habitiurs App Store</string>
+		<key>com.habitiurs.app.HabitiursWidget</key>
+		<string>Habitiurs Widget App Store</string>
 	</dict>
 	<key>uploadSymbols</key>
 	<true/>

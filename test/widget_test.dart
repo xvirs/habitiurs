@@ -15,142 +15,149 @@ import 'package:habitiurs/features/auth/presentation/bloc/auth_event.dart';
 import 'package:habitiurs/features/auth/presentation/pages/auth_wrapper.dart';
 
 void main() {
-  group('Habitiurs App Tests', () {
-    testWidgets('App inicializa correctamente y muestra pantalla de carga', (
-      WidgetTester tester,
-    ) async {
-      // Crear un AuthService mock para testing
-      final authService = AuthService();
+  group(
+    'Habitiurs App Tests',
+    () {
+      testWidgets('App inicializa correctamente y muestra pantalla de carga', (
+        WidgetTester tester,
+      ) async {
+        // Crear un AuthService mock para testing
+        final authService = AuthService();
 
-      // Construir la app de testing
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BlocProvider(
-            create:
-                (context) => AuthBloc(
-                  loginWithGoogle: LoginWithGoogle(authService),
-                  loginWithApple: LoginWithApple(authService),
-                  logoutUser: LogoutUser(authService),
-                  createGuestSession: CreateGuestSession(authService),
-                  checkAuthStatus: CheckAuthStatus(authService),
-                )..add(AuthInitializationRequested()),
-            child: const AuthWrapper(),
-          ),
-        ),
-      );
-
-      // Verificar que se muestra la pantalla de carga inicialmente
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
-    });
-
-    testWidgets('Navegación a pantalla de login cuando no hay usuario', (
-      WidgetTester tester,
-    ) async {
-      final authService = AuthService();
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BlocProvider(
-            create:
-                (context) => AuthBloc(
-                  loginWithGoogle: LoginWithGoogle(authService),
-                  loginWithApple: LoginWithApple(authService),
-                  logoutUser: LogoutUser(authService),
-                  createGuestSession: CreateGuestSession(authService),
-                  checkAuthStatus: CheckAuthStatus(authService),
-                )..add(AuthInitializationRequested()),
-            child: const AuthWrapper(),
-          ),
-        ),
-      );
-
-      // Esperar a que termine la inicialización (splash time)
-      await tester.pump(const Duration(milliseconds: 1600));
-
-      // Verificar que aparece la pantalla de login
-      expect(find.text('Habitiurs'), findsOneWidget);
-      expect(find.text('Construye hábitos duraderos con IA'), findsOneWidget);
-      expect(find.text('Continuar con Google'), findsOneWidget);
-      expect(find.text('Continuar sin cuenta'), findsOneWidget);
-    });
-
-    testWidgets('Botones de login funcionan correctamente', (
-      WidgetTester tester,
-    ) async {
-      final authService = AuthService();
-
-      await tester.pumpWidget(
-        MaterialApp(
-          home: BlocProvider(
-            create:
-                (context) => AuthBloc(
-                  loginWithGoogle: LoginWithGoogle(authService),
-                  loginWithApple: LoginWithApple(authService),
-                  logoutUser: LogoutUser(authService),
-                  createGuestSession: CreateGuestSession(authService),
-                  checkAuthStatus: CheckAuthStatus(authService),
-                )..add(AuthInitializationRequested()),
-            child: const AuthWrapper(),
-          ),
-        ),
-      );
-
-      // Esperar a que aparezca la pantalla de login
-      await tester.pump(const Duration(milliseconds: 1600));
-
-      // Verificar que los botones existen y son tappeable
-      final googleButton = find.text('Continuar con Google');
-      final guestButton = find.text('Continuar sin cuenta');
-
-      expect(googleButton, findsOneWidget);
-      expect(guestButton, findsOneWidget);
-
-      // Tap en botón de modo invitado: abre el diálogo de confirmación
-      await tester.tap(guestButton);
-      await tester.pumpAndSettle();
-
-      // El diálogo "Modo sin cuenta" debe aparecer con su botón Continuar
-      expect(find.text('Modo sin cuenta'), findsOneWidget);
-      expect(find.text('Continuar'), findsOneWidget);
-    });
-
-    testWidgets('Tema de la app se aplica correctamente', (
-      WidgetTester tester,
-    ) async {
-      final authService = AuthService();
-
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData(
-            colorScheme: ColorScheme.fromSeed(
-              seedColor: Colors.blue,
-              brightness: Brightness.light,
+        // Construir la app de testing
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider(
+              create:
+                  (context) => AuthBloc(
+                    loginWithGoogle: LoginWithGoogle(authService),
+                    loginWithApple: LoginWithApple(authService),
+                    logoutUser: LogoutUser(authService),
+                    createGuestSession: CreateGuestSession(authService),
+                    checkAuthStatus: CheckAuthStatus(authService),
+                  )..add(AuthInitializationRequested()),
+              child: const AuthWrapper(),
             ),
-            useMaterial3: true,
           ),
-          home: BlocProvider(
-            create:
-                (context) => AuthBloc(
-                  loginWithGoogle: LoginWithGoogle(authService),
-                  loginWithApple: LoginWithApple(authService),
-                  logoutUser: LogoutUser(authService),
-                  createGuestSession: CreateGuestSession(authService),
-                  checkAuthStatus: CheckAuthStatus(authService),
-                )..add(AuthInitializationRequested()),
-            child: const AuthWrapper(),
+        );
+
+        // Verificar que se muestra la pantalla de carga inicialmente
+        expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      });
+
+      testWidgets('Navegación a pantalla de login cuando no hay usuario', (
+        WidgetTester tester,
+      ) async {
+        final authService = AuthService();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider(
+              create:
+                  (context) => AuthBloc(
+                    loginWithGoogle: LoginWithGoogle(authService),
+                    loginWithApple: LoginWithApple(authService),
+                    logoutUser: LogoutUser(authService),
+                    createGuestSession: CreateGuestSession(authService),
+                    checkAuthStatus: CheckAuthStatus(authService),
+                  )..add(AuthInitializationRequested()),
+              child: const AuthWrapper(),
+            ),
           ),
-        ),
-      );
+        );
 
-      await tester.pump(const Duration(milliseconds: 1600));
+        // Esperar a que termine la inicialización (splash time)
+        await tester.pump(const Duration(milliseconds: 1600));
 
-      // Verificar que los elementos tienen el tema correcto
-      final materialApp = tester.widget<MaterialApp>(find.byType(MaterialApp));
-      expect(materialApp.theme?.useMaterial3, true);
-    });
-    // Estas pruebas usan AuthService real (Firebase), que no se inicializa en
-    // `flutter test` sin mocks. Se verifican en dispositivo, no en CI.
-  }, skip: 'Requiere Firebase inicializado (AuthService); no corre en CI sin mocks');
+        // Verificar que aparece la pantalla de login
+        expect(find.text('Habitiurs'), findsOneWidget);
+        expect(find.text('Construye hábitos duraderos con IA'), findsOneWidget);
+        expect(find.text('Continuar con Google'), findsOneWidget);
+        expect(find.text('Continuar sin cuenta'), findsOneWidget);
+      });
+
+      testWidgets('Botones de login funcionan correctamente', (
+        WidgetTester tester,
+      ) async {
+        final authService = AuthService();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: BlocProvider(
+              create:
+                  (context) => AuthBloc(
+                    loginWithGoogle: LoginWithGoogle(authService),
+                    loginWithApple: LoginWithApple(authService),
+                    logoutUser: LogoutUser(authService),
+                    createGuestSession: CreateGuestSession(authService),
+                    checkAuthStatus: CheckAuthStatus(authService),
+                  )..add(AuthInitializationRequested()),
+              child: const AuthWrapper(),
+            ),
+          ),
+        );
+
+        // Esperar a que aparezca la pantalla de login
+        await tester.pump(const Duration(milliseconds: 1600));
+
+        // Verificar que los botones existen y son tappeable
+        final googleButton = find.text('Continuar con Google');
+        final guestButton = find.text('Continuar sin cuenta');
+
+        expect(googleButton, findsOneWidget);
+        expect(guestButton, findsOneWidget);
+
+        // Tap en botón de modo invitado: abre el diálogo de confirmación
+        await tester.tap(guestButton);
+        await tester.pumpAndSettle();
+
+        // El diálogo "Modo sin cuenta" debe aparecer con su botón Continuar
+        expect(find.text('Modo sin cuenta'), findsOneWidget);
+        expect(find.text('Continuar'), findsOneWidget);
+      });
+
+      testWidgets('Tema de la app se aplica correctamente', (
+        WidgetTester tester,
+      ) async {
+        final authService = AuthService();
+
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: ThemeData(
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: Colors.blue,
+                brightness: Brightness.light,
+              ),
+              useMaterial3: true,
+            ),
+            home: BlocProvider(
+              create:
+                  (context) => AuthBloc(
+                    loginWithGoogle: LoginWithGoogle(authService),
+                    loginWithApple: LoginWithApple(authService),
+                    logoutUser: LogoutUser(authService),
+                    createGuestSession: CreateGuestSession(authService),
+                    checkAuthStatus: CheckAuthStatus(authService),
+                  )..add(AuthInitializationRequested()),
+              child: const AuthWrapper(),
+            ),
+          ),
+        );
+
+        await tester.pump(const Duration(milliseconds: 1600));
+
+        // Verificar que los elementos tienen el tema correcto
+        final materialApp = tester.widget<MaterialApp>(
+          find.byType(MaterialApp),
+        );
+        expect(materialApp.theme?.useMaterial3, true);
+      });
+      // Estas pruebas usan AuthService real (Firebase), que no se inicializa en
+      // `flutter test` sin mocks. Se verifican en dispositivo, no en CI.
+    },
+    skip:
+        'Requiere Firebase inicializado (AuthService); no corre en CI sin mocks',
+  );
 
   group('Widget Component Tests', () {
     testWidgets('Loading screen muestra elementos correctos', (
