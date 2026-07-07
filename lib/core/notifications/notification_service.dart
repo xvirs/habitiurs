@@ -115,9 +115,9 @@ class NotificationService {
 
     if (androidPlatform != null) {
       await androidPlatform.requestNotificationsPermission();
-      // Las alarmas exactas se conceden automáticamente por declarar
-      // USE_EXACT_ALARM (Android 13+) y SCHEDULE_EXACT_ALARM (Android 12) en
-      // el manifest; no hace falta pedirlas en runtime.
+      // Usamos alarmas inexactas: no requieren SCHEDULE_EXACT_ALARM/USE_EXACT_ALARM
+      // (esos permisos exigen declaración en Play y están reservados a apps de
+      // alarma/calendario). El aviso llega con una ventana corta de tolerancia.
     }
   }
 
@@ -195,15 +195,14 @@ class NotificationService {
       iOS: iosDetails,
     );
 
-    // Alarma exacta: el recordatorio llega a la hora puesta aunque el equipo
-    // esté en reposo (requiere SCHEDULE_EXACT_ALARM/USE_EXACT_ALARM en el manifest).
+    // Alarma inexacta: puede llegar dentro de una ventana corta de tolerancia.
     await _notifications.zonedSchedule(
       0, // ID de la notificación
       title,
       body,
       scheduledDate,
       details,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
       uiLocalNotificationDateInterpretation:
           UILocalNotificationDateInterpretation.absoluteTime,
       matchDateTimeComponents:
@@ -313,7 +312,7 @@ class NotificationService {
         'Es momento de cumplir tu hábito. ¡Tú puedes!',
         scheduledDate,
         details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         uiLocalNotificationDateInterpretation:
             UILocalNotificationDateInterpretation.absoluteTime,
         matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
