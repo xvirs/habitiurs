@@ -30,13 +30,16 @@ jobs:
           CERTIFICATE_BASE64: ${{ secrets.APPLE_ID_CERTIFICATE_BASE64 }}
           CERTIFICATE_PASSWORD: ${{ secrets.APPLE_ID_CERTIFICATE_PASSWORD }}
           PROVISIONING_PROFILE_BASE64: ${{ secrets.APPLE_ID_PROVISIONING_PROFILE_BASE64 }}
+          WIDGET_PROFILE_BASE64: ${{ secrets.APPLE_ID_WIDGET_PROFILE_BASE64 }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
           CERT_PATH=$RUNNER_TEMP/cert.p12
           PROFILE_PATH=$RUNNER_TEMP/profile.mobileprovision
+          WIDGET_PROFILE_PATH=$RUNNER_TEMP/widget.mobileprovision
           KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           echo "$CERTIFICATE_BASE64" | base64 -d > $CERT_PATH
           echo "$PROVISIONING_PROFILE_BASE64" | base64 -d > $PROFILE_PATH
+          echo "$WIDGET_PROFILE_BASE64" | base64 -d > $WIDGET_PROFILE_PATH
           security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
           security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
           security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
@@ -45,6 +48,7 @@ jobs:
           security list-keychain -d user -s $KEYCHAIN_PATH
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
+          cp $WIDGET_PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/
 
       - run: flutter pub get
       - run: cd ios && pod install && cd ..
