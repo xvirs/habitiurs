@@ -18,6 +18,7 @@ class FirebaseService {
   static const String _usersCollection = 'users';
   static const String _habitsCollection = 'habits';
   static const String _habitEntriesCollection = 'habit_entries';
+  static const String _missionsCollection = 'missions';
   static const String _syncOperationsCollection = 'sync_operations';
 
   // USER OPERATIONS
@@ -127,7 +128,11 @@ class FirebaseService {
     try {
       final userRef = _firestore.collection(_usersCollection).doc(userId);
 
-      for (final collection in [_habitsCollection, _habitEntriesCollection]) {
+      for (final collection in [
+        _habitsCollection,
+        _habitEntriesCollection,
+        _missionsCollection,
+      ]) {
         // Borrado por lotes (límite de 500 operaciones por batch)
         while (true) {
           final snapshot =
@@ -193,6 +198,108 @@ class FirebaseService {
     } catch (e) {
       throw FirebaseException(
         'Error borrando hábito $habitId en Firestore: $e',
+      );
+    }
+  }
+
+  // MISSIONS SYNC — mismo patrón de tombstones que hábitos.
+  Future<void> syncMissions(
+    String userId,
+    List<Map<String, dynamic>> missions,
+  ) async {
+    try {
+      final batch = _firestore.batch();
+      final userMissionsRef = _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection(_missionsCollection);
+
+      for (final mission in missions) {
+        final missionId = mission['id'].toString();
+        final docRef = userMissionsRef.doc(missionId);
+
+        batch.set(docRef, {
+          'id': mission['id'],
+          'title': mission['title'],
+          'note': mission['note'],
+          'is_done': mission['is_done'] ?? 0,
+          'due_date': mission['due_date'],
+          'created_at': mission['created_at'],
+          'completed_at': mission['completed_at'],
+          'is_deleted': mission['is_deleted'] ?? 0,
+          'last_modified': mission['last_modified'],
+          'user_id': userId,
+          'last_sync': FieldValue.serverTimestamp(),
+          'device_sync_time': DateTime.now().toIso8601String(),
+        }, SetOptions(merge: true));
+      }
+
+      await batch.commit();
+      appLog(
+        '✅ [Firebase] ${missions.length} misiones sincronizadas con merge',
+      );
+    } catch (e) {
+      throw FirebaseException('Error sincronizando misiones: $e');
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMissions(String userId) async {
+    try {
+      final snapshot =
+          await _firestore
+              .collection(_usersCollection)
+              .doc(userId)
+              .collection(_missionsCollection)
+              .orderBy('created_at')
+              .get();
+
+      final missions =
+          snapshot.docs.map((doc) {
+            final data = doc.data();
+            return {
+              'id': data['id'],
+              'title': data['title'],
+              'note': data['note'],
+              'is_done': data['is_done'] ?? 0,
+              'due_date': data['due_date'],
+              'created_at': data['created_at'],
+              'completed_at': data['completed_at'],
+              'is_deleted': data['is_deleted'] ?? 0,
+              'last_modified': data['last_modified'],
+              'firestore_id': doc.id,
+            };
+          }).toList();
+
+      appLog(
+        '☁️ [Firebase] Descargadas ${missions.length} misiones para usuario $userId',
+      );
+      return missions;
+    } catch (e) {
+      throw FirebaseException('Error obteniendo misiones: $e');
+    }
+  }
+
+  // BORRADO LÓGICO (tombstone) de misión en Firestore.
+  Future<void> deleteMissionInFirestore(String userId, int missionId) async {
+    try {
+      final missionDocRef = _firestore
+          .collection(_usersCollection)
+          .doc(userId)
+          .collection(_missionsCollection)
+          .doc(missionId.toString());
+
+      await missionDocRef.set({
+        'is_deleted': 1,
+        'last_modified': DateTime.now().toIso8601String(),
+        'last_sync': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      appLog(
+        '✅ [Firebase] Misión $missionId marcada como borrada (tombstone).',
+      );
+    } catch (e) {
+      throw FirebaseException(
+        'Error borrando misión $missionId en Firestore: $e',
       );
     }
   }

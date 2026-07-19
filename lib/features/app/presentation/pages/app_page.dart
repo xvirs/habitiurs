@@ -14,6 +14,10 @@ import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../habits/presentation/bloc/habit_bloc.dart';
 import '../../../statistics/presentation/bloc/statistics_bloc.dart';
 import '../../../ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
+import '../../../settings/presentation/bloc/settings_bloc.dart';
+import '../../../settings/presentation/bloc/settings_event.dart';
+import '../../../missions/presentation/bloc/mission_bloc.dart';
+import '../../../missions/presentation/bloc/mission_event.dart';
 
 class AppPage extends StatefulWidget {
   final AppState appState;
@@ -99,6 +103,19 @@ class _AppPageState extends State<AppPage> {
         ),
         BlocProvider<AIAssistantBloc>(
           create: (context) => InjectionContainer().aiAssistantBloc,
+        ),
+        // SettingsBloc a nivel raíz: MainPage decide con missionsEnabled si
+        // muestra la pestaña de Misiones. Es el mismo singleton que usa la
+        // pantalla de Configuración, así que el toggle se refleja al instante.
+        BlocProvider<SettingsBloc>(
+          create:
+              (context) =>
+                  InjectionContainer().settingsBloc..add(const LoadSettings()),
+        ),
+        BlocProvider<MissionBloc>(
+          create:
+              (context) =>
+                  InjectionContainer().missionBloc..add(const LoadMissions()),
         ),
       ],
       child: const AuthWrapper(),

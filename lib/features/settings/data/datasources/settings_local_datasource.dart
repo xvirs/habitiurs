@@ -15,6 +15,7 @@ class SettingsLocalDatasourceImpl implements SettingsLocalDatasource {
   static const String _notificationsEnabledKey = 'notifications_enabled';
   static const String _notificationHourKey = 'notification_hour';
   static const String _notificationMinuteKey = 'notification_minute';
+  static const String _missionsEnabledKey = 'missions_enabled';
 
   SettingsLocalDatasourceImpl({required this.sharedPreferences});
 
@@ -26,11 +27,14 @@ class SettingsLocalDatasourceImpl implements SettingsLocalDatasource {
         sharedPreferences.getInt(_notificationHourKey) ?? 20;
     final notificationMinute =
         sharedPreferences.getInt(_notificationMinuteKey) ?? 0;
+    final missionsEnabled =
+        sharedPreferences.getBool(_missionsEnabledKey) ?? true;
 
     return AppSettingsModel(
       notificationsEnabled: notificationsEnabled,
       notificationHour: notificationHour,
       notificationMinute: notificationMinute,
+      missionsEnabled: missionsEnabled,
     );
   }
 
@@ -48,6 +52,10 @@ class SettingsLocalDatasourceImpl implements SettingsLocalDatasource {
       _notificationMinuteKey,
       settings.notificationMinute,
     );
+    await sharedPreferences.setBool(
+      _missionsEnabledKey,
+      settings.missionsEnabled,
+    );
   }
 
   @override
@@ -55,5 +63,6 @@ class SettingsLocalDatasourceImpl implements SettingsLocalDatasource {
     await sharedPreferences.remove(_notificationsEnabledKey);
     await sharedPreferences.remove(_notificationHourKey);
     await sharedPreferences.remove(_notificationMinuteKey);
+    await sharedPreferences.remove(_missionsEnabledKey);
   }
 }

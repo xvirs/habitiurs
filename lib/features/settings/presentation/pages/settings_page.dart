@@ -113,6 +113,23 @@ class SettingsPage extends StatelessWidget {
 
                     const Divider(),
 
+                    // Sección de Funciones
+                    const _SectionHeader(title: 'Funciones'),
+
+                    SwitchListTile(
+                      secondary: const Icon(Icons.flag_outlined),
+                      title: const Text('Misiones'),
+                      subtitle: const Text(
+                        'Tareas de una sola vez (trámites, turnos, etc.)',
+                      ),
+                      value: settings.missionsEnabled,
+                      onChanged: (value) {
+                        context.read<SettingsBloc>().add(ToggleMissions(value));
+                      },
+                    ),
+
+                    const Divider(),
+
                     // Sección Legal
                     const _SectionHeader(title: 'Legal'),
 

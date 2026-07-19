@@ -14,6 +14,11 @@ import 'package:habitiurs/features/statistics/presentation/bloc/statistics_bloc.
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_event.dart';
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_state.dart'; // Added
 import 'package:habitiurs/features/statistics/presentation/pages/statistics_page.dart';
+import 'package:habitiurs/features/missions/presentation/bloc/mission_bloc.dart';
+import 'package:habitiurs/features/missions/presentation/bloc/mission_event.dart';
+import 'package:habitiurs/features/missions/presentation/pages/missions_page.dart';
+import 'package:habitiurs/features/settings/presentation/bloc/settings_bloc.dart';
+import 'package:habitiurs/features/settings/presentation/bloc/settings_state.dart';
 import '../../../../shared/widgets/user_drawer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -32,10 +37,18 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   final Set<int> _visitedTabs = {1};
   bool _isSyncing = false;
 
-  static const List<String> _pageTitles = [
+  static const List<String> _baseTitles = [
     'Asistente IA',
     'Mis Hábitos',
     'Estadísticas',
+  ];
+
+  /// Índice de la pestaña de Misiones (siempre la última, cuando está activa).
+  static const int _missionsIndex = 3;
+
+  List<String> _titlesFor(bool showMissions) => [
+    ..._baseTitles,
+    if (showMissions) 'Misiones',
   ];
 
   @override
@@ -62,6 +75,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     if (authState is! AuthAuthenticated) return;
     context.read<HabitBloc>().add(RefreshData());
     context.read<StatisticsBloc>().add(RefreshStatisticsQuiet());
+    context.read<MissionBloc>().add(const LoadMissions());
   }
 
   void _setupAuthSyncSubscription() {
@@ -98,6 +112,9 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       case 2:
         context.read<StatisticsBloc>().add(LoadStatistics());
         break;
+      case _missionsIndex:
+        context.read<MissionBloc>().add(const LoadMissions());
+        break;
     }
   }
 
@@ -111,6 +128,9 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         break;
       case 2:
         context.read<StatisticsBloc>().add(RefreshStatistics());
+        break;
+      case _missionsIndex:
+        context.read<MissionBloc>().add(const LoadMissions());
         break;
     }
   }
@@ -140,12 +160,27 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       case 2:
         context.read<StatisticsBloc>().add(RefreshStatisticsQuiet());
         break;
+      case _missionsIndex:
+        context.read<MissionBloc>().add(const LoadMissions());
+        break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     final isWide = Responsive.isWide(context);
+
+    final settingsState = context.watch<SettingsBloc>().state;
+    final showMissions =
+        settingsState is SettingsLoaded &&
+        settingsState.settings.missionsEnabled;
+
+    // Si la pestaña de Misiones se desactiva mientras estaba seleccionada,
+    // volvemos a Hábitos para no dejar el índice fuera de rango.
+    final effectiveIndex =
+        (!showMissions && _currentIndex == _missionsIndex) ? 1 : _currentIndex;
+
+    final titles = _titlesFor(showMissions);
 
     final pages = Column(
       children: [
@@ -157,8 +192,13 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
           ),
         Expanded(
           child: IndexedStack(
-            index: _currentIndex,
-            children: const [AIAssistantPage(), HabitsPage(), StatisticsPage()],
+            index: effectiveIndex,
+            children: [
+              const AIAssistantPage(),
+              const HabitsPage(),
+              const StatisticsPage(),
+              if (showMissions) const MissionsPage(),
+            ],
           ),
         ),
       ],
@@ -167,7 +207,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
     return Scaffold(
       appBar: AppBar(
         title: Text(
-          _pageTitles[_currentIndex],
+          titles[effectiveIndex],
           style: const TextStyle(fontWeight: FontWeight.w600),
         ),
         centerTitle: false,
@@ -175,7 +215,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         surfaceTintColor: Colors.transparent,
         actions: [
           _RefreshButton(
-            currentIndex: _currentIndex,
+            currentIndex: effectiveIndex,
             onRefresh: _refreshCurrentTab,
           ),
           const SizedBox(width: 8),
@@ -192,7 +232,11 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
           isWide
               ? Row(
                 children: [
-                  _NavRail(currentIndex: _currentIndex, onTap: _onTabTapped),
+                  _NavRail(
+                    currentIndex: effectiveIndex,
+                    onTap: _onTabTapped,
+                    showMissions: showMissions,
+                  ),
                   const VerticalDivider(width: 1, thickness: 1),
                   Expanded(child: pages),
                 ],
@@ -201,7 +245,11 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
       bottomNavigationBar:
           isWide
               ? null
-              : _BottomNavBar(currentIndex: _currentIndex, onTap: _onTabTapped),
+              : _BottomNavBar(
+                currentIndex: effectiveIndex,
+                onTap: _onTabTapped,
+                showMissions: showMissions,
+              ),
     );
   }
 }
@@ -209,8 +257,13 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 class _NavRail extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onTap;
+  final bool showMissions;
 
-  const _NavRail({required this.currentIndex, required this.onTap});
+  const _NavRail({
+    required this.currentIndex,
+    required this.onTap,
+    required this.showMissions,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -219,22 +272,28 @@ class _NavRail extends StatelessWidget {
       onDestinationSelected: onTap,
       labelType: NavigationRailLabelType.all,
       groupAlignment: -0.85,
-      destinations: const [
-        NavigationRailDestination(
+      destinations: [
+        const NavigationRailDestination(
           icon: Icon(Icons.psychology_outlined),
           selectedIcon: Icon(Icons.psychology),
           label: Text('Asistente IA'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.check_circle_outline),
           selectedIcon: Icon(Icons.check_circle),
           label: Text('Hábitos'),
         ),
-        NavigationRailDestination(
+        const NavigationRailDestination(
           icon: Icon(Icons.analytics_outlined),
           selectedIcon: Icon(Icons.analytics),
           label: Text('Estadísticas'),
         ),
+        if (showMissions)
+          const NavigationRailDestination(
+            icon: Icon(Icons.flag_outlined),
+            selectedIcon: Icon(Icons.flag),
+            label: Text('Misiones'),
+          ),
       ],
     );
   }
@@ -432,8 +491,13 @@ class _AvatarContainer extends StatelessWidget {
 class _BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onTap;
+  final bool showMissions;
 
-  const _BottomNavBar({required this.currentIndex, required this.onTap});
+  const _BottomNavBar({
+    required this.currentIndex,
+    required this.onTap,
+    required this.showMissions,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -441,22 +505,28 @@ class _BottomNavBar extends StatelessWidget {
       type: BottomNavigationBarType.fixed,
       currentIndex: currentIndex,
       onTap: onTap,
-      items: const [
-        BottomNavigationBarItem(
+      items: [
+        const BottomNavigationBarItem(
           icon: Icon(Icons.psychology_outlined),
           activeIcon: Icon(Icons.psychology),
           label: 'Asistente IA',
         ),
-        BottomNavigationBarItem(
+        const BottomNavigationBarItem(
           icon: Icon(Icons.check_circle_outline),
           activeIcon: Icon(Icons.check_circle),
           label: 'Hábitos',
         ),
-        BottomNavigationBarItem(
+        const BottomNavigationBarItem(
           icon: Icon(Icons.analytics_outlined),
           activeIcon: Icon(Icons.analytics),
           label: 'Estadísticas',
         ),
+        if (showMissions)
+          const BottomNavigationBarItem(
+            icon: Icon(Icons.flag_outlined),
+            activeIcon: Icon(Icons.flag),
+            label: 'Misiones',
+          ),
       ],
     );
   }
