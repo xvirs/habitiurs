@@ -61,10 +61,10 @@ jobs:
           serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
           packageName: com.habitiurs.app
           releaseFiles: build/app/outputs/bundle/release/app-release.aab
-          # ⚠️ 'alpha' = prueba cerrada. Subir a 'production' SOLO cuando Google te habilite
-          # producción (cuentas personales: 12 testers / 14 días + solicitar acceso). Si no,
-          # falla con "Precondition check failed". Verificá el track real con el script del setup.
-          track: ${{ github.event.inputs.track || 'internal' }}
+          # 'alpha' = prueba cerrada (donde están tus testers). Por tag va acá por defecto.
+          # Subir a 'production' SOLO cuando Google te habilite producción (cuentas personales:
+          # 12 testers / 14 días + solicitar acceso), o falla con "Precondition check failed".
+          track: ${{ github.event.inputs.track || 'alpha' }}
           status: completed
 
       - name: Upload AAB as artifact (backup)
