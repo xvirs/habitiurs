@@ -15,6 +15,7 @@ import '../../../missions/presentation/bloc/mission_bloc.dart';
 import '../../../missions/presentation/bloc/mission_event.dart';
 import '../../../missions/presentation/bloc/mission_state.dart';
 import '../../../missions/presentation/widgets/add_mission_bottom_sheet.dart';
+import '../../../missions/presentation/widgets/mission_actions.dart';
 import '../../../settings/presentation/bloc/settings_bloc.dart';
 import '../../../settings/presentation/bloc/settings_state.dart';
 
@@ -749,7 +750,8 @@ class _DayMissionsList extends StatelessWidget {
                               ? theme.colorScheme.primary
                               : theme.colorScheme.outline,
                     ),
-                    onPressed: () => missionBloc.add(ToggleMissionDone(m)),
+                    onPressed:
+                        () => toggleMissionWithUndo(context, missionBloc, m),
                   ),
                   title: Text(
                     m.title,

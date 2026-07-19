@@ -16,7 +16,9 @@ import 'package:habitiurs/features/statistics/presentation/bloc/statistics_state
 import 'package:habitiurs/features/statistics/presentation/pages/statistics_page.dart';
 import 'package:habitiurs/features/missions/presentation/bloc/mission_bloc.dart';
 import 'package:habitiurs/features/missions/presentation/bloc/mission_event.dart';
+import 'package:habitiurs/features/missions/presentation/bloc/mission_state.dart';
 import 'package:habitiurs/features/missions/presentation/pages/missions_page.dart';
+import 'package:habitiurs/shared/utils/date_utils.dart';
 import 'package:habitiurs/features/settings/presentation/bloc/settings_bloc.dart';
 import 'package:habitiurs/features/settings/presentation/bloc/settings_state.dart';
 import '../../../../shared/widgets/user_drawer.dart';
@@ -290,8 +292,8 @@ class _NavRail extends StatelessWidget {
         ),
         if (showMissions)
           const NavigationRailDestination(
-            icon: Icon(Icons.flag_outlined),
-            selectedIcon: Icon(Icons.flag),
+            icon: _MissionsTabIcon(icon: Icons.flag_outlined),
+            selectedIcon: _MissionsTabIcon(icon: Icons.flag),
             label: Text('Misiones'),
           ),
       ],
@@ -488,6 +490,39 @@ class _AvatarContainer extends StatelessWidget {
   }
 }
 
+/// Icono de la pestaña Misiones con un badge que cuenta las misiones
+/// "accionables": pendientes que vencen hoy o ya están vencidas.
+class _MissionsTabIcon extends StatelessWidget {
+  final IconData icon;
+
+  const _MissionsTabIcon({required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return BlocBuilder<MissionBloc, MissionState>(
+      builder: (context, state) {
+        final count = _actionableCount(state);
+        final child = Icon(icon);
+        if (count == 0) return child;
+        return Badge(
+          label: Text('$count'),
+          backgroundColor: Theme.of(context).colorScheme.error,
+          child: child,
+        );
+      },
+    );
+  }
+
+  static int _actionableCount(MissionState state) {
+    if (state is! MissionLoaded) return 0;
+    final today = AppDateUtils.getStartOfDay(DateTime.now());
+    return state.missions.where((m) {
+      if (m.isDone || m.dueDate == null) return false;
+      return !AppDateUtils.getStartOfDay(m.dueDate!).isAfter(today);
+    }).length;
+  }
+}
+
 class _BottomNavBar extends StatelessWidget {
   final int currentIndex;
   final void Function(int) onTap;
@@ -523,8 +558,8 @@ class _BottomNavBar extends StatelessWidget {
         ),
         if (showMissions)
           const BottomNavigationBarItem(
-            icon: Icon(Icons.flag_outlined),
-            activeIcon: Icon(Icons.flag),
+            icon: _MissionsTabIcon(icon: Icons.flag_outlined),
+            activeIcon: _MissionsTabIcon(icon: Icons.flag),
             label: 'Misiones',
           ),
       ],

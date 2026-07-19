@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
+import 'package:habitiurs/core/notifications/notification_service.dart';
 
 import '../../domain/entities/mission.dart';
 import '../../domain/usecases/create_mission.dart';
@@ -33,9 +34,31 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
       emit(const MissionLoading());
       final missions = await getMissions();
       emit(MissionLoaded(missions));
+      // Reprogramar avisos (sobrevive reinicio/reinstalación y cambios de fecha).
+      for (final m in missions) {
+        await _syncMissionReminder(m);
+      }
     } catch (e) {
       appLog('❌ [MissionBloc] Error cargando misiones: $e');
       emit(MissionError('Error al cargar misiones: $e'));
+    }
+  }
+
+  /// Programa o cancela el aviso de una misión según su estado.
+  Future<void> _syncMissionReminder(Mission m) async {
+    if (m.id == null) return;
+    try {
+      if (!m.isDone && m.dueDate != null) {
+        await NotificationService().scheduleMissionReminder(
+          missionId: m.id!,
+          title: m.title,
+          dueDate: m.dueDate!,
+        );
+      } else {
+        await NotificationService().cancelMissionReminder(m.id!);
+      }
+    } catch (e) {
+      appLog('⚠️ [MissionBloc] Error programando aviso de misión: $e');
     }
   }
 
@@ -47,7 +70,8 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
         dueDate: event.dueDate,
         createdAt: DateTime.now(),
       );
-      await createMission(mission);
+      final id = await createMission(mission);
+      await _syncMissionReminder(mission.copyWith(id: id));
       add(const LoadMissions());
     } catch (e) {
       appLog('❌ [MissionBloc] Error creando misión: $e');
@@ -58,6 +82,7 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
   Future<void> _onEdit(EditMission event, Emitter<MissionState> emit) async {
     try {
       await updateMission(event.mission);
+      await _syncMissionReminder(event.mission);
       add(const LoadMissions());
     } catch (e) {
       appLog('❌ [MissionBloc] Error editando misión: $e');
@@ -78,6 +103,8 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
         clearCompletedAt: !nowDone,
       );
       await updateMission(updated);
+      // Completada → cancela el aviso; reabierta → lo reprograma.
+      await _syncMissionReminder(updated);
       add(const LoadMissions());
     } catch (e) {
       appLog('❌ [MissionBloc] Error cambiando estado de misión: $e');
@@ -91,6 +118,7 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
   ) async {
     try {
       await deleteMission(event.id);
+      await NotificationService().cancelMissionReminder(event.id);
       add(const LoadMissions());
     } catch (e) {
       appLog('❌ [MissionBloc] Error eliminando misión: $e');

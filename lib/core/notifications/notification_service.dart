@@ -90,9 +90,16 @@ class NotificationService {
       description: 'Recordatorio individual de cada hábito',
       importance: Importance.high,
     );
+    const mission = AndroidNotificationChannel(
+      'mission_reminder',
+      'Recordatorios de misiones',
+      description: 'Aviso de misiones con fecha límite',
+      importance: Importance.high,
+    );
 
     await android.createNotificationChannel(daily);
     await android.createNotificationChannel(perHabit);
+    await android.createNotificationChannel(mission);
   }
 
   /// Solicita permisos en iOS
@@ -332,6 +339,107 @@ class NotificationService {
     for (var weekday = 1; weekday <= 7; weekday++) {
       await _notifications.cancel(_habitReminderId(habitId, weekday));
     }
+  }
+
+  // ─── Recordatorios de misiones ─────────────────────────────────────────
+  // Ids reservados: 5000000 + missionId*2 + slot (0=víspera 18:00, 1=día 09:00).
+  // Rango alto para no colisionar con hábitos (0 y 1000+habitId*10+weekday).
+
+  static const int _missionEveHour = 18; // víspera a las 18:00
+  static const int _missionDayHour = 9; // día de vencimiento a las 09:00
+
+  static int _missionReminderId(int missionId, int slot) =>
+      5000000 + missionId * 2 + slot;
+
+  /// Programa el aviso de una misión pendiente con fecha límite: uno la víspera
+  /// (18:00) y otro el mismo día (09:00). Solo agenda los que aún no pasaron.
+  Future<void> scheduleMissionReminder({
+    required int missionId,
+    required String title,
+    required DateTime dueDate,
+  }) async {
+    if (!_initialized) {
+      await initialize();
+    }
+
+    await cancelMissionReminder(missionId);
+
+    const androidDetails = AndroidNotificationDetails(
+      'mission_reminder',
+      'Recordatorios de misiones',
+      channelDescription: 'Aviso de misiones con fecha límite',
+      importance: Importance.high,
+      priority: Priority.high,
+      icon: '@mipmap/ic_launcher',
+      styleInformation: BigTextStyleInformation(''),
+    );
+    const iosDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+    );
+    const details = NotificationDetails(
+      android: androidDetails,
+      iOS: iosDetails,
+    );
+
+    final now = tz.TZDateTime.now(tz.local);
+
+    // Slot 0: víspera a las 18:00.
+    final eve = tz.TZDateTime(
+      tz.local,
+      dueDate.year,
+      dueDate.month,
+      dueDate.day,
+      _missionEveHour,
+    ).subtract(const Duration(days: 1));
+    if (eve.isAfter(now)) {
+      await _notifications.zonedSchedule(
+        _missionReminderId(missionId, 0),
+        'Mañana: $title',
+        'Tenés una misión para mañana. ¡Preparate!',
+        eve,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
+
+    // Slot 1: el mismo día a las 09:00.
+    final dayOf = tz.TZDateTime(
+      tz.local,
+      dueDate.year,
+      dueDate.month,
+      dueDate.day,
+      _missionDayHour,
+    );
+    if (dayOf.isAfter(now)) {
+      await _notifications.zonedSchedule(
+        _missionReminderId(missionId, 1),
+        'Hoy: $title',
+        'Hoy vence esta misión. ¡A completarla!',
+        dayOf,
+        details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+        uiLocalNotificationDateInterpretation:
+            UILocalNotificationDateInterpretation.absoluteTime,
+      );
+    }
+
+    appLog(
+      '⏰ [NotificationService] Recordatorio de misión $missionId programado '
+      '(vence: ${dueDate.toIso8601String().split('T')[0]})',
+    );
+  }
+
+  /// Cancela ambos avisos (víspera y día) de una misión.
+  Future<void> cancelMissionReminder(int missionId) async {
+    if (!_initialized) {
+      await initialize();
+    }
+    await _notifications.cancel(_missionReminderId(missionId, 0));
+    await _notifications.cancel(_missionReminderId(missionId, 1));
   }
 
   tz.TZDateTime _nextInstanceOfWeekdayTime(int weekday, int hour, int minute) {

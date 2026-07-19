@@ -7,6 +7,7 @@ import '../bloc/mission_bloc.dart';
 import '../bloc/mission_event.dart';
 import '../bloc/mission_state.dart';
 import '../widgets/add_mission_bottom_sheet.dart';
+import '../widgets/mission_actions.dart';
 import '../widgets/mission_tile.dart';
 
 class MissionsPage extends StatelessWidget {
@@ -108,13 +109,17 @@ class MissionsPage extends StatelessWidget {
                       (m) => _DismissibleMission(
                         mission: m,
                         onToggle:
-                            () => context.read<MissionBloc>().add(
-                              ToggleMissionDone(m),
+                            () => toggleMissionWithUndo(
+                              context,
+                              context.read<MissionBloc>(),
+                              m,
                             ),
                         onEdit: () => _openEdit(context, m),
                         onDelete:
-                            () => context.read<MissionBloc>().add(
-                              RemoveMission(m.id!),
+                            () => deleteMissionWithUndo(
+                              context,
+                              context.read<MissionBloc>(),
+                              m,
                             ),
                       ),
                     ),
@@ -125,13 +130,17 @@ class MissionsPage extends StatelessWidget {
                       (m) => _DismissibleMission(
                         mission: m,
                         onToggle:
-                            () => context.read<MissionBloc>().add(
-                              ToggleMissionDone(m),
+                            () => toggleMissionWithUndo(
+                              context,
+                              context.read<MissionBloc>(),
+                              m,
                             ),
                         onEdit: () => _openEdit(context, m),
                         onDelete:
-                            () => context.read<MissionBloc>().add(
-                              RemoveMission(m.id!),
+                            () => deleteMissionWithUndo(
+                              context,
+                              context.read<MissionBloc>(),
+                              m,
                             ),
                       ),
                     ),
@@ -183,27 +192,6 @@ class _DismissibleMission extends StatelessWidget {
           color: theme.colorScheme.onErrorContainer,
         ),
       ),
-      confirmDismiss: (_) async {
-        return await showDialog<bool>(
-              context: context,
-              builder:
-                  (ctx) => AlertDialog(
-                    title: const Text('¿Eliminar misión?'),
-                    content: Text('"${mission.title}" se eliminará.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(false),
-                        child: const Text('Cancelar'),
-                      ),
-                      TextButton(
-                        onPressed: () => Navigator.of(ctx).pop(true),
-                        child: const Text('Eliminar'),
-                      ),
-                    ],
-                  ),
-            ) ??
-            false;
-      },
       onDismissed: (_) => onDelete(),
       child: MissionTile(mission: mission, onToggle: onToggle, onEdit: onEdit),
     );

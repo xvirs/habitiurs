@@ -13,6 +13,7 @@ import '../bloc/habit_state.dart';
 import '../widgets/weekly_grid.dart';
 import '../widgets/daily_habits_list.dart';
 import '../widgets/add_habit_bottom_sheet.dart';
+import '../../../missions/presentation/widgets/today_missions_banner.dart';
 import '../../../../shared/enums/habit_status.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
 
@@ -394,6 +395,7 @@ class _LoadedView extends StatelessWidget {
               ),
             ),
           ),
+          const TodayMissionsBanner(),
           Expanded(
             flex: 1,
             child: DailyHabitsList(
