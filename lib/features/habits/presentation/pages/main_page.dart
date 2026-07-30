@@ -46,12 +46,13 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   // Se actualiza en cada build según missionsEnabled; lo usa _onTabTapped
   // para mapear el índice tocado a su TabKind.
-  List<TabKind> _tabs = const [TabKind.ai, TabKind.habits, TabKind.stats];
+  // Orden: Estadísticas (izq) · Hábitos (centro) · Misiones/Asistente (der).
+  List<TabKind> _tabs = const [TabKind.stats, TabKind.habits, TabKind.ai];
 
   List<TabKind> _tabsFor(bool missionsEnabled) =>
       missionsEnabled
-          ? const [TabKind.habits, TabKind.stats, TabKind.missions]
-          : const [TabKind.ai, TabKind.habits, TabKind.stats];
+          ? const [TabKind.stats, TabKind.habits, TabKind.missions]
+          : const [TabKind.stats, TabKind.habits, TabKind.ai];
 
   String _titleFor(TabKind k) => switch (k) {
     TabKind.ai => 'Asistente IA',
