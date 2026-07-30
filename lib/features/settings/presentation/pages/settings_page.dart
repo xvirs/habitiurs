@@ -12,7 +12,6 @@ import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_event.dart';
 import '../../../habits/presentation/bloc/habit_bloc.dart';
 import '../../../habits/presentation/bloc/habit_event.dart';
-import '../../../habits/presentation/pages/archived_habits_page.dart';
 import '../../../../shared/utils/responsive.dart';
 
 class SettingsPage extends StatelessWidget {
@@ -58,77 +57,10 @@ class SettingsPage extends StatelessWidget {
               }
 
               if (state is SettingsLoaded) {
-                final settings = state.settings;
-
                 return ListView(
                   children: [
-                    // Sección de Notificaciones
-                    const _SectionHeader(title: 'Notificaciones'),
-
-                    SwitchListTile(
-                      title: const Text('Recordatorio diario'),
-                      subtitle: const Text(
-                        'Recibir notificación con hábitos pendientes',
-                      ),
-                      value: settings.notificationsEnabled,
-                      onChanged: (value) {
-                        context.read<SettingsBloc>().add(
-                          ToggleNotifications(value),
-                        );
-                      },
-                    ),
-
-                    if (settings.notificationsEnabled)
-                      ListTile(
-                        leading: const Icon(Icons.access_time),
-                        title: const Text('Hora de recordatorio'),
-                        subtitle: Text(settings.formattedNotificationTime),
-                        trailing: const Icon(Icons.chevron_right),
-                        onTap:
-                            () => _showTimePicker(
-                              context,
-                              settings.notificationHour,
-                              settings.notificationMinute,
-                            ),
-                      ),
-
-                    const Divider(),
-
-                    // Sección de Hábitos
-                    const _SectionHeader(title: 'Hábitos'),
-
-                    ListTile(
-                      leading: const Icon(Icons.archive_outlined),
-                      title: const Text('Hábitos archivados'),
-                      subtitle: const Text('Restaurar o eliminar hábitos'),
-                      trailing: const Icon(Icons.chevron_right),
-                      onTap: () {
-                        Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) => const ArchivedHabitsPage(),
-                          ),
-                        );
-                      },
-                    ),
-
-                    const Divider(),
-
-                    // Sección de Funciones
-                    const _SectionHeader(title: 'Funciones'),
-
-                    SwitchListTile(
-                      secondary: const Icon(Icons.flag_outlined),
-                      title: const Text('Misiones'),
-                      subtitle: const Text(
-                        'Tareas de una sola vez (trámites, turnos, etc.)',
-                      ),
-                      value: settings.missionsEnabled,
-                      onChanged: (value) {
-                        context.read<SettingsBloc>().add(ToggleMissions(value));
-                      },
-                    ),
-
-                    const Divider(),
+                    // Los ajustes recurrentes (Misiones, recordatorio diario,
+                    // hábitos archivados) viven ahora en el drawer.
 
                     // Sección Legal
                     const _SectionHeader(title: 'Legal'),
@@ -210,29 +142,6 @@ class SettingsPage extends StatelessWidget {
     if (!ok && context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('No se pudo abrir el enlace')),
-      );
-    }
-  }
-
-  Future<void> _showTimePicker(
-    BuildContext context,
-    int currentHour,
-    int currentMinute,
-  ) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: currentHour, minute: currentMinute),
-      builder: (context, child) {
-        return MediaQuery(
-          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-          child: child!,
-        );
-      },
-    );
-
-    if (picked != null && context.mounted) {
-      context.read<SettingsBloc>().add(
-        UpdateNotificationTime(picked.hour, picked.minute),
       );
     }
   }

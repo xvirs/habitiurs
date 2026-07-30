@@ -3,15 +3,22 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../core/auth/models/user.dart';
 import '../../core/di/injection_container.dart';
-import '../../core/sync/services/sync_manager.dart';
-import '../../core/sync/models/sync_models.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
 import '../../features/auth/presentation/bloc/auth_event.dart';
 import '../../features/auth/presentation/bloc/auth_state.dart';
 import '../../features/settings/presentation/pages/settings_page.dart';
 import '../../features/settings/presentation/bloc/settings_bloc.dart';
 import '../../features/settings/presentation/bloc/settings_event.dart';
+import '../../features/settings/presentation/bloc/settings_state.dart';
+import '../../features/habits/presentation/bloc/habit_bloc.dart';
+import '../../features/habits/presentation/bloc/habit_event.dart';
+import '../../features/habits/presentation/pages/archived_habits_page.dart';
+import '../../features/ai_assistant/presentation/bloc/ai_assistant_event.dart';
+import '../../features/ai_assistant/presentation/bloc/ai_assistant_state.dart';
+import '../../features/ai_assistant/presentation/pages/ai_assistant_page.dart';
 
+/// Drawer como "centro de control": accesos rápidos y los ajustes más
+/// recurrentes (Misiones, recordatorio diario) sin entrar a Configuración.
 class UserDrawer extends StatefulWidget {
   final VoidCallback? onDataSynced;
 
@@ -21,11 +28,14 @@ class UserDrawer extends StatefulWidget {
 }
 
 class _UserDrawerState extends State<UserDrawer> {
-  late final SyncManager _syncManager;
   @override
   void initState() {
     super.initState();
-    _syncManager = InjectionContainer().syncManager;
+    // Asegura que los toggles tengan datos aunque el arranque no los cargara.
+    final settingsBloc = InjectionContainer().settingsBloc;
+    if (settingsBloc.state is! SettingsLoaded) {
+      settingsBloc.add(const LoadSettings());
+    }
   }
 
   @override
@@ -45,25 +55,122 @@ class _UserDrawerState extends State<UserDrawer> {
       child: Drawer(
         child: Column(
           children: [
-            // Header con información del usuario
             _buildUserHeader(context),
-            // Opciones del drawer
             Expanded(
               child: ListView(
                 padding: EdgeInsets.zero,
                 children: [
-                  // MODIFIED: Remove sync section. Sync is now handled by pull-to-refresh and auto-sync.
-                  // _buildSyncSection(context),
-                  // const Divider(),
-                  _buildSettingsSection(context),
+                  BlocBuilder<SettingsBloc, SettingsState>(
+                    builder: (context, state) {
+                      final settings =
+                          state is SettingsLoaded ? state.settings : null;
+                      final missionsEnabled = settings?.missionsEnabled ?? true;
+                      final notificationsEnabled =
+                          settings?.notificationsEnabled ?? true;
+
+                      return Column(
+                        children: [
+                          _sectionLabel(context, 'Accesos'),
+                          // El Asistente IA vive acá cuando Misiones ocupa su
+                          // lugar en la barra inferior.
+                          if (missionsEnabled)
+                            ListTile(
+                              leading: const Icon(Icons.psychology_outlined),
+                              title: const Text('Asistente IA'),
+                              trailing: const Icon(
+                                Icons.chevron_right,
+                                size: 20,
+                              ),
+                              onTap: () => _openAIAssistant(context),
+                            ),
+                          ListTile(
+                            leading: const Icon(Icons.archive_outlined),
+                            title: const Text('Hábitos archivados'),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => _openArchivedHabits(context),
+                          ),
+
+                          const Divider(height: 8),
+                          _sectionLabel(context, 'Ajustes rápidos'),
+
+                          SwitchListTile(
+                            secondary: const Icon(Icons.flag_outlined),
+                            title: const Text('Misiones'),
+                            subtitle: const Text('Tareas de una sola vez'),
+                            value: missionsEnabled,
+                            onChanged:
+                                settings == null
+                                    ? null
+                                    : (v) => context.read<SettingsBloc>().add(
+                                      ToggleMissions(v),
+                                    ),
+                          ),
+                          SwitchListTile(
+                            secondary: const Icon(Icons.notifications_outlined),
+                            title: const Text('Recordatorio diario'),
+                            subtitle: const Text('Aviso de hábitos pendientes'),
+                            value: notificationsEnabled,
+                            onChanged:
+                                settings == null
+                                    ? null
+                                    : (v) => _toggleNotifications(context, v),
+                          ),
+                          if (notificationsEnabled && settings != null)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 40),
+                              child: ListTile(
+                                leading: const Icon(
+                                  Icons.access_time,
+                                  size: 20,
+                                ),
+                                title: const Text('Hora'),
+                                trailing: Text(
+                                  settings.formattedNotificationTime,
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    color:
+                                        Theme.of(context).colorScheme.primary,
+                                  ),
+                                ),
+                                onTap:
+                                    () => _pickReminderTime(
+                                      context,
+                                      settings.notificationHour,
+                                      settings.notificationMinute,
+                                    ),
+                              ),
+                            ),
+                        ],
+                      );
+                    },
+                  ),
+
                   const Divider(),
+                  _buildSettingsSection(context),
                   _buildLogoutSection(context),
                 ],
               ),
             ),
-            // Footer con versión de la app
             _buildFooter(context),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionLabel(BuildContext context, String text) {
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+        child: Text(
+          text.toUpperCase(),
+          style: TextStyle(
+            fontSize: 11,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0.5,
+            color: Theme.of(context).colorScheme.primary,
+          ),
         ),
       ),
     );
@@ -73,11 +180,9 @@ class _UserDrawerState extends State<UserDrawer> {
     return BlocBuilder<AuthBloc, AuthState>(
       builder: (context, state) {
         User? user;
-
         if (state is AuthAuthenticated) {
           user = state.user;
         }
-
         final isGuest = user?.isGuest ?? true;
 
         return Container(
@@ -95,7 +200,6 @@ class _UserDrawerState extends State<UserDrawer> {
           padding: const EdgeInsets.fromLTRB(16, 35, 16, 12),
           child: Row(
             children: [
-              // Avatar del usuario
               CircleAvatar(
                 radius: 22,
                 backgroundColor: Colors.white,
@@ -112,16 +216,12 @@ class _UserDrawerState extends State<UserDrawer> {
                         )
                         : null,
               ),
-
               const SizedBox(width: 12),
-
-              // Información del usuario
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    // Nombre del usuario
                     Text(
                       user?.displayName ?? 'Usuario invitado',
                       style: const TextStyle(
@@ -132,9 +232,7 @@ class _UserDrawerState extends State<UserDrawer> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-
                     const SizedBox(height: 4),
-                    // Email del usuario
                     Text(
                       user?.email ?? 'guest@habitiurs.local',
                       style: const TextStyle(
@@ -144,10 +242,7 @@ class _UserDrawerState extends State<UserDrawer> {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                     ),
-
                     const SizedBox(height: 6),
-
-                    // Badge de cuenta
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 6,
@@ -184,7 +279,7 @@ class _UserDrawerState extends State<UserDrawer> {
         color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       title: const Text('Configuración'),
-      subtitle: const Text('Preferencias y ajustes'),
+      subtitle: const Text('Legal, versión y cuenta'),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _handleSettingsTap(context),
     );
@@ -196,9 +291,7 @@ class _UserDrawerState extends State<UserDrawer> {
         if (state is! AuthAuthenticated) {
           return const SizedBox.shrink();
         }
-
         final isGuest = state.user.isGuest;
-
         return ListTile(
           leading: Icon(
             isGuest ? Icons.login : Icons.logout,
@@ -265,20 +358,77 @@ class _UserDrawerState extends State<UserDrawer> {
     );
   }
 
-  // MODIFIED: Simplified event handlers since explicit sync buttons are removed
+  // ─── Acciones ──────────────────────────────────────────────────────────
+
+  void _toggleNotifications(BuildContext context, bool enabled) {
+    context.read<SettingsBloc>().add(ToggleNotifications(enabled));
+    // Reprograma/cancela el recordatorio diario según el nuevo valor.
+    try {
+      context.read<HabitBloc>().add(RescheduleNotifications());
+    } catch (_) {}
+  }
+
+  Future<void> _pickReminderTime(
+    BuildContext context,
+    int hour,
+    int minute,
+  ) async {
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: hour, minute: minute),
+      builder:
+          (context, child) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+            child: child!,
+          ),
+    );
+    if (picked != null && context.mounted) {
+      context.read<SettingsBloc>().add(
+        UpdateNotificationTime(picked.hour, picked.minute),
+      );
+      try {
+        context.read<HabitBloc>().add(RescheduleNotifications());
+      } catch (_) {}
+    }
+  }
+
+  void _openAIAssistant(BuildContext context) {
+    Navigator.pop(context);
+    final aiBloc = InjectionContainer().aiAssistantBloc;
+    if (aiBloc.state is AIAssistantInitial) {
+      aiBloc.add(LoadAIAssistantData());
+    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => BlocProvider.value(
+              value: aiBloc,
+              child: Scaffold(
+                appBar: AppBar(title: const Text('Asistente IA')),
+                body: const AIAssistantPage(),
+              ),
+            ),
+      ),
+    );
+  }
+
+  void _openArchivedHabits(BuildContext context) {
+    Navigator.pop(context);
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (_) => BlocProvider.value(
+              value: InjectionContainer().habitBloc,
+              child: const ArchivedHabitsPage(),
+            ),
+      ),
+    );
+  }
 
   void _handleSettingsTap(BuildContext context) {
     Navigator.pop(context);
-
-    // Obtener el SettingsBloc del contenedor de inyección de dependencias
     final settingsBloc = InjectionContainer().settingsBloc;
-
-    // Cargar configuración y navegar
     settingsBloc.add(const LoadSettings());
-
-    // La ruta pierde los providers del árbol principal: pasar los blocs
-    // necesarios explícitamente (AuthBloc para borrado de cuenta,
-    // HabitBloc para reprogramar notificaciones y archivados).
     final authBloc = BlocProvider.of<AuthBloc>(context, listen: false);
 
     Navigator.of(context).push(
@@ -298,7 +448,6 @@ class _UserDrawerState extends State<UserDrawer> {
 
   void _handleAuthTap(BuildContext context, bool isGuest) async {
     Navigator.pop(context);
-
     final authBloc = BlocProvider.of<AuthBloc>(context, listen: false);
     if (isGuest) {
       authBloc.add(AuthLoginWithGoogleRequested());
