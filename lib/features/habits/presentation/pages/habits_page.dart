@@ -13,13 +13,16 @@ import '../bloc/habit_state.dart';
 import '../widgets/weekly_grid.dart';
 import '../widgets/daily_habits_list.dart';
 import '../widgets/add_habit_bottom_sheet.dart';
-import '../../../missions/presentation/widgets/today_missions_banner.dart';
+import '../../../missions/presentation/widgets/missions_home_card.dart';
 import '../../../../shared/widgets/skeleton.dart';
 import '../../../../shared/enums/habit_status.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
 
 class HabitsPage extends StatefulWidget {
-  const HabitsPage({super.key});
+  /// Abre la pestaña de Misiones (desde la tarjeta destacada de Misiones).
+  final VoidCallback? onOpenMissions;
+
+  const HabitsPage({super.key, this.onOpenMissions});
 
   @override
   State<HabitsPage> createState() => HabitsPageState();
@@ -140,6 +143,7 @@ class HabitsPageState extends State<HabitsPage>
           onDelete: _handleDelete,
           onEdit: _handleEdit,
           onAdd: _handleAdd,
+          onOpenMissions: widget.onOpenMissions,
         ),
       ),
       _ => const _HabitsSkeleton(),
@@ -383,6 +387,7 @@ class _LoadedView extends StatelessWidget {
   final void Function(int, String) onDelete;
   final void Function(Habit) onEdit;
   final VoidCallback onAdd;
+  final VoidCallback? onOpenMissions;
 
   const _LoadedView({
     required this.state,
@@ -391,6 +396,7 @@ class _LoadedView extends StatelessWidget {
     required this.onDelete,
     required this.onEdit,
     required this.onAdd,
+    this.onOpenMissions,
   });
 
   @override
@@ -425,7 +431,7 @@ class _LoadedView extends StatelessWidget {
               ),
             ),
           ),
-          const TodayMissionsBanner(),
+          MissionsHomeCard(onOpenMissions: onOpenMissions),
           Expanded(
             flex: 1,
             child: DailyHabitsList(
