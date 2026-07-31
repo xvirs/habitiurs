@@ -31,7 +31,10 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
 
   Future<void> _onLoad(LoadMissions event, Emitter<MissionState> emit) async {
     try {
-      emit(const MissionLoading());
+      // Solo mostrar "loading" en la primera carga. En recargas (cambio de
+      // pestaña, volver de background, tras crear/editar) se mantiene la lista
+      // actual para que no parpadee.
+      if (state is! MissionLoaded) emit(const MissionLoading());
       final missions = await getMissions();
       emit(MissionLoaded(missions));
       // Reprogramar avisos (sobrevive reinicio/reinstalación y cambios de fecha).

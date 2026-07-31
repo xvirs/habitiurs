@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/utils/date_utils.dart';
 import '../../../../shared/utils/responsive.dart';
+import '../../../../shared/widgets/skeleton.dart';
 import '../../../../shared/widgets/swipe_action_background.dart';
 import '../../domain/entities/mission.dart';
 import '../bloc/mission_bloc.dart';
@@ -55,7 +56,7 @@ class MissionsPage extends StatelessWidget {
         child: BlocBuilder<MissionBloc, MissionState>(
           builder: (context, state) {
             if (state is MissionLoading || state is MissionInitial) {
-              return const Center(child: CircularProgressIndicator());
+              return const _MissionsSkeleton();
             }
             if (state is MissionError) {
               return _ErrorView(
@@ -685,6 +686,48 @@ class _ErrorView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Skeleton de la primera carga de Misiones: encabezado resumen + filas.
+class _MissionsSkeleton extends StatelessWidget {
+  const _MissionsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.outlineVariant,
+            ),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Skeleton(width: 200, height: 28),
+              SizedBox(height: 14),
+              Skeleton(height: 6, radius: 3),
+            ],
+          ),
+        ),
+        const SizedBox(height: 16),
+        const Skeleton(width: 120, height: 14),
+        const SizedBox(height: 10),
+        ...List.generate(
+          4,
+          (_) => const Padding(
+            padding: EdgeInsets.symmetric(vertical: 4),
+            child: Skeleton(height: 60, radius: 10),
+          ),
+        ),
+      ],
     );
   }
 }

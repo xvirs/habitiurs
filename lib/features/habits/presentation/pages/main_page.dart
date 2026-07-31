@@ -4,15 +4,12 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/shared/utils/responsive.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_event.dart';
-import 'package:habitiurs/features/ai_assistant/presentation/bloc/ai_assistant_state.dart'; // Added
 import 'package:habitiurs/features/ai_assistant/presentation/pages/ai_assistant_page.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_bloc.dart';
 import 'package:habitiurs/features/habits/presentation/bloc/habit_event.dart';
-import 'package:habitiurs/features/habits/presentation/bloc/habit_state.dart';
 import 'package:habitiurs/features/habits/presentation/pages/habits_page.dart';
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_bloc.dart';
 import 'package:habitiurs/features/statistics/presentation/bloc/statistics_event.dart';
-import 'package:habitiurs/features/statistics/presentation/bloc/statistics_state.dart'; // Added
 import 'package:habitiurs/features/statistics/presentation/pages/statistics_page.dart';
 import 'package:habitiurs/features/missions/presentation/bloc/mission_bloc.dart';
 import 'package:habitiurs/features/missions/presentation/bloc/mission_event.dart';
@@ -226,8 +223,6 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
         elevation: 0,
         surfaceTintColor: Colors.transparent,
         actions: [
-          _RefreshButton(kind: current, onRefresh: _refreshCurrentTab),
-          const SizedBox(width: 8),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: _UserAvatar(),
@@ -323,130 +318,6 @@ class _NavRail extends StatelessWidget {
               label: Text(meta.label),
             );
           }).toList(),
-    );
-  }
-}
-
-class _RefreshButton extends StatelessWidget {
-  final TabKind kind;
-  final VoidCallback onRefresh;
-
-  const _RefreshButton({required this.kind, required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return switch (kind) {
-      TabKind.ai => _AIRefreshButton(onRefresh: onRefresh),
-      TabKind.habits => _HabitsRefreshButton(onRefresh: onRefresh),
-      TabKind.stats => _StatisticsRefreshButton(onRefresh: onRefresh),
-      TabKind.missions => _RefreshIconButton(
-        isLoading: false,
-        onPressed: onRefresh,
-        loadingTooltip: '',
-        normalTooltip: 'Actualizar misiones',
-      ),
-    };
-  }
-}
-
-class _AIRefreshButton extends StatelessWidget {
-  final VoidCallback onRefresh;
-
-  const _AIRefreshButton({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<AIAssistantBloc, AIAssistantState>(
-      builder: (context, state) {
-        final isLoading =
-            state is AIAssistantLoaded && state.isRecommendationLoading;
-        return _RefreshIconButton(
-          isLoading: isLoading,
-          onPressed: isLoading ? null : onRefresh,
-          loadingTooltip: 'Generando recomendación...',
-          normalTooltip: 'Nueva recomendación',
-        );
-      },
-    );
-  }
-}
-
-class _StatisticsRefreshButton extends StatelessWidget {
-  final VoidCallback onRefresh;
-
-  const _StatisticsRefreshButton({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<StatisticsBloc, StatisticsState>(
-      builder: (context, state) {
-        final isLoading = state is StatisticsLoaded && state.isRefreshing;
-        return _RefreshIconButton(
-          isLoading: isLoading,
-          onPressed: isLoading ? null : onRefresh,
-          loadingTooltip: 'Actualizando estadísticas...',
-          normalTooltip: 'Actualizar estadísticas',
-        );
-      },
-    );
-  }
-}
-
-class _HabitsRefreshButton extends StatelessWidget {
-  final VoidCallback onRefresh;
-
-  const _HabitsRefreshButton({required this.onRefresh});
-
-  @override
-  Widget build(BuildContext context) {
-    return BlocBuilder<HabitBloc, HabitState>(
-      builder: (context, state) {
-        final isLoading = state is HabitLoaded && state.isRefreshing;
-        // También mostrar loading si se está cargando inicialmente no cubierto por el esqueleto
-        final isGlobalLoading = state is HabitLoading;
-
-        return _RefreshIconButton(
-          isLoading: isLoading || isGlobalLoading,
-          onPressed: (isLoading || isGlobalLoading) ? null : onRefresh,
-          loadingTooltip: 'Actualizando hábitos...',
-          normalTooltip: 'Actualizar hábitos',
-        );
-      },
-    );
-  }
-}
-
-class _RefreshIconButton extends StatelessWidget {
-  final bool isLoading;
-  final VoidCallback? onPressed;
-  final String loadingTooltip;
-  final String normalTooltip;
-
-  const _RefreshIconButton({
-    required this.isLoading,
-    required this.onPressed,
-    required this.loadingTooltip,
-    required this.normalTooltip,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-
-    return IconButton(
-      onPressed: onPressed,
-      tooltip: isLoading ? loadingTooltip : normalTooltip,
-      icon:
-          isLoading
-              ? SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: theme.colorScheme.primary,
-                ),
-              )
-              : Icon(Icons.refresh, color: theme.colorScheme.primary),
     );
   }
 }

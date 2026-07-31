@@ -14,6 +14,7 @@ import '../widgets/weekly_grid.dart';
 import '../widgets/daily_habits_list.dart';
 import '../widgets/add_habit_bottom_sheet.dart';
 import '../../../missions/presentation/widgets/today_missions_banner.dart';
+import '../../../../shared/widgets/skeleton.dart';
 import '../../../../shared/enums/habit_status.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
 
@@ -122,7 +123,7 @@ class HabitsPageState extends State<HabitsPage>
 
   Widget _buildBody(BuildContext context, HabitState state) {
     return switch (state) {
-      HabitLoading() => const _LoadingView(),
+      HabitLoading() => const _HabitsSkeleton(),
       HabitError() => _ErrorView(
         message: state.message,
         onRetry: () {
@@ -141,7 +142,7 @@ class HabitsPageState extends State<HabitsPage>
           onAdd: _handleAdd,
         ),
       ),
-      _ => const _LoadingView(),
+      _ => const _HabitsSkeleton(),
     };
   }
 
@@ -258,37 +259,64 @@ class HabitsPageState extends State<HabitsPage>
   }
 }
 
-class _LoadingView extends StatelessWidget {
-  const _LoadingView();
+/// Skeleton de la primera carga: reproduce la forma del tablero semanal y de
+/// la lista diaria para que el layout no salte al llegar los datos.
+class _HabitsSkeleton extends StatelessWidget {
+  const _HabitsSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
+    return CenteredContent(
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          SizedBox(
-            width: 48,
-            height: 48,
-            child: CircularProgressIndicator(
-              strokeWidth: 3,
-              color: theme.colorScheme.primary.withOpacity(0.8),
+          Expanded(
+            child: Card(
+              margin: const EdgeInsets.all(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Skeleton(width: 160, height: 22),
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: Column(
+                        children: List.generate(
+                          3,
+                          (_) => const Expanded(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 4),
+                              child: Skeleton(height: double.infinity),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
-          const SizedBox(height: 24),
-          Text(
-            'Preparando tus hábitos',
-            style: theme.textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: theme.colorScheme.onSurface,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Construyendo una mejor versión de ti',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.outline,
+          Expanded(
+            child: Card(
+              margin: const EdgeInsets.all(16),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Skeleton(width: 140, height: 20),
+                    const SizedBox(height: 16),
+                    ...List.generate(
+                      3,
+                      (_) => const Padding(
+                        padding: EdgeInsets.only(bottom: 10),
+                        child: Skeleton(height: 52, radius: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
           ),
         ],
@@ -390,7 +418,9 @@ class _LoadedView extends StatelessWidget {
                   habits: state.habits,
                   weekEntries: state.weekEntries,
                   weekStart: state.currentWeekStart,
-                  isLoading: state.isRefreshing,
+                  // En refresco no se vacía el tablero: se mantiene la data y
+                  // el indicador de pull-to-refresh da el feedback.
+                  isLoading: false,
                 ),
               ),
             ),
@@ -405,7 +435,7 @@ class _LoadedView extends StatelessWidget {
               onDelete: onDelete,
               onEdit: onEdit,
               onAdd: onAdd,
-              isLoading: state.isRefreshing,
+              isLoading: false,
             ),
           ),
         ],
