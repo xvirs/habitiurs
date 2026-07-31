@@ -50,6 +50,16 @@ import '../../features/ai_assistant/domain/usecases/get_app_guides.dart';
 import '../../features/ai_assistant/domain/usecases/get_ai_recommendation.dart';
 import '../../features/ai_assistant/presentation/bloc/ai_assistant_bloc.dart';
 
+// Missions
+import '../../features/missions/data/datasources/mission_local_datasource.dart';
+import '../../features/missions/data/repositories/mission_repository_impl.dart';
+import '../../features/missions/domain/repositories/mission_repository.dart';
+import '../../features/missions/domain/usecases/create_mission.dart';
+import '../../features/missions/domain/usecases/delete_mission.dart';
+import '../../features/missions/domain/usecases/get_missions.dart';
+import '../../features/missions/domain/usecases/update_mission.dart';
+import '../../features/missions/presentation/bloc/mission_bloc.dart';
+
 // Settings
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../features/settings/data/datasources/settings_local_datasource.dart';
@@ -78,12 +88,14 @@ class InjectionContainer {
   late final StatisticsLocalDatasource _statisticsLocalDatasource;
   late final OfflineContentDatasource _offlineContentDatasource;
   late final SettingsLocalDatasource _settingsLocalDatasource;
+  late final MissionLocalDataSource _missionLocalDataSource;
 
   // Repositories
   late final HabitRepository _habitRepository;
   late final StatisticsRepository _statisticsRepository;
   late final AIAssistantRepository _aiAssistantRepository;
   late final SettingsRepository _settingsRepository;
+  late final MissionRepository _missionRepository;
 
   // Auth Use Cases
   late final CheckAuthStatus _checkAuthStatus;
@@ -115,12 +127,19 @@ class InjectionContainer {
   late final GetSettings _getSettings;
   late final UpdateSettings _updateSettings;
 
+  // Missions Use Cases
+  late final GetMissions _getMissions;
+  late final CreateMission _createMission;
+  late final UpdateMission _updateMission;
+  late final DeleteMission _deleteMission;
+
   // BLoC singletons (una sola instancia compartida con el árbol de widgets)
   late final HabitBloc _habitBloc;
   late final StatisticsBloc _statisticsBloc;
   late final AIAssistantBloc _aiAssistantBloc;
   late final HabitEvaluationCubit _habitEvaluationCubit;
   late final SettingsBloc _settingsBloc;
+  late final MissionBloc _missionBloc;
 
   bool _isInitialized = false;
 
@@ -168,6 +187,7 @@ class InjectionContainer {
       authService: _authService,
       habitDataSource: _habitLocalDataSource,
       statisticsDataSource: _statisticsLocalDatasource,
+      missionDataSource: _missionLocalDataSource,
     );
 
     // SyncRepository reutiliza la misma instancia de SyncManager
@@ -184,6 +204,7 @@ class InjectionContainer {
       databaseHelper: _databaseHelper,
     );
     _offlineContentDatasource = OfflineContentDatasourceImpl();
+    _missionLocalDataSource = MissionLocalDataSourceImpl(_databaseHelper);
 
     // Inicializar SharedPreferences para Settings
     final sharedPreferences = await SharedPreferences.getInstance();
@@ -211,6 +232,11 @@ class InjectionContainer {
     _settingsRepository = SettingsRepositoryImpl(
       localDatasource: _settingsLocalDatasource,
     );
+
+    _missionRepository = MissionRepositoryImpl(
+      _missionLocalDataSource,
+      _syncRepository,
+    );
   }
 
   void _initializeUseCases() {
@@ -219,7 +245,15 @@ class InjectionContainer {
     _initializeStatisticsUseCases();
     _initializeAIAssistantUseCases();
     _initializeSettingsUseCases();
+    _initializeMissionsUseCases();
     _initializeBlocs();
+  }
+
+  void _initializeMissionsUseCases() {
+    _getMissions = GetMissions(_missionRepository);
+    _createMission = CreateMission(_missionRepository);
+    _updateMission = UpdateMission(_missionRepository);
+    _deleteMission = DeleteMission(_missionRepository, _authService);
   }
 
   void _initializeBlocs() {
@@ -247,6 +281,12 @@ class InjectionContainer {
     _settingsBloc = SettingsBloc(
       getSettings: _getSettings,
       updateSettings: _updateSettings,
+    );
+    _missionBloc = MissionBloc(
+      getMissions: _getMissions,
+      createMission: _createMission,
+      updateMission: _updateMission,
+      deleteMission: _deleteMission,
     );
   }
 
@@ -304,6 +344,7 @@ class InjectionContainer {
   AIAssistantBloc get aiAssistantBloc => _aiAssistantBloc;
   HabitEvaluationCubit get habitEvaluationCubit => _habitEvaluationCubit;
   SettingsBloc get settingsBloc => _settingsBloc;
+  MissionBloc get missionBloc => _missionBloc;
 
   // Core Service Getters
   AIRepository get aiRepository => _aiRepository;

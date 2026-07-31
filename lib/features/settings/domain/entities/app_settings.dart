@@ -6,10 +6,14 @@ class AppSettings extends Equatable {
   final int notificationHour;
   final int notificationMinute;
 
+  /// Activa/desactiva la feature de Misiones (4ª pestaña).
+  final bool missionsEnabled;
+
   const AppSettings({
     required this.notificationsEnabled,
     required this.notificationHour,
     required this.notificationMinute,
+    required this.missionsEnabled,
   });
 
   factory AppSettings.defaults() {
@@ -17,6 +21,7 @@ class AppSettings extends Equatable {
       notificationsEnabled: true,
       notificationHour: 20, // 8 PM
       notificationMinute: 0,
+      missionsEnabled: true,
     );
   }
 
@@ -28,11 +33,13 @@ class AppSettings extends Equatable {
     bool? notificationsEnabled,
     int? notificationHour,
     int? notificationMinute,
+    bool? missionsEnabled,
   }) {
     return AppSettings(
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       notificationHour: notificationHour ?? this.notificationHour,
       notificationMinute: notificationMinute ?? this.notificationMinute,
+      missionsEnabled: missionsEnabled ?? this.missionsEnabled,
     );
   }
 
@@ -41,5 +48,6 @@ class AppSettings extends Equatable {
     notificationsEnabled,
     notificationHour,
     notificationMinute,
+    missionsEnabled,
   ];
 }

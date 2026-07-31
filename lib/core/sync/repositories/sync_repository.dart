@@ -22,6 +22,7 @@ abstract class SyncRepository {
   Future<bool> hasConflicts(String collectionType, DateTime localLastSync);
 
   Future<void> deleteHabitRemotely(String userId, int habitId);
+  Future<void> deleteMissionRemotely(String userId, int missionId);
 
   void pauseAutoSync();
   void resumeAutoSync();
@@ -162,6 +163,19 @@ class SyncRepositoryImpl implements SyncRepository {
       appLog(
         '❌ [SyncRepo] Error eliminando hábito $habitId remotamente en SyncRepo: $e',
       );
+      rethrow;
+    }
+  }
+
+  @override
+  Future<void> deleteMissionRemotely(String userId, int missionId) async {
+    try {
+      await _firebaseService.deleteMissionInFirestore(userId, missionId);
+      appLog(
+        '✅ [SyncRepo] Misión $missionId eliminada remotamente en Firebase.',
+      );
+    } catch (e) {
+      appLog('❌ [SyncRepo] Error eliminando misión $missionId remotamente: $e');
       rethrow;
     }
   }

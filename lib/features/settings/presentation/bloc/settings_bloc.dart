@@ -17,7 +17,32 @@ class SettingsBloc extends Bloc<SettingsEvent, SettingsState> {
     on<LoadSettings>(_onLoadSettings);
     on<ToggleNotifications>(_onToggleNotifications);
     on<UpdateNotificationTime>(_onUpdateNotificationTime);
+    on<ToggleMissions>(_onToggleMissions);
     on<ResetSettings>(_onResetSettings);
+  }
+
+  Future<void> _onToggleMissions(
+    ToggleMissions event,
+    Emitter<SettingsState> emit,
+  ) async {
+    try {
+      if (state is SettingsLoaded) {
+        final current = (state as SettingsLoaded).settings;
+        final newSettings = current.copyWith(missionsEnabled: event.enabled);
+        await updateSettings(newSettings);
+        appLog(
+          '✅ [SettingsBloc] Misiones ${event.enabled ? "activadas" : "desactivadas"}',
+        );
+        emit(SettingsLoaded(newSettings));
+      }
+    } catch (e) {
+      appLog('❌ [SettingsBloc] Error toggle misiones: $e');
+      if (state is SettingsLoaded) {
+        emit(state as SettingsLoaded);
+      } else {
+        emit(SettingsError('Error al actualizar misiones: ${e.toString()}'));
+      }
+    }
   }
 
   Future<void> _onLoadSettings(
