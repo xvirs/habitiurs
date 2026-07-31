@@ -66,6 +66,7 @@ class SqliteDatabaseHelper implements DatabaseHelper {
   Future<void> _createTables(Database db) async {
     await db.execute(DatabaseConstants.createHabitsTable);
     await db.execute(DatabaseConstants.createHabitEntriesTable);
+    await db.execute(DatabaseConstants.createMissionsTable);
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -106,6 +107,22 @@ class SqliteDatabaseHelper implements DatabaseHelper {
     }
     if (oldVersion < 7) {
       await _migrateToVersion7(db);
+    }
+    if (oldVersion < 8) {
+      await _migrateToVersion8(db);
+    }
+  }
+
+  Future<void> _migrateToVersion8(Database db) async {
+    appLog('🔄 [Database] Migrando a versión 8: tabla de misiones.');
+    final tables = await db.rawQuery(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name='missions'",
+    );
+    if (tables.isEmpty) {
+      await db.execute(DatabaseConstants.createMissionsTable);
+      appLog('✅ [Database] Tabla missions creada.');
+    } else {
+      appLog('ℹ️ [Database] Tabla missions ya existía, omitiendo.');
     }
   }
 

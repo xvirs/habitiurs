@@ -8,6 +8,8 @@ import '../models/sync_models.dart';
 // Imports para acceso a datasources (asegúrate de que estén correctos)
 import '../../../features/habits/data/datasources/habit_local_datasource.dart';
 import '../../../features/statistics/data/datasources/statistics_local_datasource.dart';
+import '../../../features/missions/data/datasources/mission_local_datasource.dart';
+import '../../../features/missions/data/models/mission_model.dart';
 import '../../../features/habits/data/models/habit_model.dart';
 import '../../../features/habits/domain/entities/habit.dart';
 import '../../../features/habits/data/models/habit_entry_model.dart';
@@ -20,6 +22,7 @@ class SyncManager {
   final IAuthService _authService;
   final HabitLocalDataSource _habitDataSource;
   final StatisticsLocalDatasource _statisticsDataSource;
+  final MissionLocalDataSource _missionDataSource;
 
   // Aquí es donde se declara y gestiona el temporizador
   Timer? _autoSyncTimer;
@@ -36,10 +39,12 @@ class SyncManager {
     required IAuthService authService,
     required HabitLocalDataSource habitDataSource,
     required StatisticsLocalDatasource statisticsDataSource,
+    required MissionLocalDataSource missionDataSource,
   }) : _firebaseService = firebaseService,
        _authService = authService,
        _habitDataSource = habitDataSource,
-       _statisticsDataSource = statisticsDataSource {
+       _statisticsDataSource = statisticsDataSource,
+       _missionDataSource = missionDataSource {
     _initializeAutoSync(); // Se llama aquí para iniciar el temporizador
   }
 
@@ -187,6 +192,13 @@ class SyncManager {
         await _syncHabitEntriesWithBidirectionalMerge(user.id);
       } catch (e) {
         _logSyncError('Entry sync', e);
+      }
+
+      // Mission sync is non-critical: failure shouldn't abort the rest.
+      try {
+        await _syncMissionsWithBidirectionalMerge(user.id);
+      } catch (e) {
+        _logSyncError('Mission sync', e);
       }
 
       _setLastSyncTime(DateTime.now());
@@ -355,6 +367,121 @@ class SyncManager {
       appLog('   ➕ Nuevos: $newHabitsAdded · 🔄 Resueltos: $conflictsResolved');
     } catch (e) {
       throw Exception('Error en sincronización bidireccional de hábitos: $e');
+    }
+  }
+
+  Future<void> _syncMissionsWithBidirectionalMerge(String userId) async {
+    try {
+      appLog(
+        '🔄 [SyncManager] === SINCRONIZACIÓN BIDIRECCIONAL DE MISIONES ===',
+      );
+
+      // Mismo orden que hábitos: DESCARGAR + MERGEAR (respetando tombstones y
+      // last_modified) y recién después SUBIR el estado ya resuelto.
+      final localMissions = await _missionDataSource.getAllMissions(
+        includeDeleted: true,
+      );
+      final Map<int, MissionModel> localMap = {
+        for (var m in localMissions)
+          if (m.id != null) m.id!: m,
+      };
+
+      final remoteMissions = await _firebaseService.getMissions(userId);
+      appLog(
+        '☁️ [SyncManager] Misiones remotas: ${remoteMissions.length} · 📱 Locales: ${localMissions.length}',
+      );
+
+      int newAdded = 0;
+      int conflictsResolved = 0;
+
+      for (final remote in remoteMissions) {
+        final remoteId = remote['id'] as int?;
+        final remoteTitle = remote['title'] as String? ?? '';
+        if (remoteId == null || remoteTitle.isEmpty) {
+          appLog('⚠️ [SyncManager] Misión remota inválida, saltando...');
+          continue;
+        }
+
+        final remoteModel = MissionModel.fromJson({
+          'id': remoteId,
+          'title': remoteTitle,
+          'note': remote['note'],
+          'is_done': remote['is_done'] ?? 0,
+          'due_date': remote['due_date'],
+          'created_at':
+              remote['created_at'] as String? ??
+              DateTime.now().toIso8601String(),
+          'completed_at': remote['completed_at'],
+          'is_deleted': remote['is_deleted'] ?? 0,
+          'last_modified': remote['last_modified'],
+        });
+
+        final local = localMap[remoteId];
+
+        if (local == null) {
+          // No existe local. Solo insertar si el remoto está vivo (no borrado).
+          if (!remoteModel.isDeleted) {
+            try {
+              await _missionDataSource.insertMissionWithId(remoteModel);
+              newAdded++;
+              appLog(
+                '➕ [SyncManager] Nueva misión desde remoto: "$remoteTitle" ($remoteId)',
+              );
+            } catch (e) {
+              appLog(
+                '❌ [SyncManager] Error agregando misión "$remoteTitle": $e',
+              );
+            }
+          }
+          continue;
+        }
+
+        // Existe en ambos: gana el más reciente por last_modified.
+        final localLm = local.lastModified;
+        final remoteLm = remoteModel.lastModified;
+        final remoteWins =
+            remoteLm != null && (localLm == null || remoteLm.isAfter(localLm));
+
+        if (remoteWins) {
+          try {
+            await _missionDataSource.updateMission(remoteModel);
+            conflictsResolved++;
+            if (remoteModel.isDeleted) {
+              appLog(
+                '🗑️ [SyncManager] Misión $remoteId borrada por remoto (tombstone).',
+              );
+            } else {
+              appLog(
+                '🔄 [SyncManager] Misión "$remoteTitle" ($remoteId) actualizada desde remoto.',
+              );
+            }
+          } catch (e) {
+            appLog(
+              '❌ [SyncManager] Error resolviendo conflicto de misión $remoteId: $e',
+            );
+          }
+        }
+      }
+
+      // Subir el estado local ya mergeado (incluye tombstones).
+      final merged = await _missionDataSource.getAllMissions(
+        includeDeleted: true,
+      );
+      final withId = merged.where((m) => m.id != null).toList();
+      if (withId.isNotEmpty) {
+        await _firebaseService.syncMissions(
+          userId,
+          withId.map((m) => m.toFirestoreMap()).toList(),
+        );
+        appLog(
+          '⬆️ [SyncManager] ${withId.length} misiones subidas (con tombstones).',
+        );
+      }
+
+      appLog('✅ [SyncManager] Misiones sincronizadas:');
+      appLog('   ➕ Nuevas: $newAdded · 🔄 Resueltos: $conflictsResolved');
+    } catch (e) {
+      throw Exception('Error en sincronización bidireccional de misiones: $e');
     }
   }
 

@@ -10,6 +10,14 @@ import '../../../../shared/enums/habit_status.dart';
 import '../bloc/habit_bloc.dart';
 import '../bloc/habit_event.dart';
 import 'habit_status_selector_modal.dart';
+import '../../../missions/domain/entities/mission.dart';
+import '../../../missions/presentation/bloc/mission_bloc.dart';
+import '../../../missions/presentation/bloc/mission_event.dart';
+import '../../../missions/presentation/bloc/mission_state.dart';
+import '../../../missions/presentation/widgets/add_mission_bottom_sheet.dart';
+import '../../../missions/presentation/widgets/mission_actions.dart';
+import '../../../settings/presentation/bloc/settings_bloc.dart';
+import '../../../settings/presentation/bloc/settings_state.dart';
 
 class WeeklyGrid extends StatelessWidget {
   final List<Habit> habits;
@@ -40,6 +48,7 @@ class WeeklyGrid extends StatelessWidget {
           _HeaderSection(weekDates: weekDates),
           _DaysHeader(weekDates: weekDates),
           Expanded(child: _buildBody(weekDates)),
+          _MissionsRow(weekDates: weekDates),
         ],
       ),
     );
@@ -478,6 +487,327 @@ class _StatusCell extends StatelessWidget {
       HabitStatus.pending =>
         Theme.of(context).colorScheme.surfaceContainerHighest,
     };
+  }
+}
+
+/// Fila "Misiones" al pie del tablero. Marca, por día de la semana visible:
+/// - bandera verde con check: se completó una misión ese día (por completedAt).
+/// - bandera roja: hay una misión con fecha límite ese día ya vencida y sin hacer.
+/// - bandera gris: hay una misión con fecha límite ese día (pendiente, no vencida).
+/// Solo aparece si Misiones está activada y hay misiones que tocan la semana.
+class _MissionsRow extends StatelessWidget {
+  final List<DateTime> weekDates;
+
+  const _MissionsRow({required this.weekDates});
+
+  @override
+  Widget build(BuildContext context) {
+    final settingsState = context.watch<SettingsBloc>().state;
+    final enabled =
+        settingsState is SettingsLoaded &&
+        settingsState.settings.missionsEnabled;
+    if (!enabled) return const SizedBox.shrink();
+
+    return BlocBuilder<MissionBloc, MissionState>(
+      builder: (context, state) {
+        if (state is! MissionLoaded) return const SizedBox.shrink();
+
+        // Agrupar por día visible las misiones relevantes.
+        final byDay = <DateTime, List<Mission>>{};
+        for (final date in weekDates) {
+          final day = AppDateUtils.getStartOfDay(date);
+          final forDay = <Mission>[];
+          for (final m in state.missions) {
+            if (_missionBelongsTo(m, day)) forDay.add(m);
+          }
+          if (forDay.isNotEmpty) byDay[day] = forDay;
+        }
+
+        if (byDay.isEmpty) return const SizedBox.shrink();
+
+        final theme = Theme.of(context);
+        return Padding(
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 26,
+                  child: Icon(
+                    Icons.flag,
+                    size: 20,
+                    color: theme.colorScheme.primary,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                ...weekDates.map((date) {
+                  final day = AppDateUtils.getStartOfDay(date);
+                  return Expanded(
+                    child: _MissionDayCell(
+                      date: day,
+                      missions: byDay[day] ?? const [],
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  /// Una misión "pertenece" a un día si: se completó ese día, o tiene fecha
+  /// límite ese día y sigue pendiente. Las pendientes sin fecha no aparecen.
+  static bool _missionBelongsTo(Mission m, DateTime day) {
+    if (m.isDone) {
+      final c = m.completedAt;
+      return c != null && AppDateUtils.getStartOfDay(c) == day;
+    }
+    final d = m.dueDate;
+    return d != null && AppDateUtils.getStartOfDay(d) == day;
+  }
+}
+
+class _MissionDayCell extends StatelessWidget {
+  final DateTime date;
+  final List<Mission> missions;
+
+  const _MissionDayCell({required this.date, required this.missions});
+
+  @override
+  Widget build(BuildContext context) {
+    if (missions.isEmpty) {
+      return const SizedBox(height: 34);
+    }
+
+    final theme = Theme.of(context);
+    final today = AppDateUtils.getStartOfDay(DateTime.now());
+
+    final hasCompleted = missions.any((m) => m.isDone);
+    final hasOverdue = missions.any((m) => !m.isDone && date.isBefore(today));
+
+    // Prioridad de color: vencida (rojo) > completada (verde) > pendiente (gris).
+    final IconData icon;
+    final Color color;
+    if (hasOverdue) {
+      icon = Icons.flag;
+      color = theme.colorScheme.error;
+    } else if (hasCompleted) {
+      icon = Icons.flag;
+      color = AppColors.completed(context);
+    } else {
+      icon = Icons.flag;
+      color = theme.colorScheme.primary;
+    }
+
+    return GestureDetector(
+      onTap: () => _showDayMissions(context, date, missions),
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        height: 34,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            // Bandera más grande dentro de una pastilla de color para que
+            // resalte como marcador de misión del día.
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(icon, size: 20, color: color),
+            ),
+            if (missions.length > 1)
+              Positioned(
+                top: 0,
+                right: 4,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    '${missions.length}',
+                    style: const TextStyle(
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  static void _showDayMissions(
+    BuildContext context,
+    DateTime date,
+    List<Mission> missions,
+  ) {
+    final missionBloc = context.read<MissionBloc>();
+    showDialog<void>(
+      context: context,
+      builder:
+          (dialogContext) => _DayMissionsDialog(
+            date: date,
+            missions: missions,
+            missionBloc: missionBloc,
+          ),
+    );
+  }
+}
+
+class _DayMissionsDialog extends StatelessWidget {
+  final DateTime date;
+  final List<Mission> missions;
+  final MissionBloc missionBloc;
+
+  const _DayMissionsDialog({
+    required this.date,
+    required this.missions,
+    required this.missionBloc,
+  });
+
+  static const _months = [
+    'ene',
+    'feb',
+    'mar',
+    'abr',
+    'may',
+    'jun',
+    'jul',
+    'ago',
+    'sep',
+    'oct',
+    'nov',
+    'dic',
+  ];
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: Row(
+        children: [
+          const Icon(Icons.flag_outlined, size: 20),
+          const SizedBox(width: 8),
+          Text('Misiones · ${date.day} ${_months[date.month - 1]}'),
+        ],
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+      content: SizedBox(
+        width: double.maxFinite,
+        child: _DayMissionsList(missions: missions, missionBloc: missionBloc),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text('Cerrar'),
+        ),
+      ],
+    );
+  }
+}
+
+/// Lista compacta de misiones del día con acción de completar/editar.
+/// Reactiva al MissionBloc: al marcar una misión, el checkbox se actualiza en
+/// el acto (se relee cada misión por su id del estado más reciente).
+class _DayMissionsList extends StatelessWidget {
+  final List<Mission> missions;
+  final MissionBloc missionBloc;
+
+  const _DayMissionsList({required this.missions, required this.missionBloc});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final ids = missions.map((m) => m.id).toList();
+    return BlocBuilder<MissionBloc, MissionState>(
+      bloc: missionBloc,
+      builder: (context, state) {
+        final current =
+            state is MissionLoaded
+                ? {for (final m in state.missions) m.id: m}
+                : <int?, Mission>{};
+        final live = [
+          for (var i = 0; i < missions.length; i++)
+            current[ids[i]] ?? missions[i],
+        ];
+        return Column(
+          mainAxisSize: MainAxisSize.min,
+          children:
+              live.map((m) {
+                return ListTile(
+                  dense: true,
+                  leading: IconButton(
+                    icon: Icon(
+                      m.isDone
+                          ? Icons.check_circle
+                          : Icons.radio_button_unchecked,
+                      color:
+                          m.isDone
+                              ? theme.colorScheme.primary
+                              : theme.colorScheme.outline,
+                    ),
+                    onPressed:
+                        () => toggleMissionWithUndo(context, missionBloc, m),
+                  ),
+                  title: Text(
+                    m.title,
+                    style: TextStyle(
+                      decoration: m.isDone ? TextDecoration.lineThrough : null,
+                    ),
+                  ),
+                  subtitle:
+                      m.note != null && m.note!.isNotEmpty
+                          ? Text(
+                            m.note!,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          )
+                          : null,
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit_outlined, size: 18),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      AddMissionBottomSheet.show(
+                        context,
+                        initial: m,
+                        onSubmit: (result) {
+                          missionBloc.add(
+                            EditMission(
+                              m.copyWith(
+                                title: result.title,
+                                note: result.note,
+                                clearNote: result.note == null,
+                                dueDate: result.dueDate,
+                                clearDueDate: result.dueDate == null,
+                              ),
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  ),
+                );
+              }).toList(),
+        );
+      },
+    );
   }
 }
 

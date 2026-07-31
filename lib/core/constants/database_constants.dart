@@ -1,9 +1,10 @@
 class DatabaseConstants {
   static const String databaseName = 'habitiurs.db';
-  static const int databaseVersion = 7;
+  static const int databaseVersion = 8;
 
   static const String habitsTable = 'habits';
   static const String habitEntriesTable = 'habit_entries';
+  static const String missionsTable = 'missions';
 
   static const String createHabitsTable = '''
     CREATE TABLE $habitsTable (
@@ -80,5 +81,22 @@ class DatabaseConstants {
 
   static const String addLastModifiedColumnToHabitEntries = '''
     ALTER TABLE $habitEntriesTable ADD COLUMN last_modified TEXT;
+  ''';
+
+  /// Tabla de misiones (tareas de una sola vez, no recurrentes).
+  /// Nace con tombstones (is_deleted + last_modified) para sincronizar igual
+  /// que los hábitos. Migración v8.
+  static const String createMissionsTable = '''
+    CREATE TABLE $missionsTable (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      note TEXT,
+      is_done INTEGER NOT NULL DEFAULT 0,
+      due_date TEXT,
+      created_at TEXT NOT NULL,
+      completed_at TEXT,
+      is_deleted INTEGER NOT NULL DEFAULT 0,
+      last_modified TEXT
+    )
   ''';
 }

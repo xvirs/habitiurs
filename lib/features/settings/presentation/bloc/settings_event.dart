@@ -31,6 +31,15 @@ class UpdateNotificationTime extends SettingsEvent {
   List<Object?> get props => [hour, minute];
 }
 
+class ToggleMissions extends SettingsEvent {
+  final bool enabled;
+
+  const ToggleMissions(this.enabled);
+
+  @override
+  List<Object?> get props => [enabled];
+}
+
 class ResetSettings extends SettingsEvent {
   const ResetSettings();
 }

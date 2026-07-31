@@ -6,6 +6,7 @@ import '../bloc/statistics_event.dart';
 import '../bloc/statistics_state.dart';
 import '../widgets/current_month_summary.dart';
 import '../widgets/historical_chart.dart';
+import '../../../../shared/widgets/skeleton.dart';
 
 // FIXED: Convertir StatisticsPage a StatefulWidget para gestionar initState/dispose
 // si necesita _today o AutomaticKeepAliveClientMixin, aunque para StatisticsPage
@@ -29,7 +30,7 @@ class StatisticsPage extends StatelessWidget {
     return BlocBuilder<StatisticsBloc, StatisticsState>(
       builder: (context, state) {
         if (state is StatisticsLoading) {
-          return const Center(child: CircularProgressIndicator());
+          return const _StatisticsSkeleton();
         }
 
         if (state is StatisticsError) {
@@ -74,17 +75,20 @@ class StatisticsPage extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
+                        // En refresco no se vacían las tarjetas: se mantiene la
+                        // data y el pull-to-refresh da el feedback (isRefreshing
+                        // false para no mostrar spinners por sección).
                         CurrentMonthSummary(
                           statistics: state.currentMonth,
-                          isRefreshing: state.isRefreshing,
+                          isRefreshing: false,
                         ),
                         YearlyStatisticsList(
                           statistics: state.currentYear,
-                          isRefreshing: state.isRefreshing,
+                          isRefreshing: false,
                         ),
                         HistoricalChart(
                           data: state.historicalData,
-                          isRefreshing: state.isRefreshing,
+                          isRefreshing: false,
                         ),
                         const SizedBox(height: 16),
                       ],
@@ -96,20 +100,52 @@ class StatisticsPage extends StatelessWidget {
           );
         }
 
-        return const Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(Icons.analytics_outlined, size: 64, color: Colors.grey),
-              SizedBox(height: 16),
-              Text(
-                'Cargando estadísticas...',
-                style: TextStyle(fontSize: 18, color: Colors.grey),
-              ),
-            ],
-          ),
-        );
+        return const _StatisticsSkeleton();
       },
+    );
+  }
+}
+
+/// Skeleton de la primera carga de estadísticas: tres tarjetas con la forma de
+/// las secciones (mes, año, histórico).
+class _StatisticsSkeleton extends StatelessWidget {
+  const _StatisticsSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 800),
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _card(context, 180),
+            const SizedBox(height: 16),
+            _card(context, 160),
+            const SizedBox(height: 16),
+            _card(context, 140),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _card(BuildContext context, double height) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Skeleton(width: 160, height: 22),
+          const SizedBox(height: 16),
+          Skeleton(height: height, radius: 12),
+        ],
+      ),
     );
   }
 }

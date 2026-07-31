@@ -2,8 +2,12 @@ name: Release iOS (App Store / TestFlight)
 
 # Secrets requeridos:
 #   APPLE_ID_CERTIFICATE_BASE64, APPLE_ID_CERTIFICATE_PASSWORD,
-#   APPLE_ID_PROVISIONING_PROFILE_BASE64, APP_STORE_CONNECT_API_KEY_ID,
-#   APP_STORE_CONNECT_API_ISSUER_ID, APP_STORE_CONNECT_API_KEY_BASE64, KEYCHAIN_PASSWORD
+#   APPLE_ID_PROVISIONING_PROFILE_BASE64 (perfil "Habitiurs App Store"),
+#   APPLE_ID_WIDGET_PROFILE_BASE64 (perfil "Habitiurs Widget App Store"),
+#   APP_STORE_CONNECT_API_KEY_ID, APP_STORE_CONNECT_API_ISSUER_ID,
+#   APP_STORE_CONNECT_API_KEY_BASE64, KEYCHAIN_PASSWORD
+# Nota: si se toca una capability en el portal de Apple, ambos perfiles se
+# invalidan: regenerarlos y resubir los dos secrets de perfil.
 
 on:
   workflow_dispatch:

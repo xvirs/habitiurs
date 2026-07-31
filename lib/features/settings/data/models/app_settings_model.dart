@@ -6,6 +6,7 @@ class AppSettingsModel extends AppSettings {
     required super.notificationsEnabled,
     required super.notificationHour,
     required super.notificationMinute,
+    required super.missionsEnabled,
   });
 
   factory AppSettingsModel.fromEntity(AppSettings settings) {
@@ -13,6 +14,7 @@ class AppSettingsModel extends AppSettings {
       notificationsEnabled: settings.notificationsEnabled,
       notificationHour: settings.notificationHour,
       notificationMinute: settings.notificationMinute,
+      missionsEnabled: settings.missionsEnabled,
     );
   }
 
@@ -21,6 +23,7 @@ class AppSettingsModel extends AppSettings {
       notificationsEnabled: notificationsEnabled,
       notificationHour: notificationHour,
       notificationMinute: notificationMinute,
+      missionsEnabled: missionsEnabled,
     );
   }
 }
