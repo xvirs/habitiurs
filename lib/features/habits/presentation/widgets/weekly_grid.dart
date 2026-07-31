@@ -527,35 +527,35 @@ class _MissionsRow extends StatelessWidget {
 
         final theme = Theme.of(context);
         return Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Divider(height: 1, color: theme.colorScheme.outlineVariant),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  SizedBox(
-                    width: 24,
-                    child: Icon(
-                      Icons.flag_outlined,
-                      size: 16,
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
+          padding: const EdgeInsets.fromLTRB(12, 4, 12, 12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.primary.withValues(alpha: 0.08),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: 26,
+                  child: Icon(
+                    Icons.flag,
+                    size: 20,
+                    color: theme.colorScheme.primary,
                   ),
-                  const SizedBox(width: 4),
-                  ...weekDates.map((date) {
-                    final day = AppDateUtils.getStartOfDay(date);
-                    return Expanded(
-                      child: _MissionDayCell(
-                        date: day,
-                        missions: byDay[day] ?? const [],
-                      ),
-                    );
-                  }),
-                ],
-              ),
-            ],
+                ),
+                const SizedBox(width: 4),
+                ...weekDates.map((date) {
+                  final day = AppDateUtils.getStartOfDay(date);
+                  return Expanded(
+                    child: _MissionDayCell(
+                      date: day,
+                      missions: byDay[day] ?? const [],
+                    ),
+                  );
+                }),
+              ],
+            ),
           ),
         );
       },
@@ -583,7 +583,7 @@ class _MissionDayCell extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (missions.isEmpty) {
-      return const SizedBox(height: 24);
+      return const SizedBox(height: 34);
     }
 
     final theme = Theme.of(context);
@@ -602,34 +602,47 @@ class _MissionDayCell extends StatelessWidget {
       icon = Icons.flag;
       color = AppColors.completed(context);
     } else {
-      icon = Icons.flag_outlined;
-      color = theme.colorScheme.onSurfaceVariant;
+      icon = Icons.flag;
+      color = theme.colorScheme.primary;
     }
 
     return GestureDetector(
       onTap: () => _showDayMissions(context, date, missions),
       behavior: HitTestBehavior.opaque,
       child: SizedBox(
-        height: 24,
+        height: 34,
         child: Stack(
           alignment: Alignment.center,
           children: [
-            Icon(icon, size: 16, color: color),
+            // Bandera más grande dentro de una pastilla de color para que
+            // resalte como marcador de misión del día.
+            Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.18),
+                borderRadius: BorderRadius.circular(9),
+              ),
+              child: Icon(icon, size: 20, color: color),
+            ),
             if (missions.length > 1)
               Positioned(
                 top: 0,
-                right: 6,
+                right: 4,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 3),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 1,
+                  ),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.primary,
-                    borderRadius: BorderRadius.circular(6),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Text(
                     '${missions.length}',
                     style: const TextStyle(
-                      fontSize: 8,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 9,
+                      fontWeight: FontWeight.w700,
                       color: Colors.white,
                     ),
                   ),

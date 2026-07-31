@@ -60,20 +60,10 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
 
   Widget _pageFor(TabKind k) => switch (k) {
     TabKind.ai => const AIAssistantPage(),
-    TabKind.habits => HabitsPage(onOpenMissions: _openMissionsTab),
+    TabKind.habits => const HabitsPage(),
     TabKind.stats => const StatisticsPage(),
     TabKind.missions => const MissionsPage(),
   };
-
-  /// Cambia a la pestaña de Misiones (desde la tarjeta destacada en Hábitos).
-  void _openMissionsTab() {
-    if (_current == TabKind.missions) return;
-    setState(() => _current = TabKind.missions);
-    if (!_visited.contains(TabKind.missions)) {
-      _visited.add(TabKind.missions);
-      _loadDataFor(TabKind.missions);
-    }
-  }
 
   @override
   void initState() {
