@@ -15,14 +15,19 @@ class StatisticsLoading extends StatisticsState {}
 class StatisticsLoaded extends StatisticsState {
   final MonthlyStatistics currentMonth;
   final List<MonthlyStatistics> currentYear;
-  final List<HistoricalDataPoint> historicalData;
+  final List<DailyActivity> dailyActivity;
+
+  /// Rachas, totales y patrón semanal derivados de la actividad diaria.
+  late final ActivityInsights insights = ActivityInsights.fromDaily(
+    dailyActivity,
+  );
   final bool isRefreshing;
   final String? errorMessage;
 
   StatisticsLoaded({
     required this.currentMonth,
     required this.currentYear,
-    required this.historicalData,
+    required this.dailyActivity,
     this.isRefreshing = false,
     this.errorMessage,
   });
@@ -31,7 +36,7 @@ class StatisticsLoaded extends StatisticsState {
   List<Object> get props => [
     currentMonth,
     currentYear,
-    historicalData,
+    dailyActivity,
     isRefreshing,
     errorMessage ?? '',
   ];
@@ -39,14 +44,14 @@ class StatisticsLoaded extends StatisticsState {
   StatisticsLoaded copyWith({
     MonthlyStatistics? currentMonth,
     List<MonthlyStatistics>? currentYear,
-    List<HistoricalDataPoint>? historicalData,
+    List<DailyActivity>? dailyActivity,
     bool? isRefreshing,
     String? errorMessage,
   }) {
     return StatisticsLoaded(
       currentMonth: currentMonth ?? this.currentMonth,
       currentYear: currentYear ?? this.currentYear,
-      historicalData: historicalData ?? this.historicalData,
+      dailyActivity: dailyActivity ?? this.dailyActivity,
       isRefreshing: isRefreshing ?? this.isRefreshing,
       errorMessage: errorMessage,
     );

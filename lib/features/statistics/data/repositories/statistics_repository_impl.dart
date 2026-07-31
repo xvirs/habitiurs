@@ -18,8 +18,8 @@ class StatisticsRepositoryImpl implements StatisticsRepository {
   }
 
   @override
-  Future<List<HistoricalDataPoint>> getHistoricalData() async {
-    return await localDatasource.getHistoricalData();
+  Future<List<DailyActivity>> getDailyActivity() async {
+    return await localDatasource.getDailyActivity();
   }
 
   @override

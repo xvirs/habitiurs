@@ -79,3 +79,19 @@ class HistoricalDataPointModel extends HistoricalDataPoint {
     );
   }
 }
+
+class DailyActivityModel extends DailyActivity {
+  const DailyActivityModel({
+    required super.date,
+    required super.completedCount,
+    required super.skippedCount,
+  });
+
+  factory DailyActivityModel.fromMap(Map<String, dynamic> map) {
+    return DailyActivityModel(
+      date: DateTime.parse(map['date'] as String),
+      completedCount: (map['completed_count'] as int?) ?? 0,
+      skippedCount: (map['skipped_count'] as int?) ?? 0,
+    );
+  }
+}
