@@ -53,7 +53,7 @@ class StatisticsPage extends StatelessWidget {
                   children: [
                     _HeroStats(
                       insights: insights,
-                      monthRate: state.currentMonth.completionRate,
+                      monthRate: state.currentMonth.achievementRate,
                     ),
                     const SizedBox(height: 12),
                     _SectionCard(
@@ -317,16 +317,18 @@ class _MonthlyTrend extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Container(
-                    height: (maxBarHeight * (m.completionRate / 100)).clamp(
+                    // Con pocos meses, que la barra no ocupe todo el ancho.
+                    constraints: const BoxConstraints(maxWidth: 64),
+                    height: (maxBarHeight * (m.achievementRate / 100)).clamp(
                       3.0,
                       maxBarHeight,
                     ),
                     decoration: BoxDecoration(
                       // Intensidad según el logro, siempre en verde (sin rojo).
                       color:
-                          m.completionRate >= 70
+                          m.achievementRate >= 70
                               ? green
-                              : m.completionRate >= 40
+                              : m.achievementRate >= 40
                               ? green.withValues(alpha: 0.65)
                               : green.withValues(alpha: 0.35),
                       borderRadius: const BorderRadius.vertical(
@@ -342,11 +344,11 @@ class _MonthlyTrend extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    '${m.completionRate.round()}%',
+                    '${m.achievementRate.round()}%',
                     style: theme.textTheme.labelSmall?.copyWith(
                       fontWeight: FontWeight.w600,
                       color:
-                          m.completionRate >= 50
+                          m.achievementRate >= 50
                               ? green
                               : theme.colorScheme.onSurfaceVariant,
                     ),

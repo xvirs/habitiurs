@@ -20,6 +20,15 @@ class MonthlyStatistics {
   double get completionRate =>
       totalHabits > 0 ? (completedCount / totalHabits) * 100 : 0.0;
 
+  /// % de logro del mes basado en las ENTRADAS del mes (completadas sobre
+  /// completadas+salteadas+pendientes), acotado a 0..100. `completionRate`
+  /// divide por totalHabits y puede superar 100 (ej: 189%) — no usar en UI.
+  double get achievementRate {
+    final total = completedCount + skippedCount + pendingCount;
+    if (total == 0) return 0.0;
+    return ((completedCount / total) * 100).clamp(0.0, 100.0);
+  }
+
   String get monthName {
     const months = [
       'Enero',
