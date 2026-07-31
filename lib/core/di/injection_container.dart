@@ -38,7 +38,7 @@ import '../../features/statistics/data/repositories/statistics_repository_impl.d
 import '../../features/statistics/domain/repositories/statistics_repository.dart';
 import '../../features/statistics/domain/usecases/get_current_month_statistics.dart';
 import '../../features/statistics/domain/usecases/get_current_year_statistics.dart';
-import '../../features/statistics/domain/usecases/get_historical_data.dart';
+import '../../features/statistics/domain/usecases/get_daily_activity.dart';
 import '../../features/statistics/presentation/bloc/statistics_bloc.dart';
 
 // AI Assistant
@@ -116,7 +116,7 @@ class InjectionContainer {
   // Statistics Use Cases
   late final GetCurrentMonthStatistics _getCurrentMonthStatistics;
   late final GetCurrentYearStatistics _getCurrentYearStatistics;
-  late final GetHistoricalData _getHistoricalData;
+  late final GetDailyActivity _getDailyActivity;
 
   // AI Assistant Use Cases
   late final GetEducationalContent _getEducationalContent;
@@ -269,7 +269,7 @@ class InjectionContainer {
     _statisticsBloc = StatisticsBloc(
       getCurrentMonthStatistics: _getCurrentMonthStatistics,
       getCurrentYearStatistics: _getCurrentYearStatistics,
-      getHistoricalData: _getHistoricalData,
+      getDailyActivity: _getDailyActivity,
       syncRepository: _syncRepository,
     );
     _aiAssistantBloc = AIAssistantBloc(
@@ -316,7 +316,7 @@ class InjectionContainer {
       _statisticsRepository,
     );
     _getCurrentYearStatistics = GetCurrentYearStatistics(_statisticsRepository);
-    _getHistoricalData = GetHistoricalData(_statisticsRepository);
+    _getDailyActivity = GetDailyActivity(_statisticsRepository);
   }
 
   void _initializeAIAssistantUseCases() {

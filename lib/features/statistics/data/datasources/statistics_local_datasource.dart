@@ -7,7 +7,7 @@ import 'package:habitiurs/core/utils/app_logger.dart';
 abstract class StatisticsLocalDatasource {
   Future<MonthlyStatisticsModel> getCurrentMonthStatistics();
   Future<List<MonthlyStatisticsModel>> getCurrentYearStatistics();
-  Future<List<HistoricalDataPointModel>> getHistoricalData();
+  Future<List<DailyActivityModel>> getDailyActivity();
   Future<MonthlyStatisticsModel> getMonthStatistics(int year, int month);
 }
 
@@ -43,17 +43,19 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
   }
 
   @override
-  Future<List<HistoricalDataPointModel>> getHistoricalData() async {
-    appLog('📊 [Statistics] Cargando datos históricos...');
+  Future<List<DailyActivityModel>> getDailyActivity() async {
+    appLog('📊 [Statistics] Cargando actividad diaria...');
     final db = await databaseHelper.database;
+    // Actividad por DÍA (alimenta el heatmap y las rachas). Se trae todo el
+    // historial: la tabla es chica y las rachas necesitan la serie completa.
     const query = '''
       SELECT
-        strftime('%Y-%m', date) as date,
+        date,
         COUNT(CASE WHEN status = ? THEN 1 END) as completed_count,
         COUNT(CASE WHEN status = ? THEN 1 END) as skipped_count
       FROM habit_entries
       WHERE status IN (?, ?)
-      GROUP BY strftime('%Y-%m', date)
+      GROUP BY date
       ORDER BY date ASC
     ''';
     final result = await db.rawQuery(query, [
@@ -62,18 +64,8 @@ class StatisticsLocalDatasourceImpl implements StatisticsLocalDatasource {
       HabitStatus.completed.index,
       HabitStatus.skipped.index,
     ]);
-    appLog('📊 [Statistics] ${result.length} punto(s) histórico(s) obtenidos');
-    return result.map((map) {
-      final dateStr = map['date'] as String;
-      final parts = dateStr.split('-');
-      final date = DateTime(int.parse(parts[0]), int.parse(parts[1]), 1);
-
-      return HistoricalDataPointModel.fromMap({
-        'date': date.toIso8601String(),
-        'completed_count': map['completed_count'],
-        'skipped_count': map['skipped_count'],
-      });
-    }).toList();
+    appLog('📊 [Statistics] ${result.length} día(s) de actividad obtenidos');
+    return result.map((map) => DailyActivityModel.fromMap(map)).toList();
   }
 
   @override

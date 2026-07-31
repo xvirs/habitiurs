@@ -2,7 +2,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/features/statistics/domain/entities/statistics.dart';
 import '../../domain/usecases/get_current_month_statistics.dart';
 import '../../domain/usecases/get_current_year_statistics.dart'; // ADDED
-import '../../domain/usecases/get_historical_data.dart'; // ADDED
+import '../../domain/usecases/get_daily_activity.dart';
 import 'statistics_event.dart';
 import 'statistics_state.dart';
 
@@ -12,13 +12,13 @@ import 'package:habitiurs/core/utils/app_logger.dart';
 class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
   final GetCurrentMonthStatistics getCurrentMonthStatistics;
   final GetCurrentYearStatistics getCurrentYearStatistics;
-  final GetHistoricalData getHistoricalData;
+  final GetDailyActivity getDailyActivity;
   final SyncRepository syncRepository; // ADDED
 
   StatisticsBloc({
     required this.getCurrentMonthStatistics,
     required this.getCurrentYearStatistics,
-    required this.getHistoricalData,
+    required this.getDailyActivity,
     required this.syncRepository, // ADDED
   }) : super(StatisticsInitial()) {
     on<LoadStatistics>(_onLoadStatistics);
@@ -37,13 +37,13 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
       final results = await Future.wait([
         getCurrentMonthStatistics(),
         getCurrentYearStatistics(),
-        getHistoricalData(),
+        getDailyActivity(),
       ]);
       emit(
         StatisticsLoaded(
           currentMonth: results[0] as MonthlyStatistics,
           currentYear: results[1] as List<MonthlyStatistics>,
-          historicalData: results[2] as List<HistoricalDataPoint>,
+          dailyActivity: results[2] as List<DailyActivity>,
           isRefreshing: false,
         ),
       );
@@ -63,14 +63,14 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
       final results = await Future.wait([
         getCurrentMonthStatistics(),
         getCurrentYearStatistics(),
-        getHistoricalData(),
+        getDailyActivity(),
       ]);
       appLog('✅ [StatisticsBloc] Estadísticas cargadas correctamente');
       emit(
         StatisticsLoaded(
           currentMonth: results[0] as MonthlyStatistics,
           currentYear: results[1] as List<MonthlyStatistics>,
-          historicalData: results[2] as List<HistoricalDataPoint>,
+          dailyActivity: results[2] as List<DailyActivity>,
           isRefreshing: false,
         ),
       );
@@ -98,14 +98,14 @@ class StatisticsBloc extends Bloc<StatisticsEvent, StatisticsState> {
       final results = await Future.wait([
         getCurrentMonthStatistics(),
         getCurrentYearStatistics(),
-        getHistoricalData(),
+        getDailyActivity(),
       ]);
       appLog('✅ [StatisticsBloc] Estadísticas actualizadas tras sync');
       emit(
         StatisticsLoaded(
           currentMonth: results[0] as MonthlyStatistics,
           currentYear: results[1] as List<MonthlyStatistics>,
-          historicalData: results[2] as List<HistoricalDataPoint>,
+          dailyActivity: results[2] as List<DailyActivity>,
           isRefreshing: false,
         ),
       );
