@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../shared/utils/date_utils.dart';
 import '../../../../shared/utils/responsive.dart';
+import '../../../../shared/widgets/swipe_action_background.dart';
 import '../../domain/entities/mission.dart';
 import '../bloc/mission_bloc.dart';
 import '../bloc/mission_event.dart';
@@ -375,20 +376,22 @@ class _MissionRow extends StatelessWidget {
 
     return Dismissible(
       key: ValueKey('mission_${mission.id}'),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        margin: const EdgeInsets.symmetric(vertical: 4),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          Icons.delete_outline,
-          color: theme.colorScheme.onErrorContainer,
-        ),
+      // Gesto unificado: izquierda = eliminar, derecha = marcar hecho.
+      background: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 4),
+        child: _CompleteBg(),
       ),
+      secondaryBackground: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 4),
+        child: _DeleteBg(),
+      ),
+      confirmDismiss: (dir) async {
+        if (dir == DismissDirection.startToEnd) {
+          onToggle();
+          return false;
+        }
+        return true;
+      },
       onDismissed: (_) => onDelete(),
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
@@ -405,7 +408,8 @@ class _MissionRow extends StatelessWidget {
               Container(width: 4, color: accent),
               Expanded(
                 child: InkWell(
-                  onTap: onEdit,
+                  onTap: onToggle,
+                  onLongPress: onEdit,
                   child: Padding(
                     padding: const EdgeInsets.fromLTRB(8, 6, 12, 6),
                     child: Row(
@@ -474,6 +478,18 @@ class _MissionRow extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CompleteBg extends StatelessWidget {
+  const _CompleteBg();
+  @override
+  Widget build(BuildContext context) => SwipeActionBackground.complete(context);
+}
+
+class _DeleteBg extends StatelessWidget {
+  const _DeleteBg();
+  @override
+  Widget build(BuildContext context) => SwipeActionBackground.delete(context);
 }
 
 String _relativeLabel(DateTime due) {
@@ -606,24 +622,26 @@ class _CompletedRow extends StatelessWidget {
     final theme = Theme.of(context);
     return Dismissible(
       key: ValueKey('mission_done_${mission.id}'),
-      direction: DismissDirection.endToStart,
-      background: Container(
-        alignment: Alignment.centerRight,
-        margin: const EdgeInsets.symmetric(vertical: 3),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        decoration: BoxDecoration(
-          color: theme.colorScheme.errorContainer,
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          Icons.delete_outline,
-          color: theme.colorScheme.onErrorContainer,
-        ),
+      background: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 3),
+        child: _CompleteBg(),
       ),
+      secondaryBackground: const Padding(
+        padding: EdgeInsets.symmetric(vertical: 3),
+        child: _DeleteBg(),
+      ),
+      confirmDismiss: (dir) async {
+        if (dir == DismissDirection.startToEnd) {
+          onToggle();
+          return false;
+        }
+        return true;
+      },
       onDismissed: (_) => onDelete(),
       child: ListTile(
         dense: true,
-        onTap: onEdit,
+        onTap: onToggle,
+        onLongPress: onEdit,
         leading: IconButton(
           icon: Icon(Icons.check_circle, color: theme.colorScheme.primary),
           onPressed: onToggle,
