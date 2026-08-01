@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:habitiurs/core/service/vibration_service.dart';
 
 import '../../domain/entities/mission.dart';
 import '../bloc/mission_bloc.dart';
@@ -14,6 +15,12 @@ void toggleMissionWithUndo(
 ) {
   final wasDone = mission.isDone;
   bloc.add(ToggleMissionDone(mission));
+  // Feedback háptico: completar se siente como un logro.
+  if (wasDone) {
+    VibrationService.selection();
+  } else {
+    VibrationService.success();
+  }
 
   ScaffoldMessenger.of(context)
     ..hideCurrentSnackBar()
