@@ -59,7 +59,7 @@ class WeeklyGrid extends StatelessWidget {
 
   /// Alto reservado para la grilla de hábitos. Constante a propósito: el
   /// tablero queda anclado arriba y siempre ocupa lo mismo.
-  static const double _gridHeight = 148;
+  static const double _gridHeight = 200;
 
   Widget _buildBody(List<DateTime> weekDates) {
     if (isLoading) {
@@ -257,7 +257,7 @@ class _HabitsGrid extends StatelessWidget {
           final rowHeight =
               (((constraints.maxHeight - gap * (count - 1)) / count).clamp(
                 12.0,
-                40.0,
+                48.0,
               )).toDouble();
 
           final content = Column(
