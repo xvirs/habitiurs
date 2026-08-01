@@ -121,56 +121,112 @@ class MissionsPage extends StatelessWidget {
             void onToggle(Mission m) => toggleMissionWithUndo(context, bloc, m);
             void onDelete(Mission m) => deleteMissionWithUndo(context, bloc, m);
 
-            return RefreshIndicator(
-              onRefresh: () async => bloc.add(const LoadMissions()),
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
-                children: [
-                  _SummaryHeader(
+            final scheme = Theme.of(context).colorScheme;
+            final green = AppColors.completed(context);
+            // Cada estante inferior scrollea adentro con un alto acotado.
+            final shelfMax = MediaQuery.sizeOf(context).height * 0.34;
+            final hasShelves = doneToday.isNotEmpty || doneOlder.isNotEmpty;
+
+            List<Widget> completedRows(
+              List<Mission> list,
+              Color accent,
+              bool tinted,
+            ) => [
+              for (var i = 0; i < list.length; i++)
+                _CompletedRow(
+                  mission: list[i],
+                  showDivider: i > 0,
+                  accent: accent,
+                  tinted: tinted,
+                  onToggle: () => onToggle(list[i]),
+                  onEdit: () => _openEdit(context, list[i]),
+                  onDelete: () => onDelete(list[i]),
+                ),
+            ];
+
+            return Column(
+              children: [
+                // Encabezado resumen: fijo arriba.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+                  child: _SummaryHeader(
                     pending: pending,
                     completedThisMonth: _completedThisMonth(completed),
                     groups: groups,
                   ),
-                  const SizedBox(height: 4),
-                  for (final u in _Urgency.values)
-                    if (groups[u]!.isNotEmpty) ...[
-                      // Con un solo grupo el encabezado no aporta nada.
-                      if (nonEmptyGroups > 1)
-                        _GroupHeader(urgency: u, count: groups[u]!.length),
-                      _MissionGroupCard(
-                        missions: groups[u]!,
-                        urgency: u,
-                        onToggle: onToggle,
-                        onEdit: (m) => _openEdit(context, m),
-                        onDelete: onDelete,
-                        onPickDate: (m) => _pickDateFor(context, m),
-                      ),
-                      const SizedBox(height: 10),
-                    ],
-                  if (doneToday.isNotEmpty)
-                    _DoneTodaySection(
-                      missions: doneToday,
-                      onToggle: onToggle,
-                      onEdit: (m) => _openEdit(context, m),
-                      onDelete: onDelete,
-                    ),
-                  if (doneOlder.isNotEmpty)
-                    _CompletedSection(
-                      completed: doneOlder,
-                      onToggle: onToggle,
-                      onEdit: (m) => _openEdit(context, m),
-                      onDelete: onDelete,
-                    ),
-                ],
-              ),
+                ),
+                // Pendientes: se llevan el mayor espacio, con scroll propio.
+                Expanded(
+                  child: RefreshIndicator(
+                    onRefresh: () async => bloc.add(const LoadMissions()),
+                    child:
+                        pending.isEmpty
+                            ? const _AllClearView()
+                            : ListView(
+                              padding: EdgeInsets.fromLTRB(
+                                12,
+                                4,
+                                12,
+                                hasShelves ? 12 : 88,
+                              ),
+                              children: [
+                                for (final u in _Urgency.values)
+                                  if (groups[u]!.isNotEmpty) ...[
+                                    // Con un solo grupo el encabezado no aporta.
+                                    if (nonEmptyGroups > 1)
+                                      _GroupHeader(
+                                        urgency: u,
+                                        count: groups[u]!.length,
+                                      ),
+                                    _MissionGroupCard(
+                                      missions: groups[u]!,
+                                      urgency: u,
+                                      onToggle: onToggle,
+                                      onEdit: (m) => _openEdit(context, m),
+                                      onDelete: onDelete,
+                                      onPickDate:
+                                          (m) => _pickDateFor(context, m),
+                                    ),
+                                    const SizedBox(height: 10),
+                                  ],
+                              ],
+                            ),
+                  ),
+                ),
+                // Pies fijos: "Hechas hoy" y "Completadas anteriores".
+                if (doneToday.isNotEmpty)
+                  _CollapsibleShelf(
+                    key: const ValueKey('shelf_today'),
+                    icon: Icons.check_circle,
+                    accent: green,
+                    title: 'Hechas hoy',
+                    count: doneToday.length,
+                    initiallyExpanded: true,
+                    maxHeight: shelfMax,
+                    reserveFabSpace: doneOlder.isEmpty,
+                    rows: completedRows(doneToday, green, true),
+                  ),
+                if (doneOlder.isNotEmpty)
+                  _CollapsibleShelf(
+                    key: const ValueKey('shelf_older'),
+                    icon: Icons.history,
+                    accent: scheme.onSurfaceVariant,
+                    title: 'Completadas anteriores',
+                    count: doneOlder.length,
+                    initiallyExpanded: false,
+                    maxHeight: shelfMax,
+                    reserveFabSpace: true,
+                    rows: completedRows(doneOlder, scheme.primary, false),
+                  ),
+              ],
             );
           },
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
+      floatingActionButton: FloatingActionButton(
         onPressed: () => _openCreate(context),
-        icon: const Icon(Icons.add),
-        label: const Text('Nueva misión'),
+        tooltip: 'Nueva misión',
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -617,157 +673,143 @@ String _formatDate(DateTime d) {
   return '${d.day} ${months[d.month - 1]}';
 }
 
-// ─── Hechas hoy (siempre visible) ───────────────────────────────────────────
+// ─── Estante colapsable (pie fijo) ──────────────────────────────────────────
 
-/// Las misiones completadas hoy quedan a la vista, tachadas y en verde: son
-/// el "montón de logros del día". No se colapsan ni desaparecen — quedan ahí
-/// hasta mañana, que es exactamente la sensación de "lo hice" que faltaba.
-class _DoneTodaySection extends StatelessWidget {
-  final List<Mission> missions;
-  final void Function(Mission) onToggle;
-  final void Function(Mission) onEdit;
-  final void Function(Mission) onDelete;
+/// Barra fija al pie de la pantalla con un panel plegable de scroll propio.
+/// Su encabezado ("Hechas hoy", "Completadas anteriores") queda SIEMPRE
+/// visible; al abrirlo, la lista scrollea dentro de un alto acotado sin tapar
+/// los pendientes de arriba.
+class _CollapsibleShelf extends StatefulWidget {
+  final IconData icon;
+  final Color accent;
+  final String title;
+  final int count;
+  final bool initiallyExpanded;
+  final double maxHeight;
 
-  const _DoneTodaySection({
-    required this.missions,
-    required this.onToggle,
-    required this.onEdit,
-    required this.onDelete,
+  /// Reserva un hueco a la derecha del encabezado para no quedar debajo del FAB.
+  final bool reserveFabSpace;
+  final List<Widget> rows;
+
+  const _CollapsibleShelf({
+    super.key,
+    required this.icon,
+    required this.accent,
+    required this.title,
+    required this.count,
+    required this.initiallyExpanded,
+    required this.maxHeight,
+    required this.rows,
+    this.reserveFabSpace = false,
   });
+
+  @override
+  State<_CollapsibleShelf> createState() => _CollapsibleShelfState();
+}
+
+class _CollapsibleShelfState extends State<_CollapsibleShelf> {
+  late bool _expanded = widget.initiallyExpanded;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final green = AppColors.completed(context);
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(4, 10, 4, 8),
-          child: Row(
-            children: [
-              Icon(Icons.check_circle, size: 16, color: green),
-              const SizedBox(width: 8),
-              Text(
-                'Hechas hoy · ${missions.length}',
-                style: theme.textTheme.labelMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                  color: green,
-                ),
-              ),
-            ],
-          ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border(
+          top: BorderSide(color: theme.colorScheme.outlineVariant),
         ),
-        Container(
-          decoration: BoxDecoration(
-            color: theme.colorScheme.surface,
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: theme.colorScheme.outlineVariant),
-          ),
-          clipBehavior: Clip.antiAlias,
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeInOut,
-            alignment: Alignment.topCenter,
-            child: Column(
-              children: [
-                for (var i = 0; i < missions.length; i++)
-                  _CompletedRow(
-                    mission: missions[i],
-                    showDivider: i > 0,
-                    accent: green,
-                    tinted: true,
-                    onToggle: () => onToggle(missions[i]),
-                    onEdit: () => onEdit(missions[i]),
-                    onDelete: () => onDelete(missions[i]),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Encabezado fijo (siempre visible).
+          InkWell(
+            onTap: () => setState(() => _expanded = !_expanded),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(14, 12, 8, 12),
+              child: Row(
+                children: [
+                  Icon(widget.icon, size: 18, color: widget.accent),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '${widget.title} · ${widget.count}',
+                      style: theme.textTheme.labelLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: widget.accent,
+                      ),
+                    ),
                   ),
-              ],
+                  Icon(
+                    _expanded
+                        ? Icons.keyboard_arrow_up
+                        : Icons.keyboard_arrow_down,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                  // Deja libre la esquina inferior derecha para el FAB.
+                  if (widget.reserveFabSpace) const SizedBox(width: 56),
+                ],
+              ),
             ),
           ),
-        ),
-        const SizedBox(height: 10),
-      ],
+          // Panel con scroll interno acotado.
+          AnimatedSize(
+            duration: const Duration(milliseconds: 200),
+            curve: Curves.easeOut,
+            alignment: Alignment.bottomCenter,
+            child:
+                _expanded
+                    ? ConstrainedBox(
+                      constraints: BoxConstraints(maxHeight: widget.maxHeight),
+                      child: Scrollbar(
+                        child: ListView(
+                          padding: EdgeInsets.zero,
+                          shrinkWrap: true,
+                          children: widget.rows,
+                        ),
+                      ),
+                    )
+                    : const SizedBox(width: double.infinity),
+          ),
+        ],
+      ),
     );
   }
 }
 
-// ─── Completadas anteriores (colapsable) ────────────────────────────────────
-
-class _CompletedSection extends StatefulWidget {
-  final List<Mission> completed;
-  final void Function(Mission) onToggle;
-  final void Function(Mission) onEdit;
-  final void Function(Mission) onDelete;
-
-  const _CompletedSection({
-    required this.completed,
-    required this.onToggle,
-    required this.onEdit,
-    required this.onDelete,
-  });
-
-  @override
-  State<_CompletedSection> createState() => _CompletedSectionState();
-}
-
-class _CompletedSectionState extends State<_CompletedSection> {
-  bool _expanded = false;
+/// Zona de pendientes cuando no queda ninguno (pero sí hay completadas).
+class _AllClearView extends StatelessWidget {
+  const _AllClearView();
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    return Column(
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(32, 48, 32, 32),
       children: [
-        const SizedBox(height: 4),
-        InkWell(
-          borderRadius: BorderRadius.circular(10),
-          onTap: () => setState(() => _expanded = !_expanded),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-            decoration: BoxDecoration(
-              color: theme.colorScheme.surface,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: theme.colorScheme.outlineVariant),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 20,
-                  color: theme.colorScheme.primary,
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    'Completadas anteriores',
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                ),
-                Text(
-                  '${widget.completed.length}',
-                  style: theme.textTheme.bodySmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                Icon(
-                  _expanded ? Icons.expand_less : Icons.expand_more,
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ],
-            ),
+        Icon(
+          Icons.check_circle_outline,
+          size: 56,
+          color: AppColors.completed(context),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          '¡Sin pendientes!',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.titleMedium?.copyWith(
+            fontWeight: FontWeight.w600,
           ),
         ),
-        if (_expanded)
-          ...widget.completed.map(
-            (m) => _CompletedRow(
-              mission: m,
-              onToggle: () => widget.onToggle(m),
-              onEdit: () => widget.onEdit(m),
-              onDelete: () => widget.onDelete(m),
-            ),
+        const SizedBox(height: 4),
+        Text(
+          'Estás al día con tus misiones.',
+          textAlign: TextAlign.center,
+          style: theme.textTheme.bodyMedium?.copyWith(
+            color: theme.colorScheme.onSurfaceVariant,
           ),
+        ),
       ],
     );
   }
