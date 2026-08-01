@@ -39,9 +39,8 @@ class DailyHabitsList extends StatelessWidget {
             .length;
 
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
-        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _HeaderSection(
@@ -49,7 +48,8 @@ class DailyHabitsList extends StatelessWidget {
             completed: completed,
             total: scheduled.length,
           ),
-          _buildBody(),
+          // Solo la lista scrollea; el tablero de arriba queda fijo.
+          Expanded(child: _buildBody()),
         ],
       ),
     );
@@ -150,8 +150,7 @@ class _HabitsListView extends StatelessWidget {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
       child: ListView.separated(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
+        physics: const AlwaysScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         itemCount: habits.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),

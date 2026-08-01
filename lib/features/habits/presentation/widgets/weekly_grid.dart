@@ -41,19 +41,25 @@ class WeeklyGrid extends StatelessWidget {
     _StatusCell.clearCache();
 
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _HeaderSection(weekDates: weekDates),
           _DaysHeader(weekDates: weekDates),
-          _buildBody(weekDates),
+          // Altura FIJA: el tablero no crece con la cantidad de hábitos;
+          // las filas se adelgazan para entrar (ver _HabitsGrid).
+          SizedBox(height: _gridHeight, child: _buildBody(weekDates)),
           _MissionsRow(weekDates: weekDates),
         ],
       ),
     );
   }
+
+  /// Alto reservado para la grilla de hábitos. Constante a propósito: el
+  /// tablero queda anclado arriba y siempre ocupa lo mismo.
+  static const double _gridHeight = 148;
 
   Widget _buildBody(List<DateTime> weekDates) {
     if (isLoading) {
@@ -241,30 +247,49 @@ class _HabitsGrid extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children:
-            habits.asMap().entries.map((entry) {
-              final index = entry.key;
-              final habit = entry.value;
-              final isLast = index == habits.length - 1;
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          const gap = 4.0;
+          final count = habits.length;
+          // Las filas se reparten el alto fijo: con muchos hábitos quedan
+          // más delgadas en vez de estirar el tablero.
+          final rowHeight =
+              (((constraints.maxHeight - gap * (count - 1)) / count).clamp(
+                12.0,
+                40.0,
+              )).toDouble();
 
-              // Altura fija por fila: el tablero crece con los hábitos en vez
-              // de repartirse una mitad de pantalla (adiós scroll interno).
-              return SizedBox(
-                height: 40,
-                child: Padding(
-                  padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
-                  child: _HabitRow(
-                    habit: habit,
-                    index: index,
-                    weekDates: weekDates,
-                    weekEntries: weekEntries,
-                  ),
-                ),
-              );
-            }).toList(),
+          final content = Column(
+            mainAxisSize: MainAxisSize.min,
+            children:
+                habits.asMap().entries.map((entry) {
+                  final index = entry.key;
+                  final habit = entry.value;
+                  final isLast = index == count - 1;
+
+                  return SizedBox(
+                    height: rowHeight + (isLast ? 0 : gap),
+                    child: Padding(
+                      padding: EdgeInsets.only(bottom: isLast ? 0 : gap),
+                      child: _HabitRow(
+                        habit: habit,
+                        index: index,
+                        weekDates: weekDates,
+                        weekEntries: weekEntries,
+                      ),
+                    ),
+                  );
+                }).toList(),
+          );
+
+          // Con muchísimos hábitos (más de los que entran ni adelgazando)
+          // el tablero scrollea por dentro sin cambiar de tamaño.
+          final needed = rowHeight * count + gap * (count - 1);
+          return needed > constraints.maxHeight
+              ? SingleChildScrollView(child: content)
+              : content;
+        },
       ),
     );
   }
@@ -312,7 +337,8 @@ class _HabitBadge extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: 24,
-      height: 24,
+      height: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 24),
       decoration: BoxDecoration(
         color: Color(habit.colorValue),
         borderRadius: BorderRadius.circular(4),

@@ -404,11 +404,10 @@ class _LoadedView extends StatelessWidget {
         state.habits.where((h) => !h.isScheduledOn(now)).toList();
     final todayHabits = [...scheduledToday, ...notScheduledToday];
 
-    // Una sola página scrolleable: el tablero crece con los hábitos y la
-    // lista va debajo (sin mitades fijas ni scroll interno).
+    // El tablero queda ANCLADO arriba (altura fija) y solo la lista de
+    // hábitos scrollea: la vista semanal nunca se pierde de vista.
     return CenteredContent(
-      child: ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
+      child: Column(
         children: [
           WeeklyGrid(
             habits: state.habits,
@@ -418,17 +417,18 @@ class _LoadedView extends StatelessWidget {
             // el indicador de pull-to-refresh da el feedback.
             isLoading: false,
           ),
-          DailyHabitsList(
-            habits: todayHabits,
-            todayEntriesMap: todayEntriesMap,
-            onToggle: onToggle,
-            onDelete: onDelete,
-            onEdit: onEdit,
-            onAdd: onAdd,
-            isLoading: false,
-            streaks: state.streaks,
+          Expanded(
+            child: DailyHabitsList(
+              habits: todayHabits,
+              todayEntriesMap: todayEntriesMap,
+              onToggle: onToggle,
+              onDelete: onDelete,
+              onEdit: onEdit,
+              onAdd: onAdd,
+              isLoading: false,
+              streaks: state.streaks,
+            ),
           ),
-          const SizedBox(height: 8),
         ],
       ),
     );
