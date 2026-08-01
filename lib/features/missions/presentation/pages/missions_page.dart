@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -18,42 +16,8 @@ import '../widgets/mission_actions.dart';
 /// Urgencia de una misión pendiente, para agrupar y colorear.
 enum _Urgency { overdue, today, upcoming, noDate }
 
-class MissionsPage extends StatefulWidget {
+class MissionsPage extends StatelessWidget {
   const MissionsPage({super.key});
-
-  @override
-  State<MissionsPage> createState() => _MissionsPageState();
-}
-
-class _MissionsPageState extends State<MissionsPage> {
-  /// Misiones recién completadas que se quedan visibles (tachadas, en verde)
-  /// un momento en su lugar antes de moverse a "Completadas". Ese instante
-  /// de "quedó tachada" es la recompensa de completar.
-  final Map<int, Timer> _lingering = {};
-
-  static const _lingerDuration = Duration(milliseconds: 1600);
-
-  void _lingerCompletion(int id) {
-    _lingering[id]?.cancel();
-    _lingering[id] = Timer(_lingerDuration, () {
-      if (mounted) setState(() => _lingering.remove(id));
-    });
-    setState(() {});
-  }
-
-  void _handleToggle(Mission m) {
-    final wasPending = !m.isDone;
-    toggleMissionWithUndo(context, context.read<MissionBloc>(), m);
-    if (wasPending && m.id != null) _lingerCompletion(m.id!);
-  }
-
-  @override
-  void dispose() {
-    for (final t in _lingering.values) {
-      t.cancel();
-    }
-    super.dispose();
-  }
 
   void _openCreate(BuildContext context) {
     final bloc = context.read<MissionBloc>();
@@ -127,70 +91,75 @@ class _MissionsPageState extends State<MissionsPage> {
               return _EmptyState(onCreate: () => _openCreate(context));
             }
 
+            final bloc = context.read<MissionBloc>();
             final groups = _groupByUrgency(pending);
-            // Las recién completadas siguen en su grupo (tachadas) mientras
-            // dura el linger; salen de "Completadas" para no duplicarse.
-            final today = AppDateUtils.getStartOfDay(DateTime.now());
-            final lingering =
-                completed.where((m) => _lingering.containsKey(m.id)).toList();
-            for (final m in lingering) {
-              groups[_urgencyOf(m, today)]!.add(m);
-            }
-            final completedVisible =
-                completed.where((m) => !_lingering.containsKey(m.id)).toList();
             final nonEmptyGroups =
                 groups.values.where((l) => l.isNotEmpty).length;
 
+            // Completadas de hoy quedan a la vista (tachadas, en verde) como
+            // "logros del día"; las de días anteriores se pliegan abajo para
+            // no acumular una lista infinita.
+            final startToday = AppDateUtils.getStartOfDay(DateTime.now());
+            final doneToday = <Mission>[];
+            final doneOlder = <Mission>[];
+            for (final m in completed) {
+              final c = m.completedAt;
+              if (c != null &&
+                  !AppDateUtils.getStartOfDay(c).isBefore(startToday)) {
+                doneToday.add(m);
+              } else {
+                doneOlder.add(m);
+              }
+            }
+            // La recién completada aparece arriba del todo en "Hechas hoy".
+            doneToday.sort(
+              (a, b) => (b.completedAt ?? DateTime(0)).compareTo(
+                a.completedAt ?? DateTime(0),
+              ),
+            );
+
+            void onToggle(Mission m) => toggleMissionWithUndo(context, bloc, m);
+            void onDelete(Mission m) => deleteMissionWithUndo(context, bloc, m);
+
             return RefreshIndicator(
-              onRefresh:
-                  () async =>
-                      context.read<MissionBloc>().add(const LoadMissions()),
+              onRefresh: () async => bloc.add(const LoadMissions()),
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(12, 12, 12, 96),
                 children: [
                   _SummaryHeader(
                     pending: pending,
                     completedThisMonth: _completedThisMonth(completed),
-                    // (el linger no afecta el conteo del mes)
                     groups: groups,
                   ),
                   const SizedBox(height: 4),
                   for (final u in _Urgency.values)
-                    if ((groups[u] ?? const []).isNotEmpty) ...[
+                    if (groups[u]!.isNotEmpty) ...[
                       // Con un solo grupo el encabezado no aporta nada.
                       if (nonEmptyGroups > 1)
                         _GroupHeader(urgency: u, count: groups[u]!.length),
                       _MissionGroupCard(
                         missions: groups[u]!,
                         urgency: u,
-                        onToggle: _handleToggle,
+                        onToggle: onToggle,
                         onEdit: (m) => _openEdit(context, m),
-                        onDelete:
-                            (m) => deleteMissionWithUndo(
-                              context,
-                              context.read<MissionBloc>(),
-                              m,
-                            ),
+                        onDelete: onDelete,
                         onPickDate: (m) => _pickDateFor(context, m),
                       ),
                       const SizedBox(height: 10),
                     ],
-                  if (completedVisible.isNotEmpty)
-                    _CompletedSection(
-                      completed: completedVisible,
-                      onToggle:
-                          (m) => toggleMissionWithUndo(
-                            context,
-                            context.read<MissionBloc>(),
-                            m,
-                          ),
+                  if (doneToday.isNotEmpty)
+                    _DoneTodaySection(
+                      missions: doneToday,
+                      onToggle: onToggle,
                       onEdit: (m) => _openEdit(context, m),
-                      onDelete:
-                          (m) => deleteMissionWithUndo(
-                            context,
-                            context.read<MissionBloc>(),
-                            m,
-                          ),
+                      onDelete: onDelete,
+                    ),
+                  if (doneOlder.isNotEmpty)
+                    _CompletedSection(
+                      completed: doneOlder,
+                      onToggle: onToggle,
+                      onEdit: (m) => _openEdit(context, m),
+                      onDelete: onDelete,
                     ),
                 ],
               ),
@@ -476,9 +445,7 @@ class _MissionRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final done = mission.isDone;
-    final green = AppColors.completed(context);
-    final accent = done ? green : _accentFor(context, urgency);
+    final accent = _accentFor(context, urgency);
     final hasNote = mission.note != null && mission.note!.isNotEmpty;
 
     return Dismissible(
@@ -494,11 +461,8 @@ class _MissionRow extends StatelessWidget {
         return true;
       },
       onDismissed: (_) => onDelete(),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 250),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          // Tinte verde suave mientras la misión "festeja" recién completada.
-          color: done ? green.withValues(alpha: 0.08) : null,
           border:
               showDivider
                   ? Border(
@@ -527,14 +491,7 @@ class _MissionRow extends StatelessWidget {
                             children: [
                               Text(
                                 mission.title,
-                                style: theme.textTheme.bodyLarge?.copyWith(
-                                  decoration:
-                                      done ? TextDecoration.lineThrough : null,
-                                  color:
-                                      done
-                                          ? theme.colorScheme.onSurfaceVariant
-                                          : null,
-                                ),
+                                style: theme.textTheme.bodyLarge,
                               ),
                               if (hasNote)
                                 Padding(
@@ -569,7 +526,7 @@ class _MissionRow extends StatelessWidget {
                         ),
                         // Empujón para que las misiones sin fecha entren al
                         // tablero y a los recordatorios.
-                        if (mission.dueDate == null && !done) ...[
+                        if (mission.dueDate == null) ...[
                           const SizedBox(width: 8),
                           _AddDateChip(onTap: onPickDate),
                         ],
@@ -577,14 +534,12 @@ class _MissionRow extends StatelessWidget {
                         // Acción a la derecha (misma anatomía que Hábitos).
                         IconButton(
                           icon: Icon(
-                            done
-                                ? Icons.check_circle
-                                : Icons.radio_button_unchecked,
-                            color: done ? green : theme.colorScheme.outline,
+                            Icons.radio_button_unchecked,
+                            color: theme.colorScheme.outline,
                           ),
                           iconSize: 26,
                           onPressed: onToggle,
-                          tooltip: done ? 'Reabrir' : 'Completar',
+                          tooltip: 'Completar',
                         ),
                       ],
                     ),
@@ -662,7 +617,81 @@ String _formatDate(DateTime d) {
   return '${d.day} ${months[d.month - 1]}';
 }
 
-// ─── Completadas (colapsable) ───────────────────────────────────────────────
+// ─── Hechas hoy (siempre visible) ───────────────────────────────────────────
+
+/// Las misiones completadas hoy quedan a la vista, tachadas y en verde: son
+/// el "montón de logros del día". No se colapsan ni desaparecen — quedan ahí
+/// hasta mañana, que es exactamente la sensación de "lo hice" que faltaba.
+class _DoneTodaySection extends StatelessWidget {
+  final List<Mission> missions;
+  final void Function(Mission) onToggle;
+  final void Function(Mission) onEdit;
+  final void Function(Mission) onDelete;
+
+  const _DoneTodaySection({
+    required this.missions,
+    required this.onToggle,
+    required this.onEdit,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final green = AppColors.completed(context);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(4, 10, 4, 8),
+          child: Row(
+            children: [
+              Icon(Icons.check_circle, size: 16, color: green),
+              const SizedBox(width: 8),
+              Text(
+                'Hechas hoy · ${missions.length}',
+                style: theme.textTheme.labelMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                  color: green,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Container(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface,
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: theme.colorScheme.outlineVariant),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: AnimatedSize(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+            alignment: Alignment.topCenter,
+            child: Column(
+              children: [
+                for (var i = 0; i < missions.length; i++)
+                  _CompletedRow(
+                    mission: missions[i],
+                    showDivider: i > 0,
+                    accent: green,
+                    tinted: true,
+                    onToggle: () => onToggle(missions[i]),
+                    onEdit: () => onEdit(missions[i]),
+                    onDelete: () => onDelete(missions[i]),
+                  ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+      ],
+    );
+  }
+}
+
+// ─── Completadas anteriores (colapsable) ────────────────────────────────────
 
 class _CompletedSection extends StatefulWidget {
   final List<Mission> completed;
@@ -710,7 +739,7 @@ class _CompletedSectionState extends State<_CompletedSection> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'Completadas',
+                    'Completadas anteriores',
                     style: theme.textTheme.bodyMedium?.copyWith(
                       color: theme.colorScheme.onSurfaceVariant,
                     ),
@@ -746,12 +775,18 @@ class _CompletedSectionState extends State<_CompletedSection> {
 
 class _CompletedRow extends StatelessWidget {
   final Mission mission;
+  final bool showDivider;
+  final Color? accent;
+  final bool tinted;
   final VoidCallback onToggle;
   final VoidCallback onEdit;
   final VoidCallback onDelete;
 
   const _CompletedRow({
     required this.mission,
+    this.showDivider = false,
+    this.accent,
+    this.tinted = false,
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
@@ -760,16 +795,12 @@ class _CompletedRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final color = accent ?? theme.colorScheme.primary;
     return Dismissible(
       key: ValueKey('mission_done_${mission.id}'),
-      background: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 3),
-        child: _CompleteBg(),
-      ),
-      secondaryBackground: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 3),
-        child: _DeleteBg(),
-      ),
+      // Mismo gesto que en pendientes: derecha = reabrir, izquierda = eliminar.
+      background: const _CompleteBg(),
+      secondaryBackground: const _DeleteBg(),
       confirmDismiss: (dir) async {
         if (dir == DismissDirection.startToEnd) {
           onToggle();
@@ -778,20 +809,40 @@ class _CompletedRow extends StatelessWidget {
         return true;
       },
       onDismissed: (_) => onDelete(),
-      child: ListTile(
-        dense: true,
-        onTap: onToggle,
-        onLongPress: onEdit,
-        leading: IconButton(
-          icon: Icon(Icons.check_circle, color: theme.colorScheme.primary),
-          onPressed: onToggle,
-          tooltip: 'Reabrir',
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: tinted ? color.withValues(alpha: 0.06) : null,
+          border:
+              showDivider
+                  ? Border(
+                    top: BorderSide(color: theme.colorScheme.outlineVariant),
+                  )
+                  : null,
         ),
-        title: Text(
-          mission.title,
-          style: theme.textTheme.bodyMedium?.copyWith(
-            decoration: TextDecoration.lineThrough,
-            color: theme.colorScheme.onSurfaceVariant,
+        child: InkWell(
+          onTap: onToggle,
+          onLongPress: onEdit,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(12, 6, 4, 6),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    mission.title,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      decoration: TextDecoration.lineThrough,
+                      color: theme.colorScheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.check_circle, color: color),
+                  iconSize: 24,
+                  onPressed: onToggle,
+                  tooltip: 'Reabrir',
+                ),
+              ],
+            ),
           ),
         ),
       ),
