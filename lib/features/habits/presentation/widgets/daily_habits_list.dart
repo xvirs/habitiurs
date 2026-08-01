@@ -3,6 +3,7 @@ import 'package:habitiurs/core/service/vibration_service.dart';
 import '../../domain/entities/habit.dart';
 import 'habit_tile.dart';
 import '../../../../shared/enums/habit_status.dart';
+import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/swipe_action_background.dart';
 
 class DailyHabitsList extends StatelessWidget {
@@ -27,11 +28,27 @@ class DailyHabitsList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Progreso del día: completados sobre programados para hoy.
+    final now = DateTime.now();
+    final scheduled = habits.where((h) => h.isScheduledOn(now)).toList();
+    final completed =
+        scheduled
+            .where((h) => todayEntriesMap[h.id!] == HabitStatus.completed)
+            .length;
+
     return Card(
       margin: const EdgeInsets.all(16),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [_HeaderSection(onAdd: onAdd), Expanded(child: _buildBody())],
+        children: [
+          _HeaderSection(
+            onAdd: onAdd,
+            completed: completed,
+            total: scheduled.length,
+          ),
+          _buildBody(),
+        ],
       ),
     );
   }
@@ -51,19 +68,49 @@ class DailyHabitsList extends StatelessWidget {
 
 class _HeaderSection extends StatelessWidget {
   final VoidCallback onAdd;
-  const _HeaderSection({required this.onAdd});
+  final int completed;
+  final int total;
+
+  const _HeaderSection({
+    required this.onAdd,
+    required this.completed,
+    required this.total,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final green = AppColors.completed(context);
+    final allDone = total > 0 && completed == total;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Hábitos de hoy',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Hábitos de hoy', style: theme.textTheme.titleMedium),
+          if (total > 0) ...[
+            const SizedBox(width: 10),
+            Text(
+              '$completed/$total',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: allDone ? green : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: completed / total,
+                  minHeight: 4,
+                  color: green,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                ),
+              ),
+            ),
+          ] else
+            const Spacer(),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
@@ -98,7 +145,8 @@ class _HabitsListView extends StatelessWidget {
     return ClipRRect(
       borderRadius: const BorderRadius.vertical(bottom: Radius.circular(12)),
       child: ListView.separated(
-        physics: const AlwaysScrollableScrollPhysics(),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         itemCount: habits.length,
         separatorBuilder: (_, __) => const SizedBox(height: 8),

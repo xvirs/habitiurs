@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/utils/date_utils.dart';
 import '../../../../shared/utils/responsive.dart';
 import '../../../../shared/widgets/skeleton.dart';
@@ -49,6 +50,22 @@ class MissionsPage extends StatelessWidget {
     );
   }
 
+  /// Atajo desde el chip "+ fecha": asigna fecha límite sin abrir el sheet.
+  Future<void> _pickDateFor(BuildContext context, Mission m) async {
+    final bloc = context.read<MissionBloc>();
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: now,
+      firstDate: DateTime(now.year - 1),
+      lastDate: DateTime(now.year + 5),
+      helpText: 'Fecha límite',
+    );
+    if (picked != null) {
+      bloc.add(EditMission(m.copyWith(dueDate: picked)));
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -75,6 +92,8 @@ class MissionsPage extends StatelessWidget {
             }
 
             final groups = _groupByUrgency(pending);
+            final nonEmptyGroups =
+                groups.values.where((l) => l.isNotEmpty).length;
 
             return RefreshIndicator(
               onRefresh:
@@ -85,33 +104,34 @@ class MissionsPage extends StatelessWidget {
                 children: [
                   _SummaryHeader(
                     pending: pending,
-                    completedCount: completed.length,
+                    completedThisMonth: _completedThisMonth(completed),
                     groups: groups,
                   ),
                   const SizedBox(height: 4),
                   for (final u in _Urgency.values)
                     if ((groups[u] ?? const []).isNotEmpty) ...[
-                      _GroupHeader(urgency: u, count: groups[u]!.length),
-                      ...groups[u]!.map(
-                        (m) => _MissionRow(
-                          mission: m,
-                          urgency: u,
-                          onToggle:
-                              () => toggleMissionWithUndo(
-                                context,
-                                context.read<MissionBloc>(),
-                                m,
-                              ),
-                          onEdit: () => _openEdit(context, m),
-                          onDelete:
-                              () => deleteMissionWithUndo(
-                                context,
-                                context.read<MissionBloc>(),
-                                m,
-                              ),
-                        ),
+                      // Con un solo grupo el encabezado no aporta nada.
+                      if (nonEmptyGroups > 1)
+                        _GroupHeader(urgency: u, count: groups[u]!.length),
+                      _MissionGroupCard(
+                        missions: groups[u]!,
+                        urgency: u,
+                        onToggle:
+                            (m) => toggleMissionWithUndo(
+                              context,
+                              context.read<MissionBloc>(),
+                              m,
+                            ),
+                        onEdit: (m) => _openEdit(context, m),
+                        onDelete:
+                            (m) => deleteMissionWithUndo(
+                              context,
+                              context.read<MissionBloc>(),
+                              m,
+                            ),
+                        onPickDate: (m) => _pickDateFor(context, m),
                       ),
-                      const SizedBox(height: 8),
+                      const SizedBox(height: 10),
                     ],
                   if (completed.isNotEmpty)
                     _CompletedSection(
@@ -144,6 +164,16 @@ class MissionsPage extends StatelessWidget {
     );
   }
 
+  /// Completadas dentro del mes calendario actual (más útil que un total
+  /// histórico que solo crece).
+  static int _completedThisMonth(List<Mission> completed) {
+    final now = DateTime.now();
+    return completed.where((m) {
+      final c = m.completedAt;
+      return c != null && c.year == now.year && c.month == now.month;
+    }).length;
+  }
+
   static Map<_Urgency, List<Mission>> _groupByUrgency(List<Mission> pending) {
     final today = AppDateUtils.getStartOfDay(DateTime.now());
     final map = <_Urgency, List<Mission>>{
@@ -169,12 +199,12 @@ _Urgency _urgencyOf(Mission m, DateTime today) {
 
 class _SummaryHeader extends StatelessWidget {
   final List<Mission> pending;
-  final int completedCount;
+  final int completedThisMonth;
   final Map<_Urgency, List<Mission>> groups;
 
   const _SummaryHeader({
     required this.pending,
-    required this.completedCount,
+    required this.completedThisMonth,
     required this.groups,
   });
 
@@ -183,9 +213,6 @@ class _SummaryHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final overdue = groups[_Urgency.overdue]?.length ?? 0;
     final today = groups[_Urgency.today]?.length ?? 0;
-    final total = pending.length + completedCount;
-    final ratio = total == 0 ? 0.0 : completedCount / total;
-
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       decoration: BoxDecoration(
@@ -208,13 +235,21 @@ class _SummaryHeader extends StatelessWidget {
               ),
               const SizedBox(width: 8),
               Text(
-                pending.length == 1
-                    ? 'misión pendiente'
-                    : 'misiones pendientes',
+                pending.length == 1 ? 'pendiente' : 'pendientes',
                 style: theme.textTheme.bodyMedium?.copyWith(
                   color: theme.colorScheme.onSurfaceVariant,
                 ),
               ),
+              const Spacer(),
+              if (completedThisMonth > 0)
+                Text(
+                  '$completedThisMonth completada'
+                  '${completedThisMonth > 1 ? "s" : ""} este mes',
+                  style: theme.textTheme.labelMedium?.copyWith(
+                    color: AppColors.completed(context),
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
             ],
           ),
           if (overdue > 0 || today > 0) ...[
@@ -237,35 +272,6 @@ class _SummaryHeader extends StatelessWidget {
                     ),
                   ),
               ],
-            ),
-          ],
-          if (total > 0) ...[
-            const SizedBox(height: 14),
-            Row(
-              children: [
-                Text(
-                  'Completadas',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  '$completedCount / $total',
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: ratio,
-                minHeight: 6,
-                backgroundColor: theme.colorScheme.surfaceContainerHighest,
-              ),
             ),
           ],
         ],
@@ -354,38 +360,83 @@ Color _accentFor(BuildContext context, _Urgency u) {
 
 // ─── Fila de misión ─────────────────────────────────────────────────────────
 
-class _MissionRow extends StatelessWidget {
-  final Mission mission;
+/// Tarjeta contenedora de un grupo: una sola caja con filas divididas
+/// (menos ruido visual que una tarjeta bordeada por misión).
+class _MissionGroupCard extends StatelessWidget {
+  final List<Mission> missions;
   final _Urgency urgency;
-  final VoidCallback onToggle;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final void Function(Mission) onToggle;
+  final void Function(Mission) onEdit;
+  final void Function(Mission) onDelete;
+  final void Function(Mission) onPickDate;
 
-  const _MissionRow({
-    required this.mission,
+  const _MissionGroupCard({
+    required this.missions,
     required this.urgency,
     required this.onToggle,
     required this.onEdit,
     required this.onDelete,
+    required this.onPickDate,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final done = mission.isDone;
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        children: [
+          for (var i = 0; i < missions.length; i++)
+            _MissionRow(
+              mission: missions[i],
+              urgency: urgency,
+              showDivider: i > 0,
+              onToggle: () => onToggle(missions[i]),
+              onEdit: () => onEdit(missions[i]),
+              onDelete: () => onDelete(missions[i]),
+              onPickDate: () => onPickDate(missions[i]),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+class _MissionRow extends StatelessWidget {
+  final Mission mission;
+  final _Urgency urgency;
+  final bool showDivider;
+  final VoidCallback onToggle;
+  final VoidCallback onEdit;
+  final VoidCallback onDelete;
+  final VoidCallback onPickDate;
+
+  const _MissionRow({
+    required this.mission,
+    required this.urgency,
+    required this.showDivider,
+    required this.onToggle,
+    required this.onEdit,
+    required this.onDelete,
+    required this.onPickDate,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final accent = _accentFor(context, urgency);
+    final hasNote = mission.note != null && mission.note!.isNotEmpty;
 
     return Dismissible(
       key: ValueKey('mission_${mission.id}'),
       // Gesto unificado: izquierda = eliminar, derecha = marcar hecho.
-      background: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 4),
-        child: _CompleteBg(),
-      ),
-      secondaryBackground: const Padding(
-        padding: EdgeInsets.symmetric(vertical: 4),
-        child: _DeleteBg(),
-      ),
+      background: const _CompleteBg(),
+      secondaryBackground: const _DeleteBg(),
       confirmDismiss: (dir) async {
         if (dir == DismissDirection.startToEnd) {
           onToggle();
@@ -394,50 +445,39 @@ class _MissionRow extends StatelessWidget {
         return true;
       },
       onDismissed: (_) => onDelete(),
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 4),
+      child: DecoratedBox(
         decoration: BoxDecoration(
-          color: theme.colorScheme.surface,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: theme.colorScheme.outlineVariant),
+          border:
+              showDivider
+                  ? Border(
+                    top: BorderSide(color: theme.colorScheme.outlineVariant),
+                  )
+                  : null,
         ),
-        clipBehavior: Clip.antiAlias,
-        child: IntrinsicHeight(
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Container(width: 4, color: accent),
-              Expanded(
-                child: InkWell(
-                  onTap: onToggle,
-                  onLongPress: onEdit,
+        child: InkWell(
+          onTap: onToggle,
+          onLongPress: onEdit,
+          child: IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Franja de urgencia (identidad a la izquierda).
+                Container(width: 4, color: accent),
+                Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(8, 6, 12, 6),
+                    padding: const EdgeInsets.fromLTRB(12, 10, 8, 10),
                     child: Row(
                       children: [
-                        IconButton(
-                          icon: Icon(
-                            done
-                                ? Icons.check_circle
-                                : Icons.radio_button_unchecked,
-                            color:
-                                done
-                                    ? theme.colorScheme.primary
-                                    : theme.colorScheme.outline,
-                          ),
-                          onPressed: onToggle,
-                          tooltip: 'Completar',
-                        ),
                         Expanded(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
                             children: [
                               Text(
                                 mission.title,
                                 style: theme.textTheme.bodyLarge,
                               ),
-                              if (mission.note != null &&
-                                  mission.note!.isNotEmpty)
+                              if (hasNote)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 2),
                                   child: Text(
@@ -468,13 +508,72 @@ class _MissionRow extends StatelessWidget {
                             ],
                           ),
                         ),
+                        // Empujón para que las misiones sin fecha entren al
+                        // tablero y a los recordatorios.
+                        if (mission.dueDate == null) ...[
+                          const SizedBox(width: 8),
+                          _AddDateChip(onTap: onPickDate),
+                        ],
+                        const SizedBox(width: 4),
+                        // Acción a la derecha (misma anatomía que Hábitos).
+                        IconButton(
+                          icon: Icon(
+                            Icons.radio_button_unchecked,
+                            color: theme.colorScheme.outline,
+                          ),
+                          iconSize: 26,
+                          onPressed: onToggle,
+                          tooltip: 'Completar',
+                        ),
                       ],
                     ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AddDateChip extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _AddDateChip({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: theme.colorScheme.primary.withValues(alpha: 0.4),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.event_outlined,
+              size: 12,
+              color: theme.colorScheme.primary,
+            ),
+            const SizedBox(width: 3),
+            Text(
+              'fecha',
+              style: theme.textTheme.labelSmall?.copyWith(
+                color: theme.colorScheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
         ),
       ),
     );

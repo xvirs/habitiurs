@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_appearance.dart';
 import '../../../../shared/enums/habit_status.dart';
+import '../../../../shared/theme/app_theme.dart';
 import 'habit_status_styles.dart';
 
 /// Callback definitions para mejor legibilidad
@@ -150,11 +151,27 @@ class _StatusToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Círculo-check (misma anatomía que Misiones). El '+' anterior se
+    // confundía con "agregar".
+    final theme = Theme.of(context);
+    final (icon, color) = switch (status) {
+      HabitStatus.completed => (
+        Icons.check_circle,
+        AppColors.completed(context),
+      ),
+      HabitStatus.skipped => (
+        Icons.cancel_outlined,
+        AppColors.skipped(context).withValues(alpha: 0.8),
+      ),
+      HabitStatus.pending => (
+        Icons.radio_button_unchecked,
+        theme.colorScheme.outline,
+      ),
+    };
+    return SizedBox(
       width: 32,
       height: 32,
-      decoration: HabitStatusStyles.buildToggleDecoration(context, status),
-      child: Center(child: HabitStatusStyles.buildStatusIcon(context, status)),
+      child: Icon(icon, size: 28, color: color),
     );
   }
 }

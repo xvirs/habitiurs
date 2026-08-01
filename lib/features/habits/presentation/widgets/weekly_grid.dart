@@ -43,11 +43,12 @@ class WeeklyGrid extends StatelessWidget {
     return Card(
       margin: const EdgeInsets.all(16),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _HeaderSection(weekDates: weekDates),
           _DaysHeader(weekDates: weekDates),
-          Expanded(child: _buildBody(weekDates)),
+          _buildBody(weekDates),
           _MissionsRow(weekDates: weekDates),
         ],
       ),
@@ -243,13 +244,17 @@ class _HabitsGrid extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children:
             habits.asMap().entries.map((entry) {
               final index = entry.key;
               final habit = entry.value;
               final isLast = index == habits.length - 1;
 
-              return Expanded(
+              // Altura fija por fila: el tablero crece con los hábitos en vez
+              // de repartirse una mitad de pantalla (adiós scroll interno).
+              return SizedBox(
+                height: 40,
                 child: Padding(
                   padding: EdgeInsets.only(bottom: isLast ? 0 : 4),
                   child: _HabitRow(
@@ -481,9 +486,11 @@ class _StatusCell extends StatelessWidget {
   }
 
   Color _getStatusColor(BuildContext context, HabitStatus status) {
+    // Rojo SUAVE para lo no hecho: mismo lenguaje que el heatmap de
+    // Estadísticas (se destaca el logro, la falla no grita).
     return switch (status) {
       HabitStatus.completed => AppColors.completed(context),
-      HabitStatus.skipped => AppColors.skipped(context),
+      HabitStatus.skipped => AppColors.skipped(context).withValues(alpha: 0.3),
       HabitStatus.pending =>
         Theme.of(context).colorScheme.surfaceContainerHighest,
     };
