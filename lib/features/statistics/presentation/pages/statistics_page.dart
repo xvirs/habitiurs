@@ -59,7 +59,6 @@ class StatisticsPage extends StatelessWidget {
                     _SectionCard(
                       icon: Icons.calendar_view_month,
                       title: 'Mapa de constancia',
-                      trailing: 'últimos 4 meses',
                       child: ConstancyHeatmap(daily: state.dailyActivity),
                     ),
                     const SizedBox(height: 12),
@@ -217,13 +216,11 @@ class _StatCard extends StatelessWidget {
 class _SectionCard extends StatelessWidget {
   final IconData icon;
   final String title;
-  final String? trailing;
   final Widget child;
 
   const _SectionCard({
     required this.icon,
     required this.title,
-    this.trailing,
     required this.child,
   });
 
@@ -259,14 +256,6 @@ class _SectionCard extends StatelessWidget {
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              const Spacer(),
-              if (trailing != null)
-                Text(
-                  trailing!,
-                  style: theme.textTheme.labelSmall?.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
             ],
           ),
           const SizedBox(height: 12),
