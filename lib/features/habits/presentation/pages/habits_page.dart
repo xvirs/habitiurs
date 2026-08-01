@@ -426,6 +426,7 @@ class _LoadedView extends StatelessWidget {
             onEdit: onEdit,
             onAdd: onAdd,
             isLoading: false,
+            streaks: state.streaks,
           ),
           const SizedBox(height: 8),
         ],

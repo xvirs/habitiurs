@@ -21,6 +21,9 @@ class HabitTile extends StatelessWidget {
   onDelete; // Mantenemos por compatibilidad pero no se usa
   final OnHabitEditCallback? onEdit;
 
+  /// Días consecutivos completados (0 = sin racha).
+  final int streak;
+
   const HabitTile({
     super.key,
     required this.habit,
@@ -29,6 +32,7 @@ class HabitTile extends StatelessWidget {
     required this.onToggle,
     required this.onDelete,
     this.onEdit,
+    this.streak = 0,
   });
 
   @override
@@ -68,6 +72,7 @@ class HabitTile extends StatelessWidget {
                 _HabitBadge(habit: habit),
                 const SizedBox(width: 12),
                 Expanded(child: _HabitName(name: habit.name, status: status)),
+                if (streak > 1) _StreakBadge(streak: streak),
                 scheduledToday
                     ? _StatusToggle(status: status)
                     : const _NotScheduledIndicator(),
@@ -75,6 +80,35 @@ class HabitTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Racha del hábito. Solo desde 2 días: con 1 no hay "racha" que cuidar.
+class _StreakBadge extends StatelessWidget {
+  final int streak;
+
+  const _StreakBadge({required this.streak});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('🔥', style: TextStyle(fontSize: 12)),
+          const SizedBox(width: 2),
+          Text(
+            '$streak',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }

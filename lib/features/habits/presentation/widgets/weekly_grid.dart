@@ -81,19 +81,18 @@ class _HeaderSection extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
+    // Header compacto: el protagonismo es de la grilla, no del título.
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 6),
       child: Row(
         children: [
-          _VerticalAccent(color: theme.colorScheme.primary),
-          const SizedBox(width: 12),
-          Icon(Icons.view_week, color: theme.colorScheme.primary, size: 20),
-          const SizedBox(width: 8),
+          Icon(Icons.view_week, color: theme.colorScheme.primary, size: 16),
+          const SizedBox(width: 6),
           Expanded(
             child: Text(
               'Vista semanal',
-              style: theme.textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
+              style: theme.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
               ),
             ),
           ),

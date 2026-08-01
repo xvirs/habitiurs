@@ -14,6 +14,7 @@ class DailyHabitsList extends StatelessWidget {
   final void Function(Habit)? onEdit;
   final VoidCallback onAdd;
   final bool isLoading;
+  final Map<int, int> streaks;
 
   const DailyHabitsList({
     super.key,
@@ -24,6 +25,7 @@ class DailyHabitsList extends StatelessWidget {
     this.onEdit,
     required this.onAdd,
     this.isLoading = false,
+    this.streaks = const {},
   });
 
   @override
@@ -62,6 +64,7 @@ class DailyHabitsList extends StatelessWidget {
       onToggle: onToggle,
       onDelete: onDelete,
       onEdit: onEdit,
+      streaks: streaks,
     );
   }
 }
@@ -131,6 +134,7 @@ class _HabitsListView extends StatelessWidget {
   final void Function(int, HabitStatus) onToggle;
   final void Function(int, String) onDelete;
   final void Function(Habit)? onEdit;
+  final Map<int, int> streaks;
 
   const _HabitsListView({
     required this.habits,
@@ -138,6 +142,7 @@ class _HabitsListView extends StatelessWidget {
     required this.onToggle,
     required this.onDelete,
     this.onEdit,
+    this.streaks = const {},
   });
 
   @override
@@ -161,6 +166,7 @@ class _HabitsListView extends StatelessWidget {
             onToggle: onToggle,
             onDelete: onDelete,
             onEdit: onEdit,
+            streak: streaks[habit.id] ?? 0,
           );
         },
       ),
@@ -175,6 +181,7 @@ class _SwipeableHabitTile extends StatefulWidget {
   final void Function(int, HabitStatus) onToggle;
   final void Function(int, String) onDelete;
   final void Function(Habit)? onEdit;
+  final int streak;
 
   const _SwipeableHabitTile({
     super.key,
@@ -184,6 +191,7 @@ class _SwipeableHabitTile extends StatefulWidget {
     required this.onToggle,
     required this.onDelete,
     this.onEdit,
+    this.streak = 0,
   });
 
   @override
@@ -259,6 +267,7 @@ class _SwipeableHabitTileState extends State<_SwipeableHabitTile> {
         },
         onDelete: (_, __) {}, // No longer usado
         onEdit: widget.onEdit,
+        streak: widget.streak,
       ),
     );
   }

@@ -545,37 +545,16 @@ class _AddDateChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Neutro a propósito: con muchas misiones sin fecha, una pila de chips
+    // de acento competía con los títulos. Es un atajo, no una llamada.
     final theme = Theme.of(context);
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: theme.colorScheme.primary.withValues(alpha: 0.4),
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.event_outlined,
-              size: 12,
-              color: theme.colorScheme.primary,
-            ),
-            const SizedBox(width: 3),
-            Text(
-              'fecha',
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: theme.colorScheme.primary,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
+    final color = theme.colorScheme.onSurfaceVariant;
+    return IconButton(
+      onPressed: onTap,
+      icon: Icon(Icons.event_outlined, size: 18, color: color),
+      iconSize: 18,
+      visualDensity: VisualDensity.compact,
+      tooltip: 'Poner fecha límite',
     );
   }
 }
