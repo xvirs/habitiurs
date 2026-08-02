@@ -413,13 +413,6 @@ struct MissionsEntryView: View {
                 }
                 Spacer(minLength: 0)
             }
-            Link(destination: URL(string: "habitiurs://newmission")!) {
-                Text("＋ Nueva misión")
-                    .font(.system(size: 13, weight: .bold)).foregroundColor(.white)
-                    .frame(maxWidth: .infinity).padding(.vertical, 9)
-                    .background(WColors.accent(scheme))
-                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
         }
         .padding(14)
         .modifier(CardBackground(scheme: scheme))

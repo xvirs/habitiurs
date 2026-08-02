@@ -200,7 +200,7 @@ class HomeWidgetService {
       final pending = missions.where((m) => !m.isDone).toList();
       await HomeWidget.saveWidgetData<String>(
         _Keys.missionItems,
-        jsonEncode(_urgentMissionItems(pending, max: 4)),
+        jsonEncode(_urgentMissionItems(pending, max: 6)),
       );
       await HomeWidget.saveWidgetData<int>(_Keys.missionPending, pending.length);
 

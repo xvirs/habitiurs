@@ -28,30 +28,33 @@ class StreakWidgetProvider : HomeWidgetProvider() {
 
         val warn = context.getColor(R.color.w_warn)
         val ink = context.getColor(R.color.w_on_surface)
+        val muted = context.getColor(R.color.w_on_surface_var)
+        val faint = context.getColor(R.color.w_check_todo)
 
         appWidgetIds.forEach { widgetId ->
             val views = RemoteViews(context.packageName, R.layout.widget_streak).apply {
                 setTextViewText(R.id.streak_num, current.toString())
-                setTextViewText(
-                    R.id.streak_unit,
-                    if (current == 1) "día de racha" else "días de racha",
-                )
 
                 if (atRisk && current > 0) {
+                    // En riesgo: 2 líneas cortas que entran en 2x1.
                     val left = total - completed
-                    setViewVisibility(R.id.streak_badge, android.view.View.VISIBLE)
                     setTextColor(R.id.streak_num, warn)
+                    setTextViewText(R.id.streak_unit, "EN RIESGO")
+                    setTextColor(R.id.streak_unit, warn)
                     setTextViewText(
                         R.id.streak_sub,
-                        if (left == 1) "Te falta 1 hábito para mantenerla"
-                        else "Te faltan $left hábitos para mantenerla",
+                        if (left == 1) "Falta 1 hoy" else "Faltan $left hoy",
                     )
                     setTextColor(R.id.streak_sub, warn)
                 } else {
-                    setViewVisibility(R.id.streak_badge, android.view.View.GONE)
                     setTextColor(R.id.streak_num, ink)
+                    setTextViewText(
+                        R.id.streak_unit,
+                        if (current == 1) "día de racha" else "días de racha",
+                    )
+                    setTextColor(R.id.streak_unit, muted)
                     setTextViewText(R.id.streak_sub, "Mejor: $best días")
-                    setTextColor(R.id.streak_sub, context.getColor(R.color.w_check_todo))
+                    setTextColor(R.id.streak_sub, faint)
                 }
 
                 setOnClickPendingIntent(
