@@ -16,8 +16,6 @@ import 'package:habitiurs/features/missions/presentation/bloc/mission_event.dart
 import 'package:habitiurs/features/missions/presentation/bloc/mission_state.dart';
 import 'package:habitiurs/features/missions/presentation/pages/missions_page.dart';
 import 'package:habitiurs/shared/utils/date_utils.dart';
-import 'package:habitiurs/features/settings/presentation/bloc/settings_bloc.dart';
-import 'package:habitiurs/features/settings/presentation/bloc/settings_state.dart';
 import '../../../../shared/widgets/user_drawer.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 import '../../../auth/presentation/bloc/auth_state.dart';
@@ -41,15 +39,13 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   final Set<TabKind> _visited = {TabKind.habits};
   bool _isSyncing = false;
 
-  // Se actualiza en cada build según missionsEnabled; lo usa _onTabTapped
-  // para mapear el índice tocado a su TabKind.
-  // Orden: Estadísticas (izq) · Hábitos (centro) · Misiones/Asistente (der).
-  List<TabKind> _tabs = const [TabKind.stats, TabKind.habits, TabKind.ai];
-
-  List<TabKind> _tabsFor(bool missionsEnabled) =>
-      missionsEnabled
-          ? const [TabKind.stats, TabKind.habits, TabKind.missions]
-          : const [TabKind.stats, TabKind.habits, TabKind.ai];
+  // Pestañas fijas: Estadísticas (izq) · Hábitos (centro) · Misiones (der).
+  // El Asistente IA se accede desde el drawer (no ocupa la barra inferior).
+  static const List<TabKind> _tabs = [
+    TabKind.stats,
+    TabKind.habits,
+    TabKind.missions,
+  ];
 
   String _titleFor(TabKind k) => switch (k) {
     TabKind.ai => 'Asistente IA',
@@ -185,14 +181,7 @@ class _MainPageState extends State<MainPage> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final isWide = Responsive.isWide(context);
 
-    final settingsState = context.watch<SettingsBloc>().state;
-    final showMissions =
-        settingsState is SettingsLoaded &&
-        settingsState.settings.missionsEnabled;
-
-    _tabs = _tabsFor(showMissions);
-    // Si la superficie activa ya no está en la barra (p. ej. estabas en el
-    // Asistente IA y activaste Misiones), caemos a Hábitos.
+    // Por robustez: si _current no está en la barra, caemos a Hábitos.
     final current = _tabs.contains(_current) ? _current : TabKind.habits;
     final index = _tabs.indexOf(current);
 

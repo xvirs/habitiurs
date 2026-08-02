@@ -64,25 +64,20 @@ class _UserDrawerState extends State<UserDrawer> {
                     builder: (context, state) {
                       final settings =
                           state is SettingsLoaded ? state.settings : null;
-                      final missionsEnabled = settings?.missionsEnabled ?? true;
                       final notificationsEnabled =
                           settings?.notificationsEnabled ?? true;
 
                       return Column(
                         children: [
                           _sectionLabel(context, 'Accesos'),
-                          // El Asistente IA vive acá cuando Misiones ocupa su
-                          // lugar en la barra inferior.
-                          if (missionsEnabled)
-                            ListTile(
-                              leading: const Icon(Icons.psychology_outlined),
-                              title: const Text('Asistente IA'),
-                              trailing: const Icon(
-                                Icons.chevron_right,
-                                size: 20,
-                              ),
-                              onTap: () => _openAIAssistant(context),
-                            ),
+                          // El Asistente IA se accede desde acá (no ocupa la
+                          // barra inferior, reservada para Misiones).
+                          ListTile(
+                            leading: const Icon(Icons.psychology_outlined),
+                            title: const Text('Asistente IA'),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => _openAIAssistant(context),
+                          ),
                           ListTile(
                             leading: const Icon(Icons.archive_outlined),
                             title: const Text('Hábitos archivados'),
@@ -93,17 +88,6 @@ class _UserDrawerState extends State<UserDrawer> {
                           const Divider(height: 8),
                           _sectionLabel(context, 'Ajustes rápidos'),
 
-                          SwitchListTile(
-                            secondary: const Icon(Icons.flag_outlined),
-                            title: const Text('Misiones'),
-                            value: missionsEnabled,
-                            onChanged:
-                                settings == null
-                                    ? null
-                                    : (v) => context.read<SettingsBloc>().add(
-                                      ToggleMissions(v),
-                                    ),
-                          ),
                           SwitchListTile(
                             secondary: const Icon(Icons.notifications_outlined),
                             title: const Text('Recordatorios'),
