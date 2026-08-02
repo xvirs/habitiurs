@@ -10,86 +10,124 @@ abstract class OfflineContentDatasource {
 class OfflineContentDatasourceImpl implements OfflineContentDatasource {
   @override
   Future<List<EducationalContentModel>> getEducationalContent() async {
+    final now = DateTime.now();
     return [
       EducationalContentModel(
         id: 1,
-        title: "La Regla de los 2 Minutos",
-        content:
-            """James Clear propone que cuando estés comenzando un nuevo hábito, debería tomar menos de dos minutos realizarlo.
+        title: 'La regla de los 2 minutos',
+        content: '''
+Cuando empieces un hábito nuevo, que hacerlo te tome menos de dos minutos.
 
-"Leer antes de dormir" se convierte en "leer una página".
-"Hacer ejercicio 30 minutos" se convierte en "ponerme las zapatillas de deporte".
-"Meditar 10 minutos" se convierte en "respirar profundo tres veces".
+• "Leer antes de dormir" → "leer una página".
+• "Entrenar 30 minutos" → "ponerme las zapatillas".
+• "Meditar 10 minutos" → "respirar hondo tres veces".
 
-La idea es que casi cualquier hábito puede reducirse a una versión de dos minutos. El objetivo no es hacer una cosa en dos minutos, sino dominar el hábito de aparecer.
+La idea no es hacer poco para siempre, sino **dominar el arte de aparecer**. Primero volvés automático el gesto de empezar; después, subir la exigencia es fácil.
 
-Una vez que dominas el arte de aparecer, puedes mejorar y refinar el hábito. Es mejor hacer menos de lo que esperas que no hacer nada en absoluto.""",
-        category: "Formación de Hábitos",
-        readTimeMinutes: 3,
-        createdAt: DateTime.now(),
+En Habitiurs esto se traduce en definir hábitos chicos y marcarlos todos los días. Es mejor un 6/7 constante que una semana perfecta seguida de dos en blanco.''',
+        category: 'Formación de hábitos',
+        readTimeMinutes: 2,
+        createdAt: now,
         isLocal: true,
       ),
       EducationalContentModel(
         id: 2,
-        title: "El Poder del Apilamiento de Hábitos",
-        content:
-            """El apilamiento de hábitos es una forma especial de intención de implementación. En lugar de emparejar tu nuevo hábito con un tiempo y lugar particular, lo emparejas con un hábito actual.
+        title: 'Apilá hábitos nuevos sobre viejos',
+        content: '''
+En vez de atar un hábito a una hora, atalo a algo que **ya hacés todos los días**.
 
-La fórmula es: "Después de [HÁBITO ACTUAL], haré [NUEVO HÁBITO]."
+La fórmula: "Después de [HÁBITO ACTUAL], haré [HÁBITO NUEVO]".
 
 Ejemplos:
-• Después de servirme mi café matutino, meditaré durante un minuto.
-• Después de quitarme los zapatos del trabajo, inmediatamente me cambiaré la ropa de ejercicio.
-• Después de cerrar mi laptop para el día, escribiré una cosa por la que estoy agradecido.
+• Después de servirme el café, medito un minuto.
+• Después de dejar los zapatos del trabajo, me pongo la ropa de entrenar.
+• Después de cerrar la laptop, anoto una cosa que agradezco.
 
-El apilamiento de hábitos funciona mejor cuando el hábito de pila y el nuevo hábito tienen aproximadamente la misma frecuencia.""",
-        category: "Formación de Hábitos",
-        readTimeMinutes: 4,
-        createdAt: DateTime.now(),
+Funciona mejor cuando ambos hábitos tienen la misma frecuencia. El hábito viejo es el recordatorio del nuevo, sin depender de tu memoria.''',
+        category: 'Formación de hábitos',
+        readTimeMinutes: 3,
+        createdAt: now,
         isLocal: true,
       ),
       EducationalContentModel(
         id: 3,
-        title: "Diseño del Entorno para el Éxito",
-        content:
-            """Tu entorno físico influye enormemente en tus hábitos. Hacer que las señales de los hábitos buenos sean obvias en tu entorno es una forma poderosa de mantenerlos.
+        title: 'Diseñá tu entorno',
+        content: '''
+Tu entorno pesa más que tu fuerza de voluntad. Hacé **obvias** las señales de los hábitos buenos y **invisibles** las de los malos.
 
-Estrategias para diseñar tu entorno:
+**Para los buenos:**
+• Fruta a la vista, botella de agua en el escritorio.
+• El libro sobre la almohada, la ropa de gym lista la noche anterior.
 
-**Para hábitos positivos:**
-• Coloca frutas en un lugar visible
-• Deja tu botella de agua donde la veas
-• Pon tu libro junto a tu cama
-• Deja tu ropa de ejercicio preparada
+**Para los malos:**
+• El control remoto guardado, el teléfono en otra habitación.
+• Nada de comida chatarra a la vista.
 
-**Para evitar hábitos negativos:**
-• Oculta el control remoto del televisor
-• Deja tu teléfono en otra habitación
-• No tengas comida chatarra visible
-
-Recuerda: es más fácil cambiar tu entorno que cambiar tu fuerza de voluntad.""",
-        category: "Formación de Hábitos",
-        readTimeMinutes: 3,
-        createdAt: DateTime.now(),
+Es más fácil cambiar el ambiente una vez que pelear con la tentación todos los días.''',
+        category: 'Formación de hábitos',
+        readTimeMinutes: 2,
+        createdAt: now,
         isLocal: true,
       ),
       EducationalContentModel(
         id: 4,
-        title: "La Importancia de la Identidad",
-        content:
-            """El cambio de comportamiento más profundo es el cambio de identidad. Cada acción es un voto por el tipo de persona que deseas convertirte.
+        title: 'Los hábitos construyen identidad',
+        content: '''
+El cambio más profundo no es de resultado, es de **identidad**. Cada acción es un voto por la persona que querés ser.
 
-En lugar de enfocarte en lo que quieres lograr, enfócate en quién quieres convertirte:
-• "Quiero leer más" → "Soy una persona que lee"
-• "Quiero ejercitarme" → "Soy una persona atlética"
-• "Quiero escribir" → "Soy un escritor"
+En vez de enfocarte en la meta, enfocate en quién querés convertirte:
+• "Quiero leer más" → "Soy una persona que lee".
+• "Quiero entrenar" → "Soy una persona que se cuida".
 
-Cada vez que realizas tu hábito, reafirmas tu identidad. Cuando corres, eres un corredor. Cuando escribes, eres un escritor. Cuando ayudas a otros, eres una persona útil.
+Cada vez que cumplís un hábito, sumás evidencia de esa identidad. Por eso en Habitiurs la racha importa: no es un puntaje, es la prueba acumulada de quién estás siendo.''',
+        category: 'Mentalidad',
+        readTimeMinutes: 3,
+        createdAt: now,
+        isLocal: true,
+      ),
+      EducationalContentModel(
+        id: 5,
+        title: 'Nunca falles dos veces seguidas',
+        content: '''
+Fallar un día no rompe nada: lo que rompe el hábito es fallar **dos veces seguidas**. Un traspié es un accidente; dos, el comienzo de un patrón.
 
-Tu identidad emerge de tus hábitos. Cada repetición es evidencia de que eres el tipo de persona que quieres ser.""",
-        category: "Mindset",
-        readTimeMinutes: 4,
-        createdAt: DateTime.now(),
+La regla es simple: si ayer no pudiste, hoy es innegociable. No hace falta compensar ni hacer el doble, solo volver.
+
+En la pestaña Hábitos, marcá "Saltado" con honestidad cuando no lo hiciste; y en el mapa de Constancia (Estadísticas) vas a ver que un hueco aislado casi no se nota, pero dos juntos sí.''',
+        category: 'Constancia',
+        readTimeMinutes: 2,
+        createdAt: now,
+        isLocal: true,
+      ),
+      EducationalContentModel(
+        id: 6,
+        title: 'Hábitos vs. objetivos',
+        content: '''
+Los objetivos marcan una dirección; los **hábitos** son el sistema que te lleva ahí. Ganás no cuando alcanzás la meta, sino cuando sostenés el sistema.
+
+• Objetivo: "correr una maratón". Hábito: "salir a correr".
+• Objetivo: "aprender inglés". Hábito: "estudiar 10 minutos".
+
+Problema de vivir para la meta: sos "un fracaso" hasta cumplirla y quedás a la deriva después. Con un buen hábito, cada día ya es un pequeño éxito.
+
+Por eso Habitiurs no te pide metas: te pide aparecer. Definí la acción diaria y dejá que el resultado llegue solo.''',
+        category: 'Mentalidad',
+        readTimeMinutes: 3,
+        createdAt: now,
+        isLocal: true,
+      ),
+      EducationalContentModel(
+        id: 7,
+        title: 'Menos hábitos, más constancia',
+        content: '''
+Arrancar con diez hábitos a la vez es la forma más rápida de abandonar. La energía se reparte y ninguno se afianza.
+
+Mantené **3 a 5 hábitos activos**. Cuando uno se vuelve automático (deja de costarte pensarlo), recién ahí sumás otro.
+
+Si el Asistente IA te dice que estás sobrecargado, hacele caso: bajá la cantidad. La calidad de la constancia le gana siempre a la cantidad de intenciones.''',
+        category: 'Constancia',
+        readTimeMinutes: 2,
+        createdAt: now,
         isLocal: true,
       ),
     ];
@@ -100,206 +138,187 @@ Tu identidad emerge de tus hábitos. Cada repetición es evidencia de que eres e
     return [
       AppGuideModel(
         id: 1,
-        title: "Bienvenido a Habitiurs",
-        content:
-            """Habitiurs es tu compañero para construir hábitos duraderos de manera simple y efectiva.
+        title: 'Bienvenido a Habitiurs',
+        content: '''
+Habitiurs es tu compañero para construir hábitos duraderos, de forma simple y sin ruido.
 
-**¿Por qué Habitiurs?**
-Esta aplicación está diseñada con principios científicos de formación de hábitos. No encontrarás gamificación complicada ni recordatorios molestos, solo las herramientas esenciales para el seguimiento consistente.
+**Su filosofía:**
+• Simplicidad sobre complejidad.
+• Constancia sobre perfección.
+• Progreso sobre resultados inmediatos.
+• Datos claros para decidir mejor.
 
-**Filosofía de la app:**
-• Simplicidad sobre complejidad
-• Constancia sobre perfección
-• Progreso sobre resultados inmediatos
-• Datos claros para tomar mejores decisiones
+**Las tres pestañas de abajo:**
+• **Estadísticas** — cómo venís en el tiempo.
+• **Hábitos** — tu día a día (es la pantalla central).
+• **Misiones** — tareas de una sola vez (trámites, turnos).
 
-Habitiurs te ayuda a enfocarte en lo que realmente importa: aparecer cada día y hacer el trabajo.""",
-        section: "overview",
+El **Asistente IA** y el resto de accesos viven en el menú lateral (☰, arriba a la izquierda).''',
+        section: 'overview',
         order: 1,
       ),
       AppGuideModel(
         id: 2,
-        title: "Entendiendo la Cuadrícula Semanal",
-        content:
-            """La cuadrícula semanal es el corazón de Habitiurs. Aquí es donde visualizas tu progreso de manera clara y motivadora.
+        title: 'La pestaña Hábitos',
+        content: '''
+Es el corazón de la app. Tiene dos partes:
 
-**Cómo funciona:**
-• Cada fila representa un hábito
-• Cada columna representa un día de la semana
-• Los números del lado izquierdo identifican cada hábito
+**1) Tablero de vista semanal (arriba, siempre visible):**
+• Cada fila es un hábito (con su ícono a la izquierda); cada columna, un día.
+• Verde = completado, rojo = saltado, gris = pendiente.
+• **Tocá** la celda de HOY para cambiar el estado.
+• **Mantené presionada** una celda de un día pasado para corregirlo.
 
-**Estados posibles:**
-🟢 Verde con ✓ = Completado
-🔴 Rojo con ✗ = Saltado (decidiste no hacerlo)
-⚪ Gris con • = Pendiente (aún no decidido)
+**2) Hábitos de hoy (abajo, scrollea):**
+• Muestra los hábitos que tocan hoy y tu progreso (ej. 2/3).
+• **Deslizá a la derecha** para marcar hecho.
+• **Deslizá a la izquierda** para eliminar.
+• **Mantené presionado** para editar.
+• El 🔥 al lado de un hábito indica los días de racha que llevás.
 
-**Interacciones:**
-• **Tap en día actual:** Cambia el estado (Pendiente → Completado → Saltado → Pendiente)
-• **Mantén presionado en días pasados:** Abre un modal para modificar el estado de ese día específico
-
-**Nota:** Puedes modificar cualquier día pasado, útil si olvidaste marcar un hábito que sí completaste.
-
-**Tip:** Usa la cuadrícula para identificar patrones. ¿Hay días específicos donde te cuesta más? ¿Ciertos hábitos son más difíciles que otros?""",
-        section: "weekly_grid",
+Con el botón **+** agregás un hábito nuevo.''',
+        section: 'habits',
         order: 2,
       ),
       AppGuideModel(
         id: 3,
-        title: "Interpretando tus Estadísticas",
-        content:
-            """Las estadísticas te dan una perspectiva objetiva de tu progreso a lo largo del tiempo.
+        title: 'Crear un buen hábito (con IA)',
+        content: '''
+Al crear un hábito podés usar la **evaluación con IA** para chequear que sea efectivo. Verifica 3 criterios:
 
-**Sección 1 - Resumen del Mes:**
-Muestra las semanas completas del mes actual con hábitos cumplidos y no cumplidos por semana.
+1. ¿Es una **acción** concreta? (no un estado de ánimo ni una meta abstracta)
+2. ¿Se puede **repetir** todos los días? (no depende de terceros)
+3. ¿Es **medible** sin dudas? (sabés si lo cumpliste o no)
 
-**Sección 2 - Vista Anual:**
-Lista todos los meses del año con:
-• Porcentaje de constancia mensual
-• Contador de hábitos completados/no completados/pendientes
+**Buenos:**
+✅ "Leer 10 páginas" · ✅ "Meditar 5 minutos" · ✅ "Un vaso de agua al despertar"
 
-**Sección 3 - Gráfico Histórico:**
-Visualiza tu tendencia de constancia a lo largo del tiempo.
+**Malos:**
+❌ "Ser feliz" (estado, no acción) · ❌ "Ganar la lotería" (no depende de vos)
 
-**Interpretación:**
-• Un 70%+ de constancia es excelente
-• 40-70% es bueno, hay espacio para mejorar
-• <40% sugiere revisar tus hábitos o estrategia
-
-Recuerda: las estadísticas son una herramienta, no un juicio. Úsalas para identificar patrones y ajustar tu enfoque.""",
-        section: "statistics",
+La IA **nunca** te va a fijar un horario ("a la mañana"). Habitiurs se enfoca en que lo HAGAS cada día, no en cuándo.''',
+        section: 'habits',
         order: 3,
       ),
       AppGuideModel(
         id: 4,
-        title: "Creando Hábitos con IA",
-        content:
-            """Al crear un nuevo hábito, puedes usar la **Evaluación con IA** para validar que tu hábito sea efectivo.
+        title: 'La pestaña Misiones',
+        content: '''
+Las misiones son **tareas de una sola vez**: un trámite, un turno médico, una llamada. No son recurrentes como los hábitos.
 
-**¿Qué evalúa la IA?**
-La IA verifica que tu hábito cumpla 3 criterios:
-1. ¿Es una ACCIÓN específica? (no un estado mental o meta abstracta)
-2. ¿Se puede REPETIR todos los días? (no depende de eventos externos)
-3. ¿Es MEDIBLE sin ambigüedad? (sabes si lo completaste o no)
+**Cómo usarlas:**
+• Tocá **＋ Nueva** (arriba) para crear una, con nota y fecha límite opcional.
+• **Deslizá a la derecha** para completarla; **a la izquierda** para borrarla.
+• **Mantené presionada** para editarla.
 
-**Ejemplos de hábitos BUENOS:**
-✅ "Leer 10 páginas"
-✅ "Meditar 5 minutos"
-✅ "Beber un vaso de agua al despertar"
+**Colores por urgencia:**
+🔴 Vencida · 🔵 Hoy · 🟠 Próxima · 🟢 Sin fecha.
 
-**Ejemplos de hábitos MALOS:**
-❌ "Ser feliz" → Es un estado emocional, no una acción
-❌ "Conquistar el mundo" → Meta grandiosa, no acción diaria
-❌ "Ganar la lotería" → No depende de ti
-
-**Tip:** La IA NUNCA sugerirá horarios específicos (ej: "por la mañana"). Habitiurs se enfoca en que HAGAS el hábito cada día, sin importar CUÁNDO lo hagas.""",
-        section: "ai_features",
+Al completar, la misión pasa a **Hechas hoy** (queda a la vista, tachada). Las de días anteriores se guardan en **Completadas anteriores**, abajo. Si una misión tiene fecha, te llega un **recordatorio** ese día.''',
+        section: 'missions',
         order: 4,
       ),
       AppGuideModel(
         id: 5,
-        title: "Asistente de IA Personalizado",
-        content:
-            """El Asistente de IA analiza tus datos reales y te da recomendaciones específicas y accionables.
+        title: 'La pestaña Estadísticas',
+        content: '''
+Te da una lectura objetiva de tu constancia, sin dramatismo.
 
-**¿Qué analiza?**
-• Tus hábitos actuales
-• Tu tasa de cumplimiento promedio
-• Tu racha actual
-• Hábitos con los que estás teniendo dificultades
+**Números clave (arriba):**
+🔥 Racha actual · 🏆 Mejor racha · % de este mes · total de completados.
 
-**Formato de la recomendación:**
-**[EMOJI] Estado:** Evaluación honesta de tu situación actual
-**💡 Acción clave:** UNA cosa específica que puedes hacer HOY
-**⚠️ Alerta:** (Si aplica) Hábitos problemáticos y por qué fallan
+**Mapa de Constancia:**
+Una cuadrícula estilo GitHub: cada celda es un día y se pinta más verde cuanto más cumpliste. De un vistazo ves tus rachas y tus huecos — la meta es "no cortar la cadena".
 
-**Niveles de rendimiento:**
-🔥 Excelente (≥80%): Mantén el momentum
-💪 Buen ritmo (60-79%): Identifica patrones
-📈 En desarrollo (40-59%): Enfócate en 1 hábito
-⚡ Necesita atención (<40%): Simplifica radicalmente
+**Tendencia por mes** y **mejor/peor día de la semana** te ayudan a detectar patrones (¿se te complican los fines de semana?).
 
-**Nota:** El asistente es DIRECTO y HONESTO. Si vas mal, te lo dirá claramente. No encontrarás motivación vacía, solo feedback accionable.""",
-        section: "ai_features",
+Es una herramienta, no un juicio: usala para ajustar, no para castigarte.''',
+        section: 'statistics',
         order: 5,
       ),
       AppGuideModel(
         id: 6,
-        title: "Modificando Días Pasados",
-        content:
-            """A veces olvidas marcar un hábito que sí completaste. Habitiurs te permite corregir días pasados.
+        title: 'Widgets en tu pantalla de inicio',
+        content: '''
+Habitiurs trae widgets para que veas (y marques) tus hábitos sin abrir la app. Para agregarlos: mantené presionada la pantalla de inicio → Widgets → buscá "Habitiurs".
 
-**Cómo modificar un día pasado:**
-1. Ve a la cuadrícula semanal en la página principal
-2. **Mantén presionado** sobre la casilla del día que quieres modificar
-3. Se abrirá un modal con el nombre del hábito y la fecha
-4. Selecciona el nuevo estado: **Completado** o **Saltado**
-5. El cambio se guarda automáticamente
+**Disponibles:**
+• **Hoy** — tus hábitos del día. En la versión lista podés **marcarlos tocándolos**, sin abrir la app.
+• **Racha** — tu racha actual; se pone en alerta si el día quedó incompleto.
+• **Constancia** — el mapa de calor, siempre a la vista.
+• **Misiones** — tus pendientes más urgentes.
 
-**Restricciones:**
-• Solo puedes modificar días PASADOS (no el día actual ni futuros)
-• El día actual se modifica con un tap simple, no con mantener presionado
-
-**Caso de uso común:**
-"Ayer leí 10 páginas pero olvidé marcarlo. Ahora puedo mantener presionado sobre ese día y marcarlo como completado."
-
-**Tip:** Esto NO es para hacer trampa. La honestidad en el seguimiento es clave para el progreso real.""",
-        section: "features",
+Se actualizan solos cuando marcás hábitos o misiones.''',
+        section: 'widgets',
         order: 6,
       ),
       AppGuideModel(
         id: 7,
-        title: "Eliminando Hábitos",
-        content:
-            """Si un hábito ya no te sirve o quieres reemplazarlo, puedes eliminarlo fácilmente.
+        title: 'El Asistente IA',
+        content: '''
+Analiza tus **datos reales** y te da una recomendación concreta y accionable. Lo abrís desde el menú lateral (☰).
 
-**Cómo eliminar un hábito:**
-1. Ve a la cuadrícula semanal
-2. **Mantén presionado sobre el número** del hábito (lado izquierdo)
-3. Aparecerá un diálogo de confirmación
-4. Confirma la eliminación
+**Qué mira:** tus hábitos, tu cumplimiento promedio, tu racha y con cuáles te está costando.
 
-**⚠️ Advertencia:**
-Esta acción es IRREVERSIBLE. Se eliminarán:
-• El hábito
-• Todo su historial de registros
-• Sus estadísticas asociadas
+**Qué te devuelve:**
+**Estado:** una lectura honesta de cómo venís.
+**💡 Acción clave:** UNA cosa para hacer hoy.
+**⚠️ Alerta:** (si aplica) hábitos que están fallando y por qué.
 
-**Alternativa:**
-Si solo quieres "pausar" un hábito temporalmente, considera simplemente no marcarlo en lugar de eliminarlo. Así conservas tu historial.
+**Niveles:** 🔥 Excelente (≥80%) · 💪 Buen ritmo (60–79%) · 📈 En desarrollo (40–59%) · ⚡ Necesita atención (<40%).
 
-**Mejor práctica:**
-Mantén solo 3-5 hábitos activos. La calidad supera la cantidad.""",
-        section: "features",
+Es directo y honesto: si vas mal, te lo dice. No hay motivación vacía, solo feedback útil. **Deslizá hacia abajo** para regenerarlo.''',
+        section: 'ai_features',
         order: 7,
       ),
       AppGuideModel(
         id: 8,
-        title: "Mejores Prácticas",
-        content: """**1. Comienza pequeño**
-Es mejor ser consistente con hábitos pequeños que fallar con hábitos grandes. Aplica la regla de los 2 minutos.
+        title: 'Menú lateral y ajustes',
+        content: '''
+El menú lateral (☰, arriba a la izquierda) es tu centro de control:
 
-**2. Usa la evaluación de IA al crear hábitos**
-Deja que la IA valide que tu hábito sea una acción concreta, repetible y medible.
+**Accesos:**
+• **Asistente IA** — tus recomendaciones.
+• **Hábitos archivados** — los que guardaste sin borrar (conservan su historial).
 
-**3. Sé honesto contigo mismo**
-Marca "Saltado" cuando corresponda. La honestidad en el seguimiento es crucial para el progreso real.
+**Ajustes rápidos:**
+• **Recordatorios** — activá/desactivá el aviso diario y elegí la hora.
 
-**4. Revisa el Asistente de IA regularmente**
-Usa sus recomendaciones para ajustar tu estrategia. Si te dice que estás sobrecargado, escucha.
-
-**5. Enfócate en la constancia, no en la perfección**
-El objetivo no es nunca fallar, sino aparecer consistentemente. Una semana con 6/7 días es mejor que una semana perfecta seguida de dos semanas sin registro.
-
-**6. Usa las estadísticas para identificar patrones**
-¿Siempre fallas los fines de semana? Prepara una estrategia específica para esos días.
-
-**7. Mantén 3-5 hábitos activos**
-Más hábitos = energía dispersa. La calidad supera la cantidad.
-
-**8. Corrige errores del pasado**
-Si olvidaste marcar un hábito completado, usa el mantener presionado para corregirlo.""",
-        section: "best_practices",
+Más abajo, fijos: **Configuración** (legal, cuenta, versión) y **Cerrar sesión**. Tus datos se sincronizan en la nube al iniciar sesión con Google.''',
+        section: 'navigation',
         order: 8,
+      ),
+      AppGuideModel(
+        id: 9,
+        title: 'Corregir y eliminar',
+        content: '''
+**Corregir un día pasado:** a veces cumplís un hábito y olvidás marcarlo. En el tablero semanal, **mantené presionada** la celda del día pasado y elegí el estado correcto. El día de HOY se cambia con un toque simple. (No es para hacer trampa: la honestidad es lo que hace que el progreso sea real.)
+
+**Eliminar un hábito:** deslizalo a la izquierda en "Hábitos de hoy". Ojo: se borra su **historial completo**. Si solo querés pausarlo, mejor archivalo (desde su edición) — así conservás los datos y podés recuperarlo desde "Hábitos archivados".
+
+**Deshacer:** al borrar una misión aparece un "Deshacer" por unos segundos.''',
+        section: 'features',
+        order: 9,
+      ),
+      AppGuideModel(
+        id: 10,
+        title: 'Buenas prácticas',
+        content: '''
+**1. Empezá chico.** Mejor ser constante con algo mínimo que fallar con algo grande (regla de los 2 minutos).
+
+**2. Validá con la IA.** Dejá que confirme que tu hábito es acción concreta, repetible y medible.
+
+**3. Sé honesto.** Marcá "Saltado" cuando corresponda; el autoengaño arruina las estadísticas.
+
+**4. Constancia, no perfección.** El objetivo no es nunca fallar, es aparecer seguido. Nunca falles dos veces seguidas.
+
+**5. Mirá los patrones.** Usá Estadísticas para ver dónde se te complica y armá una estrategia para esos días.
+
+**6. Mantené 3–5 hábitos.** Más hábitos, energía dispersa. La calidad supera a la cantidad.
+
+**7. Escuchá al Asistente.** Si te dice que simplifiques, simplificá.''',
+        section: 'best_practices',
+        order: 10,
       ),
     ];
   }
