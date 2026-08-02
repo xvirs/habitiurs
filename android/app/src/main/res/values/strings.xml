@@ -8,4 +8,10 @@
     <string name="widget_summary_description">Progreso de tus hábitos de hoy de un vistazo</string>
     <string name="widget_list_label">Habitiurs · Hábitos de hoy</string>
     <string name="widget_list_description">Marca tus hábitos de hoy sin abrir la app</string>
+    <string name="widget_streak_label">Habitiurs · Racha</string>
+    <string name="widget_streak_description">Tu racha actual y aviso cuando está en riesgo</string>
+    <string name="widget_heatmap_label">Habitiurs · Constancia</string>
+    <string name="widget_heatmap_description">Mapa de tu constancia de los últimos meses</string>
+    <string name="widget_missions_label">Habitiurs · Misiones</string>
+    <string name="widget_missions_description">Tus misiones más urgentes y crear una nueva</string>
 </resources>

@@ -9,16 +9,32 @@ import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
 import '../../features/habits/domain/entities/habit.dart';
+import '../../features/missions/domain/entities/mission.dart';
+import '../../features/statistics/domain/entities/statistics.dart';
 import '../../shared/enums/habit_status.dart';
+import '../../shared/utils/date_utils.dart';
+import '../di/injection_container.dart';
 import '../utils/app_logger.dart';
 
 /// Claves compartidas con los widgets nativos.
 class _Keys {
+  // Hábitos de hoy (widgets "Hoy" Resumen + Lista).
   static const todayHabits =
       'today_habits'; // JSON: [{id,name,color,icon,status}]
   static const summary = 'today_summary'; // "3/5"
   static const completed = 'today_completed'; // int
   static const total = 'today_total'; // int
+
+  // Racha (widget "No rompas la cadena").
+  static const streakCurrent = 'streak_current'; // int
+  static const streakBest = 'streak_best'; // int
+
+  // Constancia (heatmap). JSON: {"weeks":15,"levels":[-1|0..3,...]}
+  static const heatData = 'heat_data';
+
+  // Misiones (widget "Pendientes").
+  static const missionItems = 'mission_items'; // JSON: [{title,urgency,due}]
+  static const missionPending = 'mission_pending'; // int
 }
 
 class HomeWidgetService {
@@ -28,8 +44,14 @@ class HomeWidgetService {
   // Nombres de los providers Android y de los widgets iOS (kind de WidgetKit).
   static const String androidSummaryProvider = 'HabitSummaryWidgetProvider';
   static const String androidListProvider = 'HabitListWidgetProvider';
+  static const String androidStreakProvider = 'StreakWidgetProvider';
+  static const String androidHeatmapProvider = 'HeatmapWidgetProvider';
+  static const String androidMissionsProvider = 'MissionsWidgetProvider';
   static const String iosSummaryWidget = 'HabitiursSummaryWidget';
   static const String iosListWidget = 'HabitiursListWidget';
+  static const String iosStreakWidget = 'HabitiursStreakWidget';
+  static const String iosHeatmapWidget = 'HabitiursHeatmapWidget';
+  static const String iosMissionsWidget = 'HabitiursMissionsWidget';
 
   /// Llamar una vez al inicializar la app.
   static Future<void> init() async {
@@ -148,6 +170,142 @@ class HomeWidgetService {
       androidName: androidListProvider,
       iOSName: iosListWidget,
     );
+  }
+
+  /// Exporta racha, heatmap de constancia y misiones urgentes, y refresca
+  /// esos widgets. Se alimenta de los repositorios (no depende de un BLoC), así
+  /// funciona tanto al iniciar la app como tras cambios en hábitos/misiones.
+  static Future<void> refreshDerived() async {
+    try {
+      final ic = InjectionContainer();
+
+      // --- Rachas + heatmap desde la actividad diaria ---
+      final daily = await ic.statisticsRepository.getDailyActivity();
+      final insights = ActivityInsights.fromDaily(daily);
+      await HomeWidget.saveWidgetData<int>(
+        _Keys.streakCurrent,
+        insights.currentStreak,
+      );
+      await HomeWidget.saveWidgetData<int>(
+        _Keys.streakBest,
+        insights.bestStreak,
+      );
+      await HomeWidget.saveWidgetData<String>(
+        _Keys.heatData,
+        jsonEncode(_buildHeat(daily, weeks: 15)),
+      );
+
+      // --- Misiones urgentes ---
+      final missions = await ic.missionRepository.getAllMissions();
+      final pending = missions.where((m) => !m.isDone).toList();
+      await HomeWidget.saveWidgetData<String>(
+        _Keys.missionItems,
+        jsonEncode(_urgentMissionItems(pending, max: 4)),
+      );
+      await HomeWidget.saveWidgetData<int>(_Keys.missionPending, pending.length);
+
+      await HomeWidget.updateWidget(
+        androidName: androidStreakProvider,
+        iOSName: iosStreakWidget,
+      );
+      await HomeWidget.updateWidget(
+        androidName: androidHeatmapProvider,
+        iOSName: iosHeatmapWidget,
+      );
+      await HomeWidget.updateWidget(
+        androidName: androidMissionsProvider,
+        iOSName: iosMissionsWidget,
+      );
+    } catch (e) {
+      appLog('⚠️ [HomeWidget] refreshDerived falló: $e');
+    }
+  }
+
+  /// Niveles del heatmap alineados por día de la semana (lunes→domingo),
+  /// terminando en la semana actual. `-1` marca días futuros (celdas vacías).
+  static Map<String, dynamic> _buildHeat(
+    List<DailyActivity> daily, {
+    required int weeks,
+  }) {
+    DateTime key(DateTime d) => DateTime(d.year, d.month, d.day);
+    final byDay = <DateTime, DailyActivity>{
+      for (final a in daily) key(a.date): a,
+    };
+    final today = key(DateTime.now());
+    // Lunes de la primera semana de la ventana.
+    final startMonday = today
+        .subtract(Duration(days: today.weekday - 1))
+        .subtract(Duration(days: 7 * (weeks - 1)));
+    final levels = <int>[];
+    for (var i = 0; i < weeks * 7; i++) {
+      final d = startMonday.add(Duration(days: i));
+      levels.add(d.isAfter(today) ? -1 : (byDay[d]?.level ?? 0));
+    }
+    return {'weeks': weeks, 'levels': levels};
+  }
+
+  /// Misiones pendientes ordenadas por urgencia (vencidas→hoy→próximas→sin
+  /// fecha) y recortadas a [max]. Replica la lógica de la pestaña Misiones.
+  static List<Map<String, dynamic>> _urgentMissionItems(
+    List<Mission> pending, {
+    required int max,
+  }) {
+    final today = AppDateUtils.getStartOfDay(DateTime.now());
+    int urgency(Mission m) {
+      final due = m.dueDate;
+      if (due == null) return 3; // sin fecha
+      final d = AppDateUtils.getStartOfDay(due);
+      if (d.isBefore(today)) return 0; // vencida
+      if (d == today) return 1; // hoy
+      return 2; // próxima
+    }
+
+    final sorted = [...pending]..sort((a, b) {
+      final ua = urgency(a), ub = urgency(b);
+      if (ua != ub) return ua.compareTo(ub);
+      final da = a.dueDate, db = b.dueDate;
+      if (da == null && db == null) return 0;
+      if (da == null) return 1;
+      if (db == null) return -1;
+      return da.compareTo(db);
+    });
+
+    return sorted
+        .take(max)
+        .map(
+          (m) => {
+            'title': m.title,
+            'urgency': urgency(m),
+            'due': _dueLabel(m.dueDate, today),
+          },
+        )
+        .toList();
+  }
+
+  static String _dueLabel(DateTime? due, DateTime today) {
+    if (due == null) return '';
+    final d = AppDateUtils.getStartOfDay(due);
+    final diff = d.difference(today).inDays;
+    if (diff == 0) return 'Hoy';
+    if (diff == 1) return 'Mañana';
+    if (diff == -1) return 'Ayer';
+    if (diff < -1) return 'hace ${-diff} d';
+    if (diff <= 7) return 'en $diff d';
+    const months = [
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
+    ];
+    return '${d.day} ${months[d.month - 1]}';
   }
 }
 

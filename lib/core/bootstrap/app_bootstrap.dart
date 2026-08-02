@@ -19,6 +19,9 @@ class AppBootstrap {
       await _initializeDependencies();
       await _initializeNotifications();
       await HomeWidgetService.init();
+      // Semilla de los widgets derivados (racha, heatmap, misiones) al arranque;
+      // los de hábitos se siembran al cargar la pestaña Hábitos. No bloqueante.
+      HomeWidgetService.refreshDerived();
 
       appLog('✅ [Bootstrap] Inicialización exitosa');
       return AppState.success();

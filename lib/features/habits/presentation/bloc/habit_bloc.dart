@@ -456,6 +456,8 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       }
     }
     HomeWidgetService.update(habits, todayStatus);
+    // Marcar un hábito cambia la racha y el heatmap: refrescar esos widgets.
+    HomeWidgetService.refreshDerived();
   }
 
   /// Programa la notificación diaria con los hábitos pendientes

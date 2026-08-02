@@ -362,6 +362,7 @@ class InjectionContainer {
   // Repository Getters
   HabitRepository get habitRepository => _habitRepository;
   StatisticsRepository get statisticsRepository => _statisticsRepository;
+  MissionRepository get missionRepository => _missionRepository;
   AIAssistantRepository get aiAssistantRepository => _aiAssistantRepository;
   SettingsRepository get settingsRepository => _settingsRepository;
 

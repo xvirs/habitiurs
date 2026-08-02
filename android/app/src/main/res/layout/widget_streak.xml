@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/streak_root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="14dp"
+    android:background="@drawable/widget_card_bg">
+
+    <TextView
+        android:id="@+id/streak_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="EN RIESGO"
+        android:textColor="@color/w_warn"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.08"
+        android:visibility="gone"
+        android:layout_marginBottom="2dp" />
+
+    <TextView
+        android:id="@+id/streak_fire"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="🔥"
+        android:textSize="26sp" />
+
+    <TextView
+        android:id="@+id/streak_num"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="0"
+        android:textColor="@color/w_on_surface"
+        android:textSize="40sp"
+        android:textStyle="bold"
+        android:includeFontPadding="false"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/streak_unit"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="días de racha"
+        android:textColor="@color/w_on_surface_var"
+        android:textSize="12sp" />
+
+    <TextView
+        android:id="@+id/streak_sub"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Mejor: 0 días"
+        android:textColor="@color/w_check_todo"
+        android:textSize="11sp"
+        android:textStyle="bold"
+        android:gravity="center"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>
