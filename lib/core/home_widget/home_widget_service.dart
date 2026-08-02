@@ -3,6 +3,7 @@
 // Exporta los hábitos de hoy a un almacén compartido que leen los widgets
 // nativos, y maneja el marcado desde el widget sin abrir la app (headless).
 import 'dart:convert';
+import 'dart:ui' show Size;
 
 import 'package:home_widget/home_widget.dart';
 import 'package:path/path.dart' as p;
@@ -15,6 +16,7 @@ import '../../shared/enums/habit_status.dart';
 import '../../shared/utils/date_utils.dart';
 import '../di/injection_container.dart';
 import '../utils/app_logger.dart';
+import 'widget_cards.dart';
 
 /// Claves compartidas con los widgets nativos.
 class _Keys {
@@ -25,16 +27,10 @@ class _Keys {
   static const completed = 'today_completed'; // int
   static const total = 'today_total'; // int
 
-  // Racha (widget "No rompas la cadena").
-  static const streakCurrent = 'streak_current'; // int
-  static const streakBest = 'streak_best'; // int
-
-  // Constancia (heatmap). JSON: {"weeks":15,"levels":[-1|0..3,...]}
-  static const heatData = 'heat_data';
-
-  // Misiones (widget "Pendientes").
-  static const missionItems = 'mission_items'; // JSON: [{title,urgency,due}]
-  static const missionPending = 'mission_pending'; // int
+  // Widgets derivados: se rinden a imagen (ruta del PNG bajo estas claves).
+  static const imgRacha = 'img_racha';
+  static const imgHeat = 'img_heat';
+  static const imgMissions = 'img_missions';
 }
 
 class HomeWidgetService {
@@ -172,37 +168,85 @@ class HomeWidgetService {
     );
   }
 
-  /// Exporta racha, heatmap de constancia y misiones urgentes, y refresca
-  /// esos widgets. Se alimenta de los repositorios (no depende de un BLoC), así
-  /// funciona tanto al iniciar la app como tras cambios en hábitos/misiones.
+  /// Rinde a imagen (con el look de la maqueta) racha, heatmap de constancia y
+  /// misiones urgentes, y refresca esos widgets. Se alimenta de los
+  /// repositorios (no depende de un BLoC), así funciona tanto al iniciar la app
+  /// como tras cambios en hábitos/misiones. El nativo solo muestra la imagen.
   static Future<void> refreshDerived() async {
     try {
       final ic = InjectionContainer();
+      final now = DateTime.now();
 
       // --- Rachas + heatmap desde la actividad diaria ---
       final daily = await ic.statisticsRepository.getDailyActivity();
       final insights = ActivityInsights.fromDaily(daily);
-      await HomeWidget.saveWidgetData<int>(
-        _Keys.streakCurrent,
-        insights.currentStreak,
+      final heat = _buildHeat(daily, weeks: 15);
+
+      // --- Hábitos de hoy para el estado "en riesgo" ---
+      final habits = await ic.habitRepository.getAllHabits();
+      final todayStart = AppDateUtils.getStartOfDay(now);
+      final entries = await ic.habitRepository.getHabitEntriesForDateRange(
+        todayStart,
+        todayStart,
       );
-      await HomeWidget.saveWidgetData<int>(
-        _Keys.streakBest,
-        insights.bestStreak,
-      );
-      await HomeWidget.saveWidgetData<String>(
-        _Keys.heatData,
-        jsonEncode(_buildHeat(daily, weeks: 15)),
-      );
+      final statusById = <int, HabitStatus>{
+        for (final e in entries) e.habitId: e.status,
+      };
+      final scheduled =
+          habits
+              .where((h) => h.isActive && h.id != null && h.isScheduledOn(now))
+              .toList();
+      final total = scheduled.length;
+      final completed =
+          scheduled
+              .where((h) => statusById[h.id] == HabitStatus.completed)
+              .length;
 
       // --- Misiones urgentes ---
       final missions = await ic.missionRepository.getAllMissions();
       final pending = missions.where((m) => !m.isDone).toList();
-      await HomeWidget.saveWidgetData<String>(
-        _Keys.missionItems,
-        jsonEncode(_urgentMissionItems(pending, max: 6)),
+
+      // --- Render de cada card a imagen ---
+      const ratio = 3.0;
+      const rachaSize = Size(172, 76);
+      const heatSize = Size(244, 150);
+      const misSize = Size(330, 158);
+
+      await HomeWidget.renderFlutterWidget(
+        RachaCard(
+          current: insights.currentStreak,
+          best: insights.bestStreak,
+          atRisk: total > 0 && completed < total,
+          remaining: total - completed,
+          size: rachaSize,
+        ),
+        key: _Keys.imgRacha,
+        logicalSize: rachaSize,
+        pixelRatio: ratio,
       );
-      await HomeWidget.saveWidgetData<int>(_Keys.missionPending, pending.length);
+      await HomeWidget.renderFlutterWidget(
+        ConstanciaCard(
+          weeks: heat['weeks'] as int,
+          levels: (heat['levels'] as List).cast<int>(),
+          best: insights.bestStreak,
+          size: heatSize,
+        ),
+        key: _Keys.imgHeat,
+        logicalSize: heatSize,
+        pixelRatio: ratio,
+      );
+      await HomeWidget.renderFlutterWidget(
+        MisionesCard(
+          pending: pending.length,
+          items: _urgentMissionItems(pending, max: 4),
+          size: misSize,
+        ),
+        key: _Keys.imgMissions,
+        logicalSize: misSize,
+        // Ratio menor: un 4x2 a ratio 3 supera el límite de bitmap de
+        // RemoteViews (~1.5MB) y el update se descarta. 2.5 entra holgado.
+        pixelRatio: 2.5,
+      );
 
       await HomeWidget.updateWidget(
         androidName: androidStreakProvider,
@@ -246,7 +290,7 @@ class HomeWidgetService {
 
   /// Misiones pendientes ordenadas por urgencia (vencidas→hoy→próximas→sin
   /// fecha) y recortadas a [max]. Replica la lógica de la pestaña Misiones.
-  static List<Map<String, dynamic>> _urgentMissionItems(
+  static List<MissionRowData> _urgentMissionItems(
     List<Mission> pending, {
     required int max,
   }) {
@@ -273,11 +317,11 @@ class HomeWidgetService {
     return sorted
         .take(max)
         .map(
-          (m) => {
-            'title': m.title,
-            'urgency': urgency(m),
-            'due': _dueLabel(m.dueDate, today),
-          },
+          (m) => MissionRowData(
+            m.title,
+            urgency(m),
+            _dueLabel(m.dueDate, today),
+          ),
         )
         .toList();
   }

@@ -9,7 +9,7 @@
     android:maxResizeWidth="360dp"
     android:maxResizeHeight="260dp"
     android:updatePeriodMillis="0"
-    android:initialLayout="@layout/widget_missions"
+    android:initialLayout="@layout/widget_image"
     android:previewLayout="@layout/widget_missions"
     android:description="@string/widget_missions_description"
     android:resizeMode="horizontal|vertical"

@@ -9,7 +9,7 @@
     android:maxResizeWidth="360dp"
     android:maxResizeHeight="220dp"
     android:updatePeriodMillis="0"
-    android:initialLayout="@layout/widget_heatmap"
+    android:initialLayout="@layout/widget_image"
     android:previewLayout="@layout/widget_heatmap"
     android:description="@string/widget_heatmap_description"
     android:resizeMode="horizontal|vertical"

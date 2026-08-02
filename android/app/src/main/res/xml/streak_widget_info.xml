@@ -9,7 +9,7 @@
     android:maxResizeWidth="250dp"
     android:maxResizeHeight="70dp"
     android:updatePeriodMillis="0"
-    android:initialLayout="@layout/widget_streak"
+    android:initialLayout="@layout/widget_image"
     android:previewLayout="@layout/widget_streak"
     android:description="@string/widget_streak_description"
     android:resizeMode="horizontal"
