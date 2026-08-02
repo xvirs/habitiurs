@@ -96,7 +96,6 @@ class _UserDrawerState extends State<UserDrawer> {
                           SwitchListTile(
                             secondary: const Icon(Icons.flag_outlined),
                             title: const Text('Misiones'),
-                            subtitle: const Text('Tareas de una sola vez'),
                             value: missionsEnabled,
                             onChanged:
                                 settings == null
@@ -107,8 +106,7 @@ class _UserDrawerState extends State<UserDrawer> {
                           ),
                           SwitchListTile(
                             secondary: const Icon(Icons.notifications_outlined),
-                            title: const Text('Recordatorio diario'),
-                            subtitle: const Text('Aviso de hábitos pendientes'),
+                            title: const Text('Recordatorios'),
                             value: notificationsEnabled,
                             onChanged:
                                 settings == null
@@ -279,7 +277,6 @@ class _UserDrawerState extends State<UserDrawer> {
         color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       title: const Text('Configuración'),
-      subtitle: const Text('Legal, versión y cuenta'),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _handleSettingsTap(context),
     );
@@ -298,11 +295,6 @@ class _UserDrawerState extends State<UserDrawer> {
             color: isGuest ? Colors.green[600] : Colors.red[600],
           ),
           title: Text(isGuest ? 'Iniciar sesión' : 'Cerrar sesión'),
-          subtitle: Text(
-            isGuest
-                ? 'Conecta tu cuenta de Google'
-                : 'Salir de tu cuenta actual',
-          ),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () => _handleAuthTap(context, isGuest),
         );
