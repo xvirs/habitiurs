@@ -5,16 +5,16 @@
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
-    android:paddingTop="9dp"
-    android:paddingBottom="9dp"
-    android:paddingStart="2dp"
-    android:paddingEnd="2dp">
+    android:paddingTop="8dp"
+    android:paddingBottom="8dp"
+    android:paddingStart="4dp"
+    android:paddingEnd="4dp">
 
     <ImageView
         android:id="@+id/item_dot"
-        android:layout_width="11dp"
-        android:layout_height="11dp"
-        android:src="@drawable/widget_dot"
+        android:layout_width="18dp"
+        android:layout_height="18dp"
+        android:src="@drawable/widget_tile"
         android:layout_marginEnd="12dp"
         android:contentDescription="@null" />
 
@@ -26,12 +26,12 @@
         android:maxLines="1"
         android:ellipsize="end"
         android:textColor="@color/w_on_surface"
-        android:textSize="15sp" />
+        android:textSize="14sp" />
 
     <ImageView
         android:id="@+id/item_check"
-        android:layout_width="28dp"
-        android:layout_height="28dp"
+        android:layout_width="26dp"
+        android:layout_height="26dp"
         android:layout_marginStart="8dp"
         android:src="@drawable/ic_check_todo"
         android:contentDescription="@null" />

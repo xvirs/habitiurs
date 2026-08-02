@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/habit.dart';
 import '../../domain/entities/habit_appearance.dart';
 import '../../../../shared/enums/habit_status.dart';
+import '../../../../shared/theme/app_theme.dart';
 import 'habit_status_styles.dart';
 
 /// Callback definitions para mejor legibilidad
@@ -20,6 +21,9 @@ class HabitTile extends StatelessWidget {
   onDelete; // Mantenemos por compatibilidad pero no se usa
   final OnHabitEditCallback? onEdit;
 
+  /// Días consecutivos completados (0 = sin racha).
+  final int streak;
+
   const HabitTile({
     super.key,
     required this.habit,
@@ -28,6 +32,7 @@ class HabitTile extends StatelessWidget {
     required this.onToggle,
     required this.onDelete,
     this.onEdit,
+    this.streak = 0,
   });
 
   @override
@@ -67,6 +72,7 @@ class HabitTile extends StatelessWidget {
                 _HabitBadge(habit: habit),
                 const SizedBox(width: 12),
                 Expanded(child: _HabitName(name: habit.name, status: status)),
+                if (streak > 1) _StreakBadge(streak: streak),
                 scheduledToday
                     ? _StatusToggle(status: status)
                     : const _NotScheduledIndicator(),
@@ -74,6 +80,35 @@ class HabitTile extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Racha del hábito. Solo desde 2 días: con 1 no hay "racha" que cuidar.
+class _StreakBadge extends StatelessWidget {
+  final int streak;
+
+  const _StreakBadge({required this.streak});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: const EdgeInsets.only(right: 8),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('🔥', style: TextStyle(fontSize: 12)),
+          const SizedBox(width: 2),
+          Text(
+            '$streak',
+            style: theme.textTheme.labelSmall?.copyWith(
+              fontWeight: FontWeight.w700,
+              color: theme.colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -150,11 +185,27 @@ class _StatusToggle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    // Círculo-check (misma anatomía que Misiones). El '+' anterior se
+    // confundía con "agregar".
+    final theme = Theme.of(context);
+    final (icon, color) = switch (status) {
+      HabitStatus.completed => (
+        Icons.check_circle,
+        AppColors.completed(context),
+      ),
+      HabitStatus.skipped => (
+        Icons.cancel_outlined,
+        AppColors.skipped(context).withValues(alpha: 0.8),
+      ),
+      HabitStatus.pending => (
+        Icons.radio_button_unchecked,
+        theme.colorScheme.outline,
+      ),
+    };
+    return SizedBox(
       width: 32,
       height: 32,
-      decoration: HabitStatusStyles.buildToggleDecoration(context, status),
-      child: Center(child: HabitStatusStyles.buildStatusIcon(context, status)),
+      child: Icon(icon, size: 28, color: color),
     );
   }
 }

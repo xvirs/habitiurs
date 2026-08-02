@@ -3,6 +3,7 @@ import 'package:habitiurs/core/service/vibration_service.dart';
 import '../../domain/entities/habit.dart';
 import 'habit_tile.dart';
 import '../../../../shared/enums/habit_status.dart';
+import '../../../../shared/theme/app_theme.dart';
 import '../../../../shared/widgets/swipe_action_background.dart';
 
 class DailyHabitsList extends StatelessWidget {
@@ -13,6 +14,7 @@ class DailyHabitsList extends StatelessWidget {
   final void Function(Habit)? onEdit;
   final VoidCallback onAdd;
   final bool isLoading;
+  final Map<int, int> streaks;
 
   const DailyHabitsList({
     super.key,
@@ -23,15 +25,32 @@ class DailyHabitsList extends StatelessWidget {
     this.onEdit,
     required this.onAdd,
     this.isLoading = false,
+    this.streaks = const {},
   });
 
   @override
   Widget build(BuildContext context) {
+    // Progreso del día: completados sobre programados para hoy.
+    final now = DateTime.now();
+    final scheduled = habits.where((h) => h.isScheduledOn(now)).toList();
+    final completed =
+        scheduled
+            .where((h) => todayEntriesMap[h.id!] == HabitStatus.completed)
+            .length;
+
     return Card(
-      margin: const EdgeInsets.all(16),
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 16),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [_HeaderSection(onAdd: onAdd), Expanded(child: _buildBody())],
+        children: [
+          _HeaderSection(
+            onAdd: onAdd,
+            completed: completed,
+            total: scheduled.length,
+          ),
+          // Solo la lista scrollea; el tablero de arriba queda fijo.
+          Expanded(child: _buildBody()),
+        ],
       ),
     );
   }
@@ -45,25 +64,56 @@ class DailyHabitsList extends StatelessWidget {
       onToggle: onToggle,
       onDelete: onDelete,
       onEdit: onEdit,
+      streaks: streaks,
     );
   }
 }
 
 class _HeaderSection extends StatelessWidget {
   final VoidCallback onAdd;
-  const _HeaderSection({required this.onAdd});
+  final int completed;
+  final int total;
+
+  const _HeaderSection({
+    required this.onAdd,
+    required this.completed,
+    required this.total,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final green = AppColors.completed(context);
+    final allDone = total > 0 && completed == total;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            'Hábitos de hoy',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Hábitos de hoy', style: theme.textTheme.titleMedium),
+          if (total > 0) ...[
+            const SizedBox(width: 10),
+            Text(
+              '$completed/$total',
+              style: theme.textTheme.labelLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                color: allDone ? green : theme.colorScheme.onSurfaceVariant,
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(2),
+                child: LinearProgressIndicator(
+                  value: completed / total,
+                  minHeight: 4,
+                  color: green,
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest,
+                ),
+              ),
+            ),
+          ] else
+            const Spacer(),
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () {
@@ -84,6 +134,7 @@ class _HabitsListView extends StatelessWidget {
   final void Function(int, HabitStatus) onToggle;
   final void Function(int, String) onDelete;
   final void Function(Habit)? onEdit;
+  final Map<int, int> streaks;
 
   const _HabitsListView({
     required this.habits,
@@ -91,6 +142,7 @@ class _HabitsListView extends StatelessWidget {
     required this.onToggle,
     required this.onDelete,
     this.onEdit,
+    this.streaks = const {},
   });
 
   @override
@@ -113,6 +165,7 @@ class _HabitsListView extends StatelessWidget {
             onToggle: onToggle,
             onDelete: onDelete,
             onEdit: onEdit,
+            streak: streaks[habit.id] ?? 0,
           );
         },
       ),
@@ -127,6 +180,7 @@ class _SwipeableHabitTile extends StatefulWidget {
   final void Function(int, HabitStatus) onToggle;
   final void Function(int, String) onDelete;
   final void Function(Habit)? onEdit;
+  final int streak;
 
   const _SwipeableHabitTile({
     super.key,
@@ -136,6 +190,7 @@ class _SwipeableHabitTile extends StatefulWidget {
     required this.onToggle,
     required this.onDelete,
     this.onEdit,
+    this.streak = 0,
   });
 
   @override
@@ -211,6 +266,7 @@ class _SwipeableHabitTileState extends State<_SwipeableHabitTile> {
         },
         onDelete: (_, __) {}, // No longer usado
         onEdit: widget.onEdit,
+        streak: widget.streak,
       ),
     );
   }

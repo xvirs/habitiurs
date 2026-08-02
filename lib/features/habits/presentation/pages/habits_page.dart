@@ -404,28 +404,20 @@ class _LoadedView extends StatelessWidget {
         state.habits.where((h) => !h.isScheduledOn(now)).toList();
     final todayHabits = [...scheduledToday, ...notScheduledToday];
 
+    // El tablero queda ANCLADO arriba (altura fija) y solo la lista de
+    // hábitos scrollea: la vista semanal nunca se pierde de vista.
     return CenteredContent(
       child: Column(
         children: [
-          Expanded(
-            flex: 1,
-            child: SingleChildScrollView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              child: SizedBox(
-                height: MediaQuery.of(context).size.height * 0.4,
-                child: WeeklyGrid(
-                  habits: state.habits,
-                  weekEntries: state.weekEntries,
-                  weekStart: state.currentWeekStart,
-                  // En refresco no se vacía el tablero: se mantiene la data y
-                  // el indicador de pull-to-refresh da el feedback.
-                  isLoading: false,
-                ),
-              ),
-            ),
+          WeeklyGrid(
+            habits: state.habits,
+            weekEntries: state.weekEntries,
+            weekStart: state.currentWeekStart,
+            // En refresco no se vacía el tablero: se mantiene la data y
+            // el indicador de pull-to-refresh da el feedback.
+            isLoading: false,
           ),
           Expanded(
-            flex: 1,
             child: DailyHabitsList(
               habits: todayHabits,
               todayEntriesMap: todayEntriesMap,
@@ -434,6 +426,7 @@ class _LoadedView extends StatelessWidget {
               onEdit: onEdit,
               onAdd: onAdd,
               isLoading: false,
+              streaks: state.streaks,
             ),
           ),
         ],

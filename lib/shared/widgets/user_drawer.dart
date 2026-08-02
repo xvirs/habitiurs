@@ -1,6 +1,7 @@
 // lib/shared/widgets/user_drawer.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/auth/models/user.dart';
 import '../../core/di/injection_container.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -28,6 +29,9 @@ class UserDrawer extends StatefulWidget {
 }
 
 class _UserDrawerState extends State<UserDrawer> {
+  /// Versión real de la app (dinámica: se actualiza sola en cada release).
+  String _version = '';
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +40,9 @@ class _UserDrawerState extends State<UserDrawer> {
     if (settingsBloc.state is! SettingsLoaded) {
       settingsBloc.add(const LoadSettings());
     }
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _version = info.version);
+    });
   }
 
   @override
@@ -64,25 +71,20 @@ class _UserDrawerState extends State<UserDrawer> {
                     builder: (context, state) {
                       final settings =
                           state is SettingsLoaded ? state.settings : null;
-                      final missionsEnabled = settings?.missionsEnabled ?? true;
                       final notificationsEnabled =
                           settings?.notificationsEnabled ?? true;
 
                       return Column(
                         children: [
                           _sectionLabel(context, 'Accesos'),
-                          // El Asistente IA vive acá cuando Misiones ocupa su
-                          // lugar en la barra inferior.
-                          if (missionsEnabled)
-                            ListTile(
-                              leading: const Icon(Icons.psychology_outlined),
-                              title: const Text('Asistente IA'),
-                              trailing: const Icon(
-                                Icons.chevron_right,
-                                size: 20,
-                              ),
-                              onTap: () => _openAIAssistant(context),
-                            ),
+                          // El Asistente IA se accede desde acá (no ocupa la
+                          // barra inferior, reservada para Misiones).
+                          ListTile(
+                            leading: const Icon(Icons.psychology_outlined),
+                            title: const Text('Asistente IA'),
+                            trailing: const Icon(Icons.chevron_right, size: 20),
+                            onTap: () => _openAIAssistant(context),
+                          ),
                           ListTile(
                             leading: const Icon(Icons.archive_outlined),
                             title: const Text('Hábitos archivados'),
@@ -94,21 +96,8 @@ class _UserDrawerState extends State<UserDrawer> {
                           _sectionLabel(context, 'Ajustes rápidos'),
 
                           SwitchListTile(
-                            secondary: const Icon(Icons.flag_outlined),
-                            title: const Text('Misiones'),
-                            subtitle: const Text('Tareas de una sola vez'),
-                            value: missionsEnabled,
-                            onChanged:
-                                settings == null
-                                    ? null
-                                    : (v) => context.read<SettingsBloc>().add(
-                                      ToggleMissions(v),
-                                    ),
-                          ),
-                          SwitchListTile(
                             secondary: const Icon(Icons.notifications_outlined),
-                            title: const Text('Recordatorio diario'),
-                            subtitle: const Text('Aviso de hábitos pendientes'),
+                            title: const Text('Recordatorios'),
                             value: notificationsEnabled,
                             onChanged:
                                 settings == null
@@ -144,13 +133,13 @@ class _UserDrawerState extends State<UserDrawer> {
                       );
                     },
                   ),
-
-                  const Divider(),
-                  _buildSettingsSection(context),
-                  _buildLogoutSection(context),
                 ],
               ),
             ),
+            // Anclados al fondo (sobre la versión), no scrollean con la lista.
+            const Divider(height: 1),
+            _buildSettingsSection(context),
+            _buildLogoutSection(context),
             _buildFooter(context),
           ],
         ),
@@ -279,7 +268,6 @@ class _UserDrawerState extends State<UserDrawer> {
         color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       title: const Text('Configuración'),
-      subtitle: const Text('Legal, versión y cuenta'),
       trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: () => _handleSettingsTap(context),
     );
@@ -298,11 +286,6 @@ class _UserDrawerState extends State<UserDrawer> {
             color: isGuest ? Colors.green[600] : Colors.red[600],
           ),
           title: Text(isGuest ? 'Iniciar sesión' : 'Cerrar sesión'),
-          subtitle: Text(
-            isGuest
-                ? 'Conecta tu cuenta de Google'
-                : 'Salir de tu cuenta actual',
-          ),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),
           onTap: () => _handleAuthTap(context, isGuest),
         );
@@ -336,7 +319,7 @@ class _UserDrawerState extends State<UserDrawer> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Habitiurs v1.0.0',
+                _version.isEmpty ? 'Habitiurs' : 'Habitiurs v$_version',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,

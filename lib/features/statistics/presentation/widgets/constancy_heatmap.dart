@@ -10,10 +10,7 @@ import '../../domain/entities/statistics.dart';
 class ConstancyHeatmap extends StatelessWidget {
   final List<DailyActivity> daily;
 
-  /// Cantidad de semanas visibles (la última columna es la semana actual).
-  final int weeks;
-
-  const ConstancyHeatmap({super.key, required this.daily, this.weeks = 17});
+  const ConstancyHeatmap({super.key, required this.daily});
 
   static DateTime _dayKey(DateTime d) => DateTime(d.year, d.month, d.day);
 
@@ -26,9 +23,6 @@ class ConstancyHeatmap extends StatelessWidget {
     };
 
     final today = _dayKey(DateTime.now());
-    // Lunes de la semana actual, y desde ahí (weeks-1) semanas hacia atrás.
-    final currentMonday = today.subtract(Duration(days: today.weekday - 1));
-    final firstMonday = currentMonday.subtract(Duration(days: 7 * (weeks - 1)));
 
     Color colorFor(int level) => switch (level) {
       3 => green,
@@ -41,8 +35,18 @@ class ConstancyHeatmap extends StatelessWidget {
       builder: (context, constraints) {
         const gap = 3.0;
         const labelWidth = 16.0;
+        // Adaptativo: en pantallas anchas entran más semanas (hasta ~6 meses)
+        // con celdas más grandes; en teléfono quedan ~15 (≈3,5 meses).
+        final weeks = (((constraints.maxWidth - labelWidth) / 19).floor())
+            .clamp(12, 26);
         final cell = ((constraints.maxWidth - labelWidth - gap * weeks) / weeks)
-            .clamp(8.0, 18.0);
+            .clamp(8.0, 22.0);
+
+        // Lunes de la semana actual, y (weeks-1) semanas hacia atrás.
+        final currentMonday = today.subtract(Duration(days: today.weekday - 1));
+        final firstMonday = currentMonday.subtract(
+          Duration(days: 7 * (weeks - 1)),
+        );
 
         const monthNames = [
           '',
@@ -87,79 +91,102 @@ class ConstancyHeatmap extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Fila de meses
-            Padding(
-              padding: const EdgeInsets.only(left: labelWidth),
-              child: Row(
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  for (var w = 0; w < weeks; w++)
-                    SizedBox(
-                      width: cell + gap,
-                      child: Text(
-                        monthLabels[w],
-                        style: TextStyle(
-                          fontSize: 8,
-                          color: theme.colorScheme.onSurfaceVariant,
-                        ),
-                        overflow: TextOverflow.visible,
-                        softWrap: false,
-                      ),
-                    ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 2),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Etiquetas de día (sparse, como GitHub)
-                Column(
-                  children: [
-                    dayLabel('L'),
-                    dayLabel(''),
-                    dayLabel('M'),
-                    dayLabel(''),
-                    dayLabel('V'),
-                    dayLabel(''),
-                    dayLabel('D'),
-                  ],
-                ),
-                // Grilla
-                for (var w = 0; w < weeks; w++)
                   Padding(
-                    padding: const EdgeInsets.only(right: gap),
-                    child: Column(
+                    padding: const EdgeInsets.only(left: labelWidth),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        for (var d = 0; d < 7; d++)
-                          _Cell(
-                            date: firstMonday.add(Duration(days: 7 * w + d)),
-                            activity:
-                                byDay[firstMonday.add(
-                                  Duration(days: 7 * w + d),
-                                )],
-                            size: cell,
-                            gap: gap,
-                            color: colorFor(
-                              byDay[firstMonday.add(Duration(days: 7 * w + d))]
-                                      ?.level ??
-                                  0,
+                        for (var w = 0; w < weeks; w++)
+                          SizedBox(
+                            width: cell + gap,
+                            child: Text(
+                              monthLabels[w],
+                              style: TextStyle(
+                                fontSize: 8,
+                                color: theme.colorScheme.onSurfaceVariant,
+                              ),
+                              overflow: TextOverflow.visible,
+                              softWrap: false,
                             ),
-                            isFuture: firstMonday
-                                .add(Duration(days: 7 * w + d))
-                                .isAfter(today),
-                            isToday:
-                                firstMonday.add(Duration(days: 7 * w + d)) ==
-                                today,
                           ),
                       ],
                     ),
                   ),
-              ],
+                  const SizedBox(height: 2),
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Etiquetas de día (sparse, como GitHub)
+                      Column(
+                        children: [
+                          dayLabel('L'),
+                          dayLabel(''),
+                          dayLabel('M'),
+                          dayLabel(''),
+                          dayLabel('V'),
+                          dayLabel(''),
+                          dayLabel('D'),
+                        ],
+                      ),
+                      // Grilla
+                      for (var w = 0; w < weeks; w++)
+                        Padding(
+                          padding: const EdgeInsets.only(right: gap),
+                          child: Column(
+                            children: [
+                              for (var d = 0; d < 7; d++)
+                                _Cell(
+                                  date: firstMonday.add(
+                                    Duration(days: 7 * w + d),
+                                  ),
+                                  activity:
+                                      byDay[firstMonday.add(
+                                        Duration(days: 7 * w + d),
+                                      )],
+                                  size: cell,
+                                  gap: gap,
+                                  color: colorFor(
+                                    byDay[firstMonday.add(
+                                              Duration(days: 7 * w + d),
+                                            )]
+                                            ?.level ??
+                                        0,
+                                  ),
+                                  isFuture: firstMonday
+                                      .add(Duration(days: 7 * w + d))
+                                      .isAfter(today),
+                                  isToday:
+                                      firstMonday.add(
+                                        Duration(days: 7 * w + d),
+                                      ) ==
+                                      today,
+                                ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ],
+              ),
             ),
             const SizedBox(height: 8),
             // Leyenda
             Row(
-              mainAxisAlignment: MainAxisAlignment.end,
               children: [
+                Text(
+                  'últimos ${(weeks / 4.33).round()} meses',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
+                ),
+                const Spacer(),
                 Text(
                   'Menos ',
                   style: TextStyle(

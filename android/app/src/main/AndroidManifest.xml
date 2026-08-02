@@ -78,6 +78,45 @@
             android:permission="android.permission.BIND_REMOTEVIEWS"
             android:exported="false" />
 
+        <!-- Widget: Racha ("No rompas la cadena") -->
+        <receiver
+            android:name=".StreakWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_streak_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/streak_widget_info" />
+        </receiver>
+
+        <!-- Widget: Constancia (heatmap) -->
+        <receiver
+            android:name=".HeatmapWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_heatmap_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/heatmap_widget_info" />
+        </receiver>
+
+        <!-- Widget: Pendientes (misiones) -->
+        <receiver
+            android:name=".MissionsWidgetProvider"
+            android:exported="true"
+            android:label="@string/widget_missions_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/missions_widget_info" />
+        </receiver>
+
         <!-- Receptor de interactividad de home_widget (marcar sin abrir la app) -->
         <receiver
             android:name="es.antonborri.home_widget.HomeWidgetBackgroundReceiver"

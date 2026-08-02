@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/educational_content.dart';
 import '../../../../shared/widgets/section_header.dart';
+import 'rich_content.dart';
 
 class EducationalContentSection extends StatelessWidget {
   final List<EducationalContent> content;
@@ -127,9 +128,10 @@ class _ContentCard extends StatelessWidget {
 
   Widget _CardPreview(BuildContext context) {
     return Text(
-      article.content,
+      plainPreview(article.content),
       style: TextStyle(
         fontSize: 12,
+        height: 1.35,
         color: Theme.of(context).colorScheme.onSurfaceVariant,
       ),
       maxLines: 4,
@@ -236,7 +238,7 @@ class _DialogContent extends StatelessWidget {
     return Expanded(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
-        child: Text(content, style: const TextStyle(fontSize: 14, height: 1.5)),
+        child: RichContent(content, fontSize: 14),
       ),
     );
   }

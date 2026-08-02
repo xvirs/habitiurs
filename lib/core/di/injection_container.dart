@@ -26,6 +26,7 @@ import '../../features/habits/domain/usecases/create_habit.dart';
 import '../../features/habits/domain/usecases/delete_habit.dart';
 import '../../features/habits/domain/usecases/get_all_habits.dart';
 import '../../features/habits/domain/usecases/get_week_entries.dart';
+import '../../features/habits/domain/usecases/get_entries_range.dart';
 import '../../features/habits/domain/usecases/toggle_habit_entry.dart';
 import '../../features/habits/domain/usecases/update_past_habit_entry.dart';
 import '../../features/habits/domain/usecases/update_habit.dart';
@@ -108,6 +109,7 @@ class InjectionContainer {
   late final GetAllHabits _getAllHabits;
   late final CreateHabit _createHabit;
   late final GetWeekEntries _getWeekEntries;
+  late final GetEntriesRange _getEntriesRange;
   late final ToggleHabitEntry _toggleHabitEntry;
   late final UpdatePastHabitEntry _updatePastHabitEntry;
   late final UpdateHabit _updateHabit;
@@ -261,6 +263,7 @@ class InjectionContainer {
       getAllHabits: _getAllHabits,
       createHabit: _createHabit,
       getWeekEntries: _getWeekEntries,
+      getEntriesRange: _getEntriesRange,
       toggleHabitEntry: _toggleHabitEntry,
       updatePastHabitEntry: _updatePastHabitEntry,
       updateHabit: _updateHabit,
@@ -303,6 +306,7 @@ class InjectionContainer {
     _createHabit = CreateHabit(_habitRepository);
     _updateHabit = UpdateHabit(_habitRepository);
     _getWeekEntries = GetWeekEntries(_habitRepository);
+    _getEntriesRange = GetEntriesRange(_habitRepository);
     _toggleHabitEntry = ToggleHabitEntry(_habitRepository);
     _updatePastHabitEntry = UpdatePastHabitEntry(_habitRepository);
     _deleteHabit = DeleteHabit(
@@ -358,6 +362,7 @@ class InjectionContainer {
   // Repository Getters
   HabitRepository get habitRepository => _habitRepository;
   StatisticsRepository get statisticsRepository => _statisticsRepository;
+  MissionRepository get missionRepository => _missionRepository;
   AIAssistantRepository get aiAssistantRepository => _aiAssistantRepository;
   SettingsRepository get settingsRepository => _settingsRepository;
 

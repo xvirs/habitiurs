@@ -19,11 +19,16 @@ class HabitLoaded extends HabitState {
   final DateTime currentWeekStart;
   final bool isRefreshing;
 
+  /// Racha actual (días consecutivos completados) por habitId. Un hábito
+  /// solo corta racha en los días en que está programado.
+  final Map<int, int> streaks;
+
   const HabitLoaded({
     required this.habits,
     required this.weekEntries,
     required this.currentWeekStart,
     this.isRefreshing = false,
+    this.streaks = const {},
   });
 
   @override
@@ -32,6 +37,7 @@ class HabitLoaded extends HabitState {
     weekEntries,
     currentWeekStart,
     isRefreshing,
+    streaks,
   ];
 
   HabitLoaded copyWith({
@@ -39,12 +45,14 @@ class HabitLoaded extends HabitState {
     List<HabitEntry>? weekEntries,
     DateTime? currentWeekStart,
     bool? isRefreshing,
+    Map<int, int>? streaks,
   }) {
     return HabitLoaded(
       habits: habits ?? this.habits,
       weekEntries: weekEntries ?? this.weekEntries,
       currentWeekStart: currentWeekStart ?? this.currentWeekStart,
       isRefreshing: isRefreshing ?? this.isRefreshing,
+      streaks: streaks ?? this.streaks,
     );
   }
 }
