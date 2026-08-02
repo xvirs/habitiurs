@@ -28,6 +28,7 @@ class _Keys {
   static const total = 'today_total'; // int
 
   // Widgets derivados: se rinden a imagen (ruta del PNG bajo estas claves).
+  static const imgResumen = 'img_resumen';
   static const imgRacha = 'img_racha';
   static const imgHeat = 'img_heat';
   static const imgMissions = 'img_missions';
@@ -213,6 +214,12 @@ class HomeWidgetService {
       const misSize = Size(330, 158);
 
       await HomeWidget.renderFlutterWidget(
+        ResumenCard(completed: completed, total: total, size: rachaSize),
+        key: _Keys.imgResumen,
+        logicalSize: rachaSize,
+        pixelRatio: ratio,
+      );
+      await HomeWidget.renderFlutterWidget(
         RachaCard(
           current: insights.currentStreak,
           best: insights.bestStreak,
@@ -248,6 +255,10 @@ class HomeWidgetService {
         pixelRatio: 2.5,
       );
 
+      await HomeWidget.updateWidget(
+        androidName: androidSummaryProvider,
+        iOSName: iosSummaryWidget,
+      );
       await HomeWidget.updateWidget(
         androidName: androidStreakProvider,
         iOSName: iosStreakWidget,

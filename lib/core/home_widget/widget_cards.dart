@@ -31,6 +31,90 @@ BoxDecoration _cardDecoration() => BoxDecoration(
   border: Border.all(color: _WC.edge, width: 1),
 );
 
+// ─── Resumen del día ─────────────────────────────────────────────────────────
+
+class ResumenCard extends StatelessWidget {
+  final int completed;
+  final int total;
+  final Size size;
+
+  const ResumenCard({
+    super.key,
+    required this.completed,
+    required this.total,
+    required this.size,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final allDone = total > 0 && completed == total;
+    final ratio = total == 0 ? 0.0 : completed / total;
+    return SizedBox(
+      width: size.width,
+      height: size.height,
+      child: Container(
+        decoration: _cardDecoration(),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        child: Row(
+          children: [
+            Text(
+              '$completed/$total',
+              style: TextStyle(
+                fontSize: 30,
+                height: 1,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+                color: allDone ? _WC.green : _WC.accent,
+              ),
+            ),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'HOY',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.6,
+                      color: _WC.faint,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    total == 0 ? 'sin hábitos' : 'completados',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12.5, color: _WC.ink),
+                  ),
+                  const SizedBox(height: 7),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(3),
+                    child: SizedBox(
+                      height: 6,
+                      child: Stack(
+                        children: [
+                          Container(color: _WC.track),
+                          FractionallySizedBox(
+                            widthFactor: ratio.clamp(0.0, 1.0),
+                            child: Container(color: _WC.green),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 // ─── Racha ──────────────────────────────────────────────────────────────────
 
 class RachaCard extends StatelessWidget {
