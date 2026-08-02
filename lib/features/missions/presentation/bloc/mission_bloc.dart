@@ -1,5 +1,6 @@
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
+import 'package:habitiurs/core/home_widget/home_widget_service.dart';
 import 'package:habitiurs/core/notifications/notification_service.dart';
 
 import '../../domain/entities/mission.dart';
@@ -37,6 +38,8 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
       if (state is! MissionLoaded) emit(const MissionLoading());
       final missions = await getMissions();
       emit(MissionLoaded(missions));
+      // Refresca el widget "Pendientes" con las misiones urgentes.
+      HomeWidgetService.refreshDerived();
       // Reprogramar avisos (sobrevive reinicio/reinstalación y cambios de fecha).
       for (final m in missions) {
         await _syncMissionReminder(m);

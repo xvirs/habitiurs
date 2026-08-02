@@ -1,33 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:habitiurs/core/service/vibration_service.dart';
 
 import '../../domain/entities/mission.dart';
 import '../bloc/mission_bloc.dart';
 import '../bloc/mission_event.dart';
 
-/// Acciones de misión compartidas (banner, pestaña, tablero) con "Deshacer".
+/// Acciones de misión compartidas (banner, pestaña, tablero).
 
-/// Completa o reabre una misión mostrando un SnackBar con opción de deshacer.
-void toggleMissionWithUndo(
-  BuildContext context,
-  MissionBloc bloc,
-  Mission mission,
-) {
+/// Completa o reabre una misión. Sin SnackBar: el toggle es reversible con
+/// otro toque, así que un "Deshacer" solo taparía la vista. El "Deshacer" se
+/// reserva para acciones destructivas (borrar).
+void toggleMission(MissionBloc bloc, Mission mission) {
   final wasDone = mission.isDone;
   bloc.add(ToggleMissionDone(mission));
-
-  ScaffoldMessenger.of(context)
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(wasDone ? 'Misión reabierta' : 'Misión completada'),
-        duration: const Duration(seconds: 4),
-        action: SnackBarAction(
-          label: 'Deshacer',
-          // Restaura el estado original exacto (isDone/completedAt).
-          onPressed: () => bloc.add(EditMission(mission)),
-        ),
-      ),
-    );
+  // Feedback háptico: completar se siente como un logro.
+  if (wasDone) {
+    VibrationService.selection();
+  } else {
+    VibrationService.success();
+  }
 }
 
 /// Borra (tombstone) una misión mostrando un SnackBar con opción de deshacer.

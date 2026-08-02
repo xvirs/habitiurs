@@ -6,6 +6,7 @@ import '../../domain/entities/habit_entry.dart';
 import '../../domain/usecases/get_all_habits.dart';
 import '../../domain/usecases/create_habit.dart';
 import '../../domain/usecases/get_week_entries.dart';
+import '../../domain/usecases/get_entries_range.dart';
 import '../../domain/usecases/toggle_habit_entry.dart';
 import '../../domain/usecases/update_past_habit_entry.dart';
 import '../../domain/usecases/update_habit.dart';
@@ -23,6 +24,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   final GetAllHabits _getAllHabits;
   final CreateHabit _createHabit;
   final GetWeekEntries _getWeekEntries;
+  final GetEntriesRange _getEntriesRange;
   final ToggleHabitEntry _toggleHabitEntry;
   final UpdatePastHabitEntry _updatePastHabitEntry;
   final UpdateHabit _updateHabit;
@@ -32,6 +34,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     required GetAllHabits getAllHabits,
     required CreateHabit createHabit,
     required GetWeekEntries getWeekEntries,
+    required GetEntriesRange getEntriesRange,
     required ToggleHabitEntry toggleHabitEntry,
     required UpdatePastHabitEntry updatePastHabitEntry,
     required UpdateHabit updateHabit,
@@ -39,6 +42,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   }) : _getAllHabits = getAllHabits,
        _createHabit = createHabit,
        _getWeekEntries = getWeekEntries,
+       _getEntriesRange = getEntriesRange,
        _toggleHabitEntry = toggleHabitEntry,
        _updatePastHabitEntry = updatePastHabitEntry,
        _updateHabit = updateHabit,
@@ -372,14 +376,71 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       // _StatusCell.clearCache();
     } catch (_) {}
 
+    // Rachas por hábito (mira más atrás que la semana visible).
+    final streaks = await _computeStreaks(validationResult.validHabits, now);
+
     emit(
       HabitLoaded(
         habits: validationResult.validHabits,
         weekEntries: allEntries,
         currentWeekStart: currentWeekStart,
         isRefreshing: isRefreshing,
+        streaks: streaks,
       ),
     );
+  }
+
+  /// Racha actual por hábito: días consecutivos completados hacia atrás,
+  /// SALTEANDO los días en que el hábito no está programado (no rompen la
+  /// racha). El día de hoy tampoco la rompe si todavía no se marcó.
+  Future<Map<int, int>> _computeStreaks(
+    List<Habit> habits,
+    DateTime now,
+  ) async {
+    if (habits.isEmpty) return const {};
+    try {
+      final today = AppDateUtils.getStartOfDay(now);
+      const lookbackDays = 120;
+      final entries = await _getEntriesRange(
+        today.subtract(const Duration(days: lookbackDays)),
+        today,
+      );
+
+      final byHabitDay = <int, Map<DateTime, HabitStatus>>{};
+      for (final e in entries) {
+        byHabitDay.putIfAbsent(e.habitId, () => {})[AppDateUtils.getStartOfDay(
+              e.date,
+            )] =
+            e.status;
+      }
+
+      final result = <int, int>{};
+      for (final habit in habits) {
+        final id = habit.id;
+        if (id == null) continue;
+        final days = byHabitDay[id] ?? const <DateTime, HabitStatus>{};
+        var streak = 0;
+        var cursor = today;
+        for (var i = 0; i <= lookbackDays; i++) {
+          if (habit.isScheduledOn(cursor)) {
+            final status = days[cursor];
+            if (status == HabitStatus.completed) {
+              streak++;
+            } else if (cursor == today) {
+              // Hoy sin marcar todavía: no corta la racha.
+            } else {
+              break;
+            }
+          }
+          cursor = cursor.subtract(const Duration(days: 1));
+        }
+        if (streak > 0) result[id] = streak;
+      }
+      return result;
+    } catch (e) {
+      appLog('⚠️ [HabitBloc] No se pudieron calcular las rachas: $e');
+      return const {};
+    }
   }
 
   /// Calcula el estado de hoy de cada hábito y lo manda a los widgets.
@@ -395,6 +456,8 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
       }
     }
     HomeWidgetService.update(habits, todayStatus);
+    // Marcar un hábito cambia la racha y el heatmap: refrescar esos widgets.
+    HomeWidgetService.refreshDerived();
   }
 
   /// Programa la notificación diaria con los hábitos pendientes

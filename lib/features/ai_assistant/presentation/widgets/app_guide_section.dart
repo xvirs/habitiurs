@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import '../../domain/entities/app_guide.dart';
 import '../../../../shared/widgets/section_header.dart';
+import 'rich_content.dart';
 
 class AppGuideSection extends StatefulWidget {
   final List<AppGuide> guides;
@@ -148,11 +149,8 @@ class _GuideBody extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-      child: Text(
-        content,
-        style: TextStyle(fontSize: 13, height: 1.4, color: Colors.grey[700]),
-      ),
+      padding: const EdgeInsets.fromLTRB(44, 0, 16, 16),
+      child: RichContent(content, fontSize: 13.5),
     );
   }
 }
