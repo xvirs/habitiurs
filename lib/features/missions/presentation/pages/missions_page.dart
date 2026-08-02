@@ -125,7 +125,6 @@ class MissionsPage extends StatelessWidget {
             final green = AppColors.completed(context);
             // Cada estante inferior scrollea adentro con un alto acotado.
             final shelfMax = MediaQuery.sizeOf(context).height * 0.34;
-            final hasShelves = doneToday.isNotEmpty || doneOlder.isNotEmpty;
 
             List<Widget> completedRows(
               List<Mission> list,
@@ -153,6 +152,7 @@ class MissionsPage extends StatelessWidget {
                     pending: pending,
                     completedThisMonth: _completedThisMonth(completed),
                     groups: groups,
+                    onCreate: () => _openCreate(context),
                   ),
                 ),
                 // Pendientes: se llevan el mayor espacio, con scroll propio.
@@ -163,12 +163,7 @@ class MissionsPage extends StatelessWidget {
                         pending.isEmpty
                             ? const _AllClearView()
                             : ListView(
-                              padding: EdgeInsets.fromLTRB(
-                                12,
-                                4,
-                                12,
-                                hasShelves ? 12 : 88,
-                              ),
+                              padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
                               children: [
                                 for (final u in _Urgency.values)
                                   if (groups[u]!.isNotEmpty) ...[
@@ -203,7 +198,6 @@ class MissionsPage extends StatelessWidget {
                     count: doneToday.length,
                     initiallyExpanded: true,
                     maxHeight: shelfMax,
-                    reserveFabSpace: doneOlder.isEmpty,
                     rows: completedRows(doneToday, green, true),
                   ),
                 if (doneOlder.isNotEmpty)
@@ -215,18 +209,12 @@ class MissionsPage extends StatelessWidget {
                     count: doneOlder.length,
                     initiallyExpanded: false,
                     maxHeight: shelfMax,
-                    reserveFabSpace: true,
                     rows: completedRows(doneOlder, scheme.primary, false),
                   ),
               ],
             );
           },
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openCreate(context),
-        tooltip: 'Nueva misión',
-        child: const Icon(Icons.add),
       ),
     );
   }
@@ -268,11 +256,13 @@ class _SummaryHeader extends StatelessWidget {
   final List<Mission> pending;
   final int completedThisMonth;
   final Map<_Urgency, List<Mission>> groups;
+  final VoidCallback onCreate;
 
   const _SummaryHeader({
     required this.pending,
     required this.completedThisMonth,
     required this.groups,
+    required this.onCreate,
   });
 
   @override
@@ -280,8 +270,9 @@ class _SummaryHeader extends StatelessWidget {
     final theme = Theme.of(context);
     final overdue = groups[_Urgency.overdue]?.length ?? 0;
     final today = groups[_Urgency.today]?.length ?? 0;
+    final showChips = overdue > 0 || today > 0 || completedThisMonth > 0;
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
       decoration: BoxDecoration(
         color: theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
@@ -291,37 +282,51 @@ class _SummaryHeader extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
             children: [
-              Text(
-                '${pending.length}',
-                style: theme.textTheme.headlineMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
+              // Conteo de pendientes.
+              Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.baseline,
+                  textBaseline: TextBaseline.alphabetic,
+                  children: [
+                    Text(
+                      '${pending.length}',
+                      style: theme.textTheme.headlineMedium?.copyWith(
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      pending.length == 1 ? 'pendiente' : 'pendientes',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                pending.length == 1 ? 'pendiente' : 'pendientes',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const Spacer(),
-              if (completedThisMonth > 0)
-                Text(
-                  '$completedThisMonth completada'
-                  '${completedThisMonth > 1 ? "s" : ""} este mes',
-                  style: theme.textTheme.labelMedium?.copyWith(
-                    color: AppColors.completed(context),
-                    fontWeight: FontWeight.w600,
+              // Acción principal en el encabezado (reemplaza al FAB flotante,
+              // que pisaba las barras del pie).
+              FilledButton.icon(
+                onPressed: onCreate,
+                icon: const Icon(Icons.add, size: 18),
+                label: const Text('Nueva'),
+                style: FilledButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
                   ),
+                  visualDensity: VisualDensity.compact,
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
+              ),
             ],
           ),
-          if (overdue > 0 || today > 0) ...[
+          if (showChips) ...[
             const SizedBox(height: 10),
-            Row(
+            Wrap(
+              spacing: 8,
+              runSpacing: 8,
               children: [
                 if (overdue > 0)
                   _StatChip(
@@ -329,7 +334,6 @@ class _SummaryHeader extends StatelessWidget {
                     fg: theme.colorScheme.error,
                     bg: theme.colorScheme.errorContainer.withValues(alpha: 0.4),
                   ),
-                if (overdue > 0 && today > 0) const SizedBox(width: 8),
                 if (today > 0)
                   _StatChip(
                     label: '$today para hoy',
@@ -337,6 +341,13 @@ class _SummaryHeader extends StatelessWidget {
                     bg: theme.colorScheme.primaryContainer.withValues(
                       alpha: 0.4,
                     ),
+                  ),
+                if (completedThisMonth > 0)
+                  _StatChip(
+                    label:
+                        '$completedThisMonth este mes',
+                    fg: AppColors.completed(context),
+                    bg: AppColors.completed(context).withValues(alpha: 0.14),
                   ),
               ],
             ),
@@ -415,13 +426,18 @@ String _labelFor(_Urgency u) => switch (u) {
   _Urgency.noDate => 'Sin fecha',
 };
 
+/// Color por urgencia. Paleta propia (la secundaria del tema es muy azulada)
+/// para que cada fila tenga identidad: rojo vencida, azul hoy, ámbar próxima,
+/// teal sin fecha. Se adapta a claro/oscuro.
 Color _accentFor(BuildContext context, _Urgency u) {
-  final scheme = Theme.of(context).colorScheme;
+  final dark = Theme.of(context).brightness == Brightness.dark;
   return switch (u) {
-    _Urgency.overdue => scheme.error,
-    _Urgency.today => scheme.primary,
-    _Urgency.upcoming => scheme.outline,
-    _Urgency.noDate => scheme.outlineVariant,
+    _Urgency.overdue =>
+      dark ? const Color(0xFFEF5350) : const Color(0xFFE53935),
+    _Urgency.today => Theme.of(context).colorScheme.primary,
+    _Urgency.upcoming =>
+      dark ? const Color(0xFFFFB74D) : const Color(0xFFF57C00),
+    _Urgency.noDate => dark ? const Color(0xFF4DB6AC) : const Color(0xFF00897B),
   };
 }
 
@@ -519,6 +535,11 @@ class _MissionRow extends StatelessWidget {
       onDismissed: (_) => onDelete(),
       child: DecoratedBox(
         decoration: BoxDecoration(
+          // Lavado tenue del color de urgencia: da vida a la fila. Las vencidas
+          // un poco más marcadas para que resalten.
+          color: accent.withValues(
+            alpha: urgency == _Urgency.overdue ? 0.07 : 0.04,
+          ),
           border:
               showDivider
                   ? Border(
@@ -567,13 +588,9 @@ class _MissionRow extends StatelessWidget {
                                   child: Text(
                                     _relativeLabel(mission.dueDate!),
                                     style: theme.textTheme.labelSmall?.copyWith(
-                                      fontWeight: FontWeight.w600,
-                                      color:
-                                          urgency == _Urgency.overdue
-                                              ? theme.colorScheme.error
-                                              : theme
-                                                  .colorScheme
-                                                  .onSurfaceVariant,
+                                      fontWeight: FontWeight.w700,
+                                      // Color por urgencia: da vida a la lista.
+                                      color: accent,
                                     ),
                                   ),
                                 ),
@@ -587,12 +604,10 @@ class _MissionRow extends StatelessWidget {
                           _AddDateChip(onTap: onPickDate),
                         ],
                         const SizedBox(width: 4),
-                        // Acción a la derecha (misma anatomía que Hábitos).
+                        // Acción a la derecha: círculo con el color de urgencia
+                        // (agrega color a cada fila sin recargar).
                         IconButton(
-                          icon: Icon(
-                            Icons.radio_button_unchecked,
-                            color: theme.colorScheme.outline,
-                          ),
+                          icon: Icon(Icons.radio_button_unchecked, color: accent),
                           iconSize: 26,
                           onPressed: onToggle,
                           tooltip: 'Completar',
@@ -686,9 +701,6 @@ class _CollapsibleShelf extends StatefulWidget {
   final int count;
   final bool initiallyExpanded;
   final double maxHeight;
-
-  /// Reserva un hueco a la derecha del encabezado para no quedar debajo del FAB.
-  final bool reserveFabSpace;
   final List<Widget> rows;
 
   const _CollapsibleShelf({
@@ -700,7 +712,6 @@ class _CollapsibleShelf extends StatefulWidget {
     required this.initiallyExpanded,
     required this.maxHeight,
     required this.rows,
-    this.reserveFabSpace = false,
   });
 
   @override
@@ -747,8 +758,6 @@ class _CollapsibleShelfState extends State<_CollapsibleShelf> {
                         : Icons.keyboard_arrow_down,
                     color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  // Deja libre la esquina inferior derecha para el FAB.
-                  if (widget.reserveFabSpace) const SizedBox(width: 56),
                 ],
               ),
             ),
