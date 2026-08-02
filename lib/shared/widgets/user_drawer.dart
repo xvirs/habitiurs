@@ -1,6 +1,7 @@
 // lib/shared/widgets/user_drawer.dart
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../core/auth/models/user.dart';
 import '../../core/di/injection_container.dart';
 import '../../features/auth/presentation/bloc/auth_bloc.dart';
@@ -28,6 +29,9 @@ class UserDrawer extends StatefulWidget {
 }
 
 class _UserDrawerState extends State<UserDrawer> {
+  /// Versión real de la app (dinámica: se actualiza sola en cada release).
+  String _version = '';
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +40,9 @@ class _UserDrawerState extends State<UserDrawer> {
     if (settingsBloc.state is! SettingsLoaded) {
       settingsBloc.add(const LoadSettings());
     }
+    PackageInfo.fromPlatform().then((info) {
+      if (mounted) setState(() => _version = info.version);
+    });
   }
 
   @override
@@ -126,13 +133,13 @@ class _UserDrawerState extends State<UserDrawer> {
                       );
                     },
                   ),
-
-                  const Divider(),
-                  _buildSettingsSection(context),
-                  _buildLogoutSection(context),
                 ],
               ),
             ),
+            // Anclados al fondo (sobre la versión), no scrollean con la lista.
+            const Divider(height: 1),
+            _buildSettingsSection(context),
+            _buildLogoutSection(context),
             _buildFooter(context),
           ],
         ),
@@ -312,7 +319,7 @@ class _UserDrawerState extends State<UserDrawer> {
               ),
               const SizedBox(width: 8),
               Text(
-                'Habitiurs v1.0.0',
+                _version.isEmpty ? 'Habitiurs' : 'Habitiurs v$_version',
                 style: TextStyle(
                   color: Theme.of(context).colorScheme.onSurfaceVariant,
                   fontSize: 12,
