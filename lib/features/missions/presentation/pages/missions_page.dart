@@ -118,7 +118,7 @@ class MissionsPage extends StatelessWidget {
               ),
             );
 
-            void onToggle(Mission m) => toggleMissionWithUndo(context, bloc, m);
+            void onToggle(Mission m) => toggleMission(bloc, m);
             void onDelete(Mission m) => deleteMissionWithUndo(context, bloc, m);
 
             final scheme = Theme.of(context).colorScheme;

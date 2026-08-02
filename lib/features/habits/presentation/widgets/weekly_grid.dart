@@ -795,8 +795,7 @@ class _DayMissionsList extends StatelessWidget {
                               ? theme.colorScheme.primary
                               : theme.colorScheme.outline,
                     ),
-                    onPressed:
-                        () => toggleMissionWithUndo(context, missionBloc, m),
+                    onPressed: () => toggleMission(missionBloc, m),
                   ),
                   title: Text(
                     m.title,
