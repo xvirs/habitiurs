@@ -425,7 +425,7 @@ struct MissionsWidget: Widget {
             MissionsEntryView(entry: entry)
         }
         .configurationDisplayName("Misiones")
-        .description("Tus misiones más urgentes y crear una nueva.")
+        .description("Tus misiones pendientes más urgentes de un vistazo.")
         .supportedFamilies([.systemMedium, .systemLarge])
     }
 }

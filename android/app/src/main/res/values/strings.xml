@@ -13,5 +13,5 @@
     <string name="widget_heatmap_label">Habitiurs · Constancia</string>
     <string name="widget_heatmap_description">Mapa de tu constancia de los últimos meses</string>
     <string name="widget_missions_label">Habitiurs · Misiones</string>
-    <string name="widget_missions_description">Tus misiones más urgentes y crear una nueva</string>
+    <string name="widget_missions_description">Tus misiones pendientes más urgentes de un vistazo</string>
 </resources>
