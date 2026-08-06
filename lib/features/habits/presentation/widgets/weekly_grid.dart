@@ -37,9 +37,6 @@ class WeeklyGrid extends StatelessWidget {
   Widget build(BuildContext context) {
     final weekDates = AppDateUtils.getWeekDates(weekStart);
 
-    // Limpiar cache al construir para asegurar datos frescos
-    _StatusCell.clearCache();
-
     return Card(
       margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
       child: Column(
@@ -369,9 +366,6 @@ class _StatusCell extends StatelessWidget {
   String get habitName => habit.name;
   DateTime? get createdAt => habit.createdAt;
 
-  // Cache para mejorar rendimiento
-  static final Map<String, HabitEntry?> _entryCache = {};
-
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
@@ -447,33 +441,20 @@ class _StatusCell extends StatelessWidget {
   }
 
   HabitEntry? _findEntry() {
-    final cacheKey = '${habitId}_${AppDateUtils.formatToYYYYMMDD(date)}';
-
-    if (_entryCache.containsKey(cacheKey)) {
-      return _entryCache[cacheKey];
-    }
-
-    // Buscar usando donde por iteración optimizada
+    // Sin cache: buscar directo en las entradas de la semana. La lista es
+    // chica (pocos hábitos × 7 días), así que iterar es trivial. El cache
+    // estático anterior era compartido entre celdas y frames y, por timing
+    // de rebuilds, a veces devolvía un estado viejo (celda que "cambiaba sola"
+    // y se corregía al recargar).
     final normalizedDate = AppDateUtils.getStartOfDay(date);
-    HabitEntry? foundEntry;
-
     for (final entry in weekEntries) {
       if (entry.habitId == habitId) {
-        final entryDate = AppDateUtils.getStartOfDay(entry.date);
-        if (entryDate == normalizedDate) {
-          foundEntry = entry;
-          break;
+        if (AppDateUtils.getStartOfDay(entry.date) == normalizedDate) {
+          return entry;
         }
       }
     }
-
-    _entryCache[cacheKey] = foundEntry;
-    return foundEntry;
-  }
-
-  // Método para limpiar cache cuando sea necesario
-  static void clearCache() {
-    _entryCache.clear();
+    return null;
   }
 
   HabitStatus _getDisplayStatus(HabitEntry? entry) {

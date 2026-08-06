@@ -370,12 +370,6 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
     // Exportar los hábitos de hoy a los widgets de pantalla de inicio.
     _exportToHomeWidget(validationResult.validHabits, allEntries, now);
 
-    // Limpiar cache del WeeklyGrid para forzar actualización
-    try {
-      // Si el import está disponible
-      // _StatusCell.clearCache();
-    } catch (_) {}
-
     // Rachas por hábito (mira más atrás que la semana visible).
     final streaks = await _computeStreaks(validationResult.validHabits, now);
 
