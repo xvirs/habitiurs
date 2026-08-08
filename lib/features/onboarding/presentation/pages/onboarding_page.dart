@@ -37,15 +37,23 @@ class _OnboardingPageState extends State<OnboardingPage> {
       icon: Icons.insights_outlined,
       title: 'Mira tu progreso',
       description:
-          'La vista semanal y las estadísticas te muestran tu avance '
+          'La vista semanal y el mapa de constancia te muestran tu avance '
           'por semana, mes y año, para que veas cómo mejoras con el tiempo.',
+    ),
+    _OnboardingContent(
+      icon: Icons.flag_outlined,
+      title: 'No te olvides de nada',
+      description:
+          'Con las Misiones anotas tareas de una sola vez —un trámite, '
+          'un turno, una llamada— y las tachas cuando las cumplís.',
     ),
     _OnboardingContent(
       icon: Icons.psychology_outlined,
       title: 'Tu asistente con IA',
       description:
-          'Recibe recomendaciones personalizadas según tu progreso y '
-          'sincroniza tus datos en la nube iniciando sesión con Google.',
+          'Recibe recomendaciones personalizadas según tu progreso, llevá tus '
+          'hábitos y tu racha a la pantalla de inicio con los widgets, y '
+          'sincroniza todo en la nube iniciando sesión con Google.',
     ),
   ];
 

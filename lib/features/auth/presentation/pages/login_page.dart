@@ -96,19 +96,24 @@ class LoginPage extends StatelessWidget {
   Widget _buildFeaturesList(BuildContext context) {
     const features = [
       {
-        'icon': Icons.psychology,
-        'title': 'IA Personalizada',
-        'description': 'Recomendaciones inteligentes basadas en tus patrones',
+        'icon': Icons.task_alt,
+        'title': 'Hábitos y Misiones',
+        'description': 'Tus rutinas diarias y tus tareas de una sola vez',
       },
       {
         'icon': Icons.analytics,
-        'title': 'Estadísticas Avanzadas',
-        'description': 'Analiza tu progreso con insights detallados',
+        'title': 'Estadísticas y constancia',
+        'description': 'Mapa de constancia, rachas e insights de tu progreso',
       },
       {
-        'icon': Icons.cloud_sync,
-        'title': 'Sincronización',
-        'description': 'Accede a tus datos desde cualquier dispositivo',
+        'icon': Icons.widgets_outlined,
+        'title': 'Widgets',
+        'description': 'Tus hábitos y tu racha en la pantalla de inicio',
+      },
+      {
+        'icon': Icons.psychology,
+        'title': 'IA y sincronización',
+        'description': 'Recomendaciones con IA y tus datos siempre en la nube',
       },
     ];
 
