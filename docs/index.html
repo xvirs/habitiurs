@@ -262,24 +262,16 @@
   .pcard h3{font-size:17px;font-weight:700}
   .pcard p{font-size:14.5px;color:var(--ink-2);line-height:1.5}
 
-  /* funciones: editorial feature list */
-  .flist{display:flex; flex-direction:column}
-  .fitem{display:grid; grid-template-columns:230px 1fr; gap:52px; padding:52px 0; border-top:1px solid var(--border); align-items:start}
-  .fitem:last-child{border-bottom:1px solid var(--border)}
-  .fitem-side{display:flex; flex-direction:column; gap:16px}
-  .fitem-side .ic{width:54px; height:54px; border-radius:15px; display:flex; align-items:center; justify-content:center; transition:transform .4s cubic-bezier(.2,.7,.2,1)}
-  .fitem:hover .fitem-side .ic{transform:translateY(-4px) rotate(-4deg)}
-  .fitem-side .ic svg{width:27px; height:27px}
-  .fitem-side .kicker{font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
-  .fitem-side .name{font-size:23px; font-weight:760; letter-spacing:-.025em; color:var(--ink); margin-top:-4px}
-  .fitem.h .ic{background:var(--green-soft); color:var(--green-2)}
-  .fitem.m .ic{background:var(--teal-soft); color:var(--teal)}
-  .fitem.s .ic{background:var(--brand-soft); color:var(--brand-ink)}
-  .fitem-main h3{font-size:clamp(23px,2.7vw,30px); font-weight:740; margin-bottom:14px}
-  .fitem-main p{color:var(--ink-2); font-size:17px; line-height:1.62; max-width:58ch}
-  .fitem-chips{display:flex; flex-wrap:wrap; gap:9px; margin-top:24px}
-  .chip{font-size:13px; font-weight:600; padding:8px 14px; border-radius:22px; background:var(--surface); border:1px solid var(--border); color:var(--ink-2); transition:border-color .3s, color .3s}
-  .fitem:hover .chip{border-color:color-mix(in srgb,var(--brand) 24%, var(--border)); color:var(--ink)}
+  /* funciones: cards compactas */
+  .mcards{display:grid; grid-template-columns:repeat(3,1fr); gap:20px}
+  .mcard{background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:28px 26px; box-shadow:var(--shadow); transition:transform .35s cubic-bezier(.2,.7,.2,1), box-shadow .35s ease, border-color .35s ease}
+  .mcard:hover{transform:translateY(-6px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb,var(--brand) 26%, var(--border))}
+  .mcard .ic{width:48px; height:48px; border-radius:13px; display:flex; align-items:center; justify-content:center; margin-bottom:18px}
+  .mcard .ic svg{width:24px; height:24px; color:#fff}
+  .mcard.h .ic{background:var(--green)} .mcard.m .ic{background:var(--teal)} .mcard.s .ic{background:var(--brand)}
+  .mcard .k{font-size:11.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:var(--ink-3); margin-bottom:7px}
+  .mcard h3{font-size:20px; font-weight:740; margin-bottom:9px}
+  .mcard p{font-size:15px; color:var(--ink-2); line-height:1.55}
 
   /* CTA */
   .cta-band{position:relative; overflow:hidden; border-radius:30px; margin:0 24px 44px;
@@ -305,7 +297,7 @@
     .hero-grid{grid-template-columns:1fr; gap:48px}
     .phil{grid-template-columns:1fr 1fr}
     .lede{max-width:46ch}
-    .fitem{grid-template-columns:1fr; gap:22px; padding:44px 0}
+    .mcards{grid-template-columns:1fr; gap:16px}
   }
   @media (max-width:560px){ .phil{grid-template-columns:1fr} .hero{padding:54px 0 40px} .cta-band{padding:56px 22px; margin:0 16px 32px} }
   :focus-visible{outline:2.5px solid var(--brand); outline-offset:3px; border-radius:6px}
@@ -483,41 +475,27 @@
     <div class="wrap">
       <div class="sec-head">
         <p class="eyebrow reveal">El método</p>
-        <h2 class="reveal d1">Aparecer se vuelve fácil cuando lo podés ver.</h2>
+        <h2 class="reveal d1">Tres gestos, y la constancia se cuida sola.</h2>
       </div>
 
-      <div class="flist">
-        <div class="fitem h reveal">
-          <div class="fitem-side">
-            <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></span>
-            <div><div class="kicker">Cada día</div><div class="name">Hábitos</div></div>
-          </div>
-          <div class="fitem-main">
-            <h3>Marcá, y volvé mañana.</h3>
-            <p>Un toque por día. La semana se pinta de verde y la racha se vuelve algo que no querés cortar. La constancia deja de ser una idea: la mirás.</p>
-          </div>
+      <div class="mcards">
+        <div class="mcard h reveal">
+          <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></span>
+          <div class="k">Hábitos</div>
+          <h3>Marcá el día</h3>
+          <p>Un toque y la semana se pinta de verde. La racha hace el resto.</p>
         </div>
-
-        <div class="fitem m reveal">
-          <div class="fitem-side">
-            <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-flag"/></svg></span>
-            <div><div class="kicker">Una sola vez</div><div class="name">Misiones</div></div>
-          </div>
-          <div class="fitem-main">
-            <h3>Sacátelo de la cabeza.</h3>
-            <p>Turnos, trámites, llamados: eso que se hace una vez y siempre se olvida. Lo anotás y lo soltás; lo que vence nunca queda escondido.</p>
-          </div>
+        <div class="mcard m reveal d1">
+          <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-flag"/></svg></span>
+          <div class="k">Misiones</div>
+          <h3>No te olvides</h3>
+          <p>Tareas de una sola vez, con o sin fecha, siempre a la vista.</p>
         </div>
-
-        <div class="fitem s reveal">
-          <div class="fitem-side">
-            <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-chart"/></svg></span>
-            <div><div class="kicker">Con el tiempo</div><div class="name">Estadísticas</div></div>
-          </div>
-          <div class="fitem-main">
-            <h3>Tu esfuerzo, hecho imagen.</h3>
-            <p>Rachas y un mapa de constancia que hacen visible lo invisible: que, día tras día, estás cambiando. Y lo llevás a la pantalla de inicio.</p>
-          </div>
+        <div class="mcard s reveal d2">
+          <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-chart"/></svg></span>
+          <div class="k">Estadísticas</div>
+          <h3>Mirá tu avance</h3>
+          <p>Racha, porcentaje del mes y un mapa de constancia que motiva.</p>
         </div>
       </div>
     </div>
