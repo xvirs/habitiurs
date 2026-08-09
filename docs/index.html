@@ -1,44 +1,660 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Habitiurs</title>
-  <style>
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0d1117;
-      color: #e6edf3;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      margin: 0;
-      text-align: center;
-      padding: 24px;
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Habitiurs: seguimiento de hábitos simple y honesto. Marcá tu día con un toque, no te olvides de nada con las Misiones y mirá tu constancia crecer. Gratis para iOS y Android.">
+<meta name="theme-color" content="#36618E">
+<meta property="og:title" content="Habitiurs — Constancia antes que perfección">
+<meta property="og:description" content="Seguimiento de hábitos simple y honesto. Gratis para iOS y Android.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://xvirs.github.io/habitiurs/">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E🧠%3C/text%3E%3C/svg%3E">
+<title>Habitiurs — Constancia antes que perfección</title>
+<style>
+  :root{
+    --bg:#F4F6FC; --bg-2:#ECEFF9; --surface:#FFFFFF; --surface-2:#F7F9FE;
+    --border:#E3E7F3; --ink:#1A2234; --ink-2:#525C77; --ink-3:#8A93AB;
+    --brand:#36618E; --brand-ink:#2B4C74; --brand-soft:#E4ECF6;
+    --green:#43A047; --green-2:#2E7D32; --green-soft:#DFEDE5;
+    --teal:#12A594; --teal-soft:#E1F1EE; --red:#E53935; --amber:#EDA13C;
+    --shadow:0 1px 2px rgba(20,30,60,.05), 0 12px 32px -12px rgba(20,30,60,.14);
+    --shadow-lg:0 30px 80px -28px rgba(24,36,84,.34);
+    --radius:18px;
+    --p-bg:#F8F9FF; --p-surface:#FFFFFF; --p-card-bd:#EBEEF6;
+    --p-ink:#1C2333; --p-ink2:#5B6479; --p-ink3:#8B93A8;
+    --p-blue:#36618E; --p-blue-soft:#DCE6F2;
+    --p-green:#43A047; --p-green-d:#2E7D32; --p-pink:#EEBBBF;
+    --p-empty:#EAEBF1; --p-red:#E53935; --p-pink-bg:#FBECEE;
+    --p-teal:#12A594; --p-teal-bg:#E7F4F1;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#0D1017; --bg-2:#12161F; --surface:#161B26; --surface-2:#1C2230;
+      --border:#28303F; --ink:#EAEDF6; --ink-2:#A6AEC3; --ink-3:#6C7691;
+      --brand:#6E93C9; --brand-ink:#9FBBE4; --brand-soft:#1C2740;
+      --green:#57B85B; --green-2:#6FC873; --green-soft:#1E3A2A;
+      --teal:#35C1B1; --teal-soft:#10312D; --red:#F0655C; --amber:#EFAF57;
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 40px -16px rgba(0,0,0,.6);
+      --shadow-lg:0 40px 90px -30px rgba(0,0,0,.7);
     }
-    h1 { font-size: 2rem; margin-bottom: 8px; }
-    p { color: #8b949e; margin-bottom: 32px; }
-    a {
-      display: block;
-      width: 100%;
-      max-width: 320px;
-      margin: 12px auto;
-      padding: 14px 20px;
-      background: #1976D2;
-      color: #fff;
-      text-decoration: none;
-      border-radius: 12px;
-      font-weight: 600;
-    }
-    a:hover { background: #1565C0; }
-  </style>
+  }
+  :root[data-theme="dark"]{
+    --bg:#0D1017; --bg-2:#12161F; --surface:#161B26; --surface-2:#1C2230;
+    --border:#28303F; --ink:#EAEDF6; --ink-2:#A6AEC3; --ink-3:#6C7691;
+    --brand:#6E93C9; --brand-ink:#9FBBE4; --brand-soft:#1C2740;
+    --green:#57B85B; --green-2:#6FC873; --green-soft:#1E3A2A;
+    --teal:#35C1B1; --teal-soft:#10312D; --red:#F0655C; --amber:#EFAF57;
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 16px 40px -16px rgba(0,0,0,.6);
+    --shadow-lg:0 40px 90px -30px rgba(0,0,0,.7);
+  }
+  :root[data-theme="light"]{
+    --bg:#F4F6FC; --bg-2:#ECEFF9; --surface:#FFFFFF; --surface-2:#F7F9FE;
+    --border:#E3E7F3; --ink:#1A2234; --ink-2:#525C77; --ink-3:#8A93AB;
+    --brand:#36618E; --brand-ink:#2B4C74; --brand-soft:#E4ECF6;
+    --green:#43A047; --green-2:#2E7D32; --green-soft:#DFEDE5;
+    --teal:#12A594; --teal-soft:#E1F1EE; --red:#E53935; --amber:#EDA13C;
+    --shadow:0 1px 2px rgba(20,30,60,.05), 0 12px 32px -12px rgba(20,30,60,.14);
+    --shadow-lg:0 30px 80px -28px rgba(24,36,84,.34);
+  }
+
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0; background:var(--bg); color:var(--ink);
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","SF Pro Text","Segoe UI",Roboto,system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased; line-height:1.55; letter-spacing:-.01em}
+  .wrap{max-width:1120px; margin:0 auto; padding:0 24px}
+  a{color:inherit; text-decoration:none}
+  h1,h2,h3,h4{margin:0; text-wrap:balance; letter-spacing:-.03em; line-height:1.06}
+  p{margin:0}
+  .eyebrow{font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--brand-ink)}
+  .num{font-variant-numeric:tabular-nums}
+
+  /* ---------- Motion ---------- */
+  .reveal{opacity:0; transform:translateY(28px); transition:opacity .8s cubic-bezier(.2,.7,.2,1), transform .8s cubic-bezier(.2,.7,.2,1)}
+  .reveal.in{opacity:1; transform:none}
+  .reveal.d1{transition-delay:.09s} .reveal.d2{transition-delay:.18s} .reveal.d3{transition-delay:.27s} .reveal.d4{transition-delay:.36s}
+  .hero-copy>*{opacity:0; transform:translateY(18px); animation:rise .85s cubic-bezier(.2,.7,.2,1) forwards}
+  .hero-copy>*:nth-child(1){animation-delay:.05s}
+  .hero-copy>*:nth-child(2){animation-delay:.14s}
+  .hero-copy>*:nth-child(3){animation-delay:.23s}
+  .hero-copy>*:nth-child(4){animation-delay:.32s}
+  .hero-copy>*:nth-child(5){animation-delay:.41s}
+  .phone-stage{opacity:0; transform:translateY(26px); animation:rise 1s cubic-bezier(.2,.7,.2,1) .34s forwards}
+  @keyframes rise{to{opacity:1; transform:none}}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    .reveal,.hero-copy>*,.phone-stage{opacity:1!important; transform:none!important; animation:none!important}
+    *{animation-duration:.001ms!important; transition-duration:.001ms!important}
+  }
+
+  /* ---------- Top nav ---------- */
+  header.nav{position:sticky; top:0; z-index:50; backdrop-filter:saturate(140%) blur(12px);
+    background:color-mix(in srgb, var(--bg) 82%, transparent); border-bottom:1px solid var(--border)}
+  .nav-in{display:flex; align-items:center; justify-content:space-between; height:64px}
+  .brand{display:flex; align-items:center; gap:10px; font-weight:700; letter-spacing:-.02em; font-size:18px}
+  .brand svg{width:30px; height:30px; flex:none}
+  .nav-links{display:flex; align-items:center; gap:28px; font-size:14.5px; color:var(--ink-2); font-weight:500}
+  .nav-links a:not(.nav-cta){position:relative}
+  .nav-links a:not(.nav-cta)::after{content:""; position:absolute; left:0; bottom:-5px; height:2px; width:0; background:var(--brand); transition:width .3s ease}
+  .nav-links a:not(.nav-cta):hover{color:var(--ink)} .nav-links a:not(.nav-cta):hover::after{width:100%}
+  .nav-cta{padding:9px 16px; border-radius:11px; background:var(--brand); color:#fff; font-weight:600; font-size:14px; transition:filter .2s, transform .2s}
+  .nav-cta:hover{filter:brightness(1.08); transform:translateY(-1px)}
+  @media (max-width:720px){ .nav-links a:not(.nav-cta){display:none} }
+
+  /* ---------- Hero ---------- */
+  .hero{position:relative; overflow:hidden; padding:78px 0 66px}
+  .hero-grid{display:grid; grid-template-columns:1.05fr .95fr; gap:56px; align-items:center; position:relative; z-index:2}
+  .hero h1{font-size:clamp(38px,6vw,66px); font-weight:760}
+  .hero h1 .accent{color:var(--brand)}
+  .lede{margin-top:22px; font-size:clamp(17px,2.2vw,20px); color:var(--ink-2); max-width:34ch; font-weight:450}
+  .cta-row{display:flex; flex-wrap:wrap; gap:14px; margin-top:34px}
+  .badge{display:inline-flex; align-items:center; gap:12px; padding:12px 18px; border-radius:14px;
+    background:var(--ink); color:var(--bg); box-shadow:var(--shadow); transition:transform .2s ease, filter .2s ease, box-shadow .2s ease}
+  .badge:hover{transform:translateY(-3px); filter:brightness(1.05); box-shadow:var(--shadow-lg)}
+  .badge svg{width:26px; height:26px; flex:none}
+  .badge small{display:block; font-size:10.5px; opacity:.72; letter-spacing:.02em; font-weight:500; line-height:1.1}
+  .badge b{display:block; font-size:16px; font-weight:650; letter-spacing:-.01em; line-height:1.15}
+  .trust{margin-top:20px; display:flex; align-items:center; gap:10px; font-size:13px; color:var(--ink-3)}
+  .trust .dot{width:6px;height:6px;border-radius:50%;background:var(--green); animation:pulse 2.6s ease-out infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--green) 55%, transparent)}70%{box-shadow:0 0 0 7px transparent}100%{box-shadow:0 0 0 0 transparent}}
+  .motif{position:absolute; inset:0; z-index:1; pointer-events:none; opacity:.5;
+    -webkit-mask-image:radial-gradient(120% 90% at 78% 22%, #000 0%, transparent 62%);
+            mask-image:radial-gradient(120% 90% at 78% 22%, #000 0%, transparent 62%)}
+  .motif .cell{position:absolute; width:16px; height:16px; border-radius:5px; background:var(--border)}
+
+  /* ================= Phone (faithful to app) ================= */
+  .phone-stage{display:flex; justify-content:center; position:relative}
+  .glow{position:absolute; width:360px; height:360px; border-radius:50%; filter:blur(70px);
+    background:radial-gradient(circle, color-mix(in srgb,var(--brand) 40%, transparent), transparent 70%); opacity:.45; z-index:0}
+  .phone{position:relative; z-index:2; width:300px; height:630px; border-radius:46px; padding:11px;
+    background:linear-gradient(155deg,#20242e,#0c0e13); box-shadow:var(--shadow-lg), inset 0 0 0 2px rgba(255,255,255,.06)}
+  .screen{position:relative; width:100%; height:100%; border-radius:37px; overflow:hidden; background:var(--p-bg);
+    display:flex; flex-direction:column; color:var(--p-ink); font-size:13px}
+  .island{position:absolute; top:9px; left:50%; transform:translateX(-50%); width:80px; height:23px; background:#05060a; border-radius:14px; z-index:20}
+  .statusbar{display:flex; align-items:center; justify-content:space-between; padding:10px 18px 2px; font-size:12px; font-weight:600; color:var(--p-ink)}
+  .appbar{display:flex; align-items:center; gap:10px; padding:5px 15px 5px}
+  .appbar .burger{width:17px; display:flex; flex-direction:column; gap:3.5px}
+  .appbar .burger i{height:2px;background:var(--p-ink);border-radius:2px}
+  .appbar h4{font-size:18px; font-weight:750; letter-spacing:-.02em; flex:1; color:var(--p-ink)}
+  .avatar{width:27px;height:27px;border-radius:50%;background:radial-gradient(circle at 50% 32%, #cbd5ea 0 40%, transparent 41%),linear-gradient(#9db0d4,#7189b6)}
+  .scroll{flex:1; position:relative; overflow:hidden}
+  .view{position:absolute; inset:0; padding:2px 12px 10px; overflow:auto; opacity:0; transform:translateY(8px);
+    pointer-events:none; transition:opacity .3s ease, transform .3s ease; scrollbar-width:none}
+  .view::-webkit-scrollbar{display:none}
+  .view.active{opacity:1; transform:none; pointer-events:auto}
+  .pcardx{background:var(--p-surface); border:1px solid var(--p-card-bd); border-radius:14px}
+  .ph-t{display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700; color:var(--p-ink)}
+  .ph-t svg{width:15px;height:15px;color:var(--p-blue)}
+  .week{padding:11px}
+  .wk-head{display:flex; justify-content:space-between; align-items:center; margin-bottom:10px}
+  .wk-range{font-size:12px; font-weight:700; color:var(--p-blue)}
+  .grid-days{display:grid; grid-template-columns:20px repeat(7,1fr); gap:4px; align-items:center}
+  .dh{text-align:center; font-size:9px; color:#9aa1b4; font-weight:600; line-height:1.3}
+  .dh b{display:block; color:#525b71; font-size:10px; font-weight:700}
+  .dh.today{color:var(--p-blue)} .dh.today b{color:var(--p-blue); display:block; text-decoration:underline; text-decoration-color:var(--p-blue); text-underline-offset:2px; text-decoration-thickness:1.5px}
+  .htile{width:20px;height:20px;border-radius:6px;display:flex;align-items:center;justify-content:center;background:var(--p-green)}
+  .htile svg{width:12px;height:12px;color:#fff}
+  .cx{height:18px;border-radius:5px;background:var(--p-empty)}
+  .cx.g{background:var(--p-green)} .cx.p{background:var(--p-pink)}
+  .cx.o{background:#fff;border:1.3px solid var(--p-blue)}
+  .flagsbar{display:flex;align-items:center;gap:10px;margin-top:10px;padding:7px 11px;background:#EEF1F8;border-radius:11px}
+  .fc{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:700;color:#455168}
+  .fc svg{width:15px;height:15px}
+  .today-h{display:flex;align-items:center;gap:8px;margin:11px 3px 9px}
+  .today-h b{font-size:14px;font-weight:750}
+  .today-h .cnt{font-size:12px;color:var(--p-blue);font-weight:700}
+  .today-h .prog{flex:1;height:5px;border-radius:4px;background:#E4E7F0;overflow:hidden}
+  .today-h .prog i{display:block;height:100%;width:0;background:var(--p-green);border-radius:4px;transition:width .45s cubic-bezier(.2,.8,.2,1)}
+  .today-h .plus{width:19px;height:19px;color:var(--p-ink2)}
+  .hrow{display:flex;align-items:center;gap:10px;padding:9px 11px;border:1px solid var(--p-card-bd);border-radius:12px;margin-bottom:7px;background:var(--p-surface);cursor:pointer;user-select:none;transition:background .15s}
+  .hrow:hover{background:#FAFBFE}
+  .hrow .tile{width:30px;height:30px;border-radius:9px;background:var(--p-green);display:flex;align-items:center;justify-content:center;flex:none}
+  .hrow .tile svg{width:16px;height:16px;color:#fff}
+  .hrow .nm{flex:1;font-size:13.5px;font-weight:550;color:var(--p-ink)}
+  .hrow .streak{font-size:12px;color:#616b82;font-weight:600}
+  .hrow .chk{width:22px;height:22px;border-radius:50%;border:2px solid #C4CBDA;flex:none;position:relative;transition:all .2s}
+  .hrow.done .chk{background:var(--p-green);border-color:var(--p-green)}
+  .hrow.done .chk::after{content:"";position:absolute;left:6.5px;top:3px;width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+  .hrow.done .nm{color:#9AA2B5;text-decoration:line-through}
+  .hrow.off{background:#F4F5F9;cursor:default}
+  .hrow.off .tile{background:#B7BECD} .hrow.off .nm{color:#A6AEBE} .hrow.off .streak{color:#A6AEBE}
+  .hrow.off .cal{width:18px;height:18px;color:#B7BECD}
+  .st2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px}
+  .st{padding:11px 12px;border:1px solid var(--p-card-bd);border-radius:12px;background:var(--p-surface)}
+  .st .lb{font-size:11px;color:#69728a}
+  .st .vl{font-size:19px;font-weight:750;margin-top:4px;display:flex;align-items:baseline;gap:4px;color:var(--p-ink);white-space:nowrap}
+  .st .vl small{font-size:11px;font-weight:500;color:#69728a}
+  .st .vl.green{color:var(--p-green-d)}
+  .heat{padding:11px;margin-bottom:8px}
+  .heat-months{display:flex;justify-content:space-between;font-size:9px;color:#9aa1b4;font-weight:600;margin:9px 0 3px;padding-left:20px}
+  .heat-wrap{display:flex;gap:4px;align-items:stretch}
+  .heat-days{display:grid;grid-template-rows:repeat(7,1fr);gap:2.5px;font-size:8.5px;color:#9aa1b4;font-weight:700;width:14px}
+  .heat-days span{display:flex;align-items:center;line-height:1}
+  .heat-col{flex:1;min-width:0}
+  .heatgrid{display:grid;grid-auto-flow:column;grid-template-rows:repeat(7,1fr);gap:2.5px}
+  .hc{width:100%;aspect-ratio:1;border-radius:2.5px;background:var(--p-empty)}
+  .hc.l1{background:#CBE7CC}.hc.l2{background:#8FCF91}.hc.l3{background:#54B458}.hc.l4{background:var(--p-green-d)}
+  .heat-lg{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:9px;font-size:9px;color:#8890a5}
+  .heat-lg .hc{width:9px;height:9px;aspect-ratio:auto}
+  .trend{padding:11px}
+  .bars{display:flex;align-items:flex-end;gap:14px;height:70px;margin-top:11px;padding:0 6px}
+  .barwrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:5px;height:100%;justify-content:flex-end}
+  .bar{width:100%;border-radius:6px 6px 2px 2px;background:var(--p-green)}
+  .barwrap small{font-size:10px;color:#69728a;font-weight:600}
+  .barwrap b{font-size:11px;font-weight:700}
+  .bestday{padding:10px 12px;display:flex;justify-content:space-between;font-size:12px;color:#5b6479}
+  .bestday b{color:var(--p-ink)}
+  .mhead{padding:12px;margin-bottom:13px}
+  .mtop{display:flex;align-items:center;justify-content:space-between}
+  .mtop .big{font-size:22px;font-weight:780;color:var(--p-ink)}.mtop .big small{font-size:12.5px;font-weight:500;color:#69728a;margin-left:4px}
+  .newbtn{background:var(--p-blue);color:#fff;font-size:12px;font-weight:650;padding:8px 12px;border-radius:10px;display:flex;gap:4px;align-items:center}
+  .mchips{display:flex;gap:7px;margin-top:11px}
+  .mchip{font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:8px}
+  .mchip.red{background:#FBE1E4;color:#C62828}
+  .mchip.green{background:#DFEDE5;color:var(--p-green-d)}
+  .mlabel{display:flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;margin:5px 2px 8px}
+  .mlabel .d{width:7px;height:7px;border-radius:50%}
+  .mrow{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border-radius:12px;margin-bottom:8px;border-left:4px solid transparent}
+  .mrow .txt{flex:1}
+  .mrow .txt b{font-size:13.5px;font-weight:600;display:block;color:var(--p-ink);letter-spacing:-.01em}
+  .mrow .txt span{font-size:12px;color:#7c8299;display:block;margin-top:2px}
+  .mrow .txt em{font-size:11.5px;font-weight:700;font-style:normal;display:block;margin-top:3px}
+  .mrow .mc{width:21px;height:21px;border-radius:50%;border:2px solid;flex:none;margin-top:2px}
+  .mrow .cal{color:#aab1c2;flex:none;margin-top:2px}.mrow .cal svg{width:15px;height:15px}
+  .mrow.ov{background:var(--p-pink-bg);border-left-color:var(--p-red)}
+  .mrow.ov .mc{border-color:var(--p-red)} .mrow.ov em{color:var(--p-red)}
+  .mrow.nd{background:var(--p-teal-bg);border-left-color:var(--p-teal)}
+  .mrow.nd .mc{border-color:var(--p-teal)}
+  .tabbar{display:flex;border-top:1px solid #E7EBF3;background:var(--p-surface);padding:7px 6px 12px}
+  .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:10px;font-weight:600;color:#8b93a8;cursor:pointer;position:relative;background:none;border:0;padding:3px 0;font-family:inherit}
+  .tab svg{width:20px;height:20px}
+  .tab.active{color:var(--p-blue)}
+  .tab .bn{position:absolute;top:-2px;right:calc(50% - 19px);background:var(--p-red);color:#fff;font-size:8.5px;font-weight:700;min-width:14px;height:14px;border-radius:7px;display:flex;align-items:center;justify-content:center;padding:0 3px}
+  .tab.hint{animation:hint 1.5s ease-in-out 3}
+  @keyframes hint{0%,100%{transform:none}50%{transform:translateY(-4px)}}
+
+  /* ================= Sections ================= */
+  section.band{padding:84px 0}
+  #funciones{background:color-mix(in srgb, var(--brand) 6%, var(--bg)); border-top:1px solid var(--border)}
+  .sec-head{max-width:680px; margin-bottom:56px}
+  .sec-head h2{font-size:clamp(29px,4vw,42px); font-weight:750; margin-top:14px}
+  .sec-head p{margin-top:16px; color:var(--ink-2); font-size:17px; max-width:56ch}
+
+  /* philosophy */
+  .phil{display:grid; grid-template-columns:repeat(4,1fr); gap:18px}
+  .pcard{background:var(--surface); border:1px solid var(--border); border-radius:var(--radius); padding:26px 24px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:15px;
+    transition:transform .4s cubic-bezier(.2,.7,.2,1), box-shadow .4s ease, border-color .4s ease}
+  .pcard:hover{transform:translateY(-6px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb,var(--brand) 30%, var(--border))}
+  .pcard .ic{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;background:var(--brand-soft);color:var(--brand)}
+  .pcard .ic svg{width:22px;height:22px}
+  .pcard h3{font-size:17px;font-weight:700}
+  .pcard p{font-size:14.5px;color:var(--ink-2);line-height:1.5}
+
+  /* funciones: editorial feature list */
+  .flist{display:flex; flex-direction:column}
+  .fitem{display:grid; grid-template-columns:230px 1fr; gap:52px; padding:52px 0; border-top:1px solid var(--border); align-items:start}
+  .fitem:last-child{border-bottom:1px solid var(--border)}
+  .fitem-side{display:flex; flex-direction:column; gap:16px}
+  .fitem-side .ic{width:54px; height:54px; border-radius:15px; display:flex; align-items:center; justify-content:center; transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+  .fitem:hover .fitem-side .ic{transform:translateY(-4px) rotate(-4deg)}
+  .fitem-side .ic svg{width:27px; height:27px}
+  .fitem-side .kicker{font-size:11.5px; font-weight:700; letter-spacing:.09em; text-transform:uppercase; color:var(--ink-3)}
+  .fitem-side .name{font-size:23px; font-weight:760; letter-spacing:-.025em; color:var(--ink); margin-top:-4px}
+  .fitem.h .ic{background:var(--green-soft); color:var(--green-2)}
+  .fitem.m .ic{background:var(--teal-soft); color:var(--teal)}
+  .fitem.s .ic{background:var(--brand-soft); color:var(--brand-ink)}
+  .fitem-main h3{font-size:clamp(23px,2.7vw,30px); font-weight:740; margin-bottom:14px}
+  .fitem-main p{color:var(--ink-2); font-size:17px; line-height:1.62; max-width:58ch}
+  .fitem-chips{display:flex; flex-wrap:wrap; gap:9px; margin-top:24px}
+  .chip{font-size:13px; font-weight:600; padding:8px 14px; border-radius:22px; background:var(--surface); border:1px solid var(--border); color:var(--ink-2); transition:border-color .3s, color .3s}
+  .fitem:hover .chip{border-color:color-mix(in srgb,var(--brand) 24%, var(--border)); color:var(--ink)}
+
+  /* CTA */
+  .cta-band{position:relative; overflow:hidden; border-radius:30px; margin:0 24px 44px;
+    background:linear-gradient(135deg,#3d6a9e 0%,#2b4d78 52%,#20395a 100%); color:#fff; padding:88px 40px; text-align:center; box-shadow:var(--shadow-lg)}
+  .cta-band::before{content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(80% 120% at 50% -12%, rgba(255,255,255,.18), transparent 62%)}
+  .cta-band .inner{position:relative; z-index:2; max-width:660px; margin:0 auto}
+  .cta-logo{width:56px; height:56px; margin:0 auto 24px; border-radius:16px; background:rgba(255,255,255,.14); display:flex; align-items:center; justify-content:center; box-shadow:0 10px 30px rgba(0,0,0,.2)}
+  .cta-logo svg{width:31px; height:31px; color:#fff}
+  .cta-band h2{font-size:clamp(31px,4.6vw,48px); font-weight:770; color:#fff; line-height:1.03}
+  .cta-band .inner>p{margin:18px auto 0; max-width:46ch; color:rgba(255,255,255,.85); font-size:18px; line-height:1.55}
+  .cta-band .cta-row{justify-content:center; margin-top:34px}
+  .cta-band .badge{background:#fff; color:#161a24}
+  .cta-reassure{display:flex; flex-wrap:wrap; justify-content:center; gap:9px 20px; margin-top:28px}
+  .cta-reassure span{display:inline-flex; align-items:center; gap:8px; font-size:14px; color:rgba(255,255,255,.82); font-weight:500}
+  .cta-reassure span::before{content:""; width:6px; height:6px; border-radius:50%; background:#7FD1AE}
+
+  footer{padding:44px 0 64px; color:var(--ink-3); font-size:14px}
+  .foot-in{display:flex; align-items:center; justify-content:space-between; gap:16px; flex-wrap:wrap; border-top:1px solid var(--border); padding-top:28px}
+  .foot-in .brand{color:var(--ink); font-size:16px}
+
+  @media (max-width:920px){
+    .hero-grid{grid-template-columns:1fr; gap:48px}
+    .phil{grid-template-columns:1fr 1fr}
+    .lede{max-width:46ch}
+    .fitem{grid-template-columns:1fr; gap:22px; padding:44px 0}
+  }
+  @media (max-width:560px){ .phil{grid-template-columns:1fr} .hero{padding:54px 0 40px} .cta-band{padding:56px 22px; margin:0 16px 32px} }
+  :focus-visible{outline:2.5px solid var(--brand); outline-offset:3px; border-radius:6px}
+</style>
+
+<style>
+  .foot-links{display:flex; gap:22px; font-size:14px}
+  .foot-links a{color:var(--ink-3)} .foot-links a:hover{color:var(--ink)}
+  @media (max-width:560px){ .foot-in{justify-content:center; text-align:center} }
+</style>
 </head>
 <body>
-  <h1>Habitiurs</h1>
-  <p>Documentos legales</p>
-  <a href="privacidad.html">Política de Privacidad</a>
-  <a href="terminos.html">Términos y Condiciones</a>
+<!-- reusable svg icons -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <g id="i-book"><path d="M4 5a2 2 0 0 1 2-2h6v17H6a2 2 0 0 0-2 2V5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M20 5a2 2 0 0 0-2-2h-6v17h6a2 2 0 0 1 2 2V5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+  <g id="i-lotus"><path d="M12 20c-4 0-7-2.6-7-5 2 0 3.6.8 4.6 1.8M12 20c4 0 7-2.6 7-5-2 0-3.6.8-4.6 1.8M12 20c-2 0-3.6-2.4-3.6-5S10.4 9 12 6c1.6 3 3.6 6.4 3.6 9s-1.6 5-3.6 5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/></g>
+  <g id="i-dumbbell"><path d="M4 9v6M7 7.5v9M17 7.5v9M20 9v6M7.5 12h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+  <g id="i-drop"><path d="M12 3.5c3.2 4 5.2 6.8 5.2 9.8A5.2 5.2 0 0 1 6.8 13.3C6.8 10.3 8.8 7.5 12 3.5z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></g>
+  <g id="i-globe"><circle cx="12" cy="12" r="8.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M3.5 12h17M12 3.5c2.6 2.7 2.6 14.3 0 17M12 3.5c-2.6 2.7-2.6 14.3 0 17" fill="none" stroke="currentColor" stroke-width="2"/></g>
+  <g id="i-flag"><path d="M6 21V4M6 4h11l-1.6 3.6L17 11H6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="i-bars"><path d="M5 20V9M12 20V4M19 20v-7" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></g>
+  <g id="i-grid"><rect x="4" y="4" width="16" height="16" rx="2.5" fill="none" stroke="currentColor" stroke-width="2"/><path d="M4 10h16M4 15h16M10 4v16M15 4v16" stroke="currentColor" stroke-width="1.4" opacity=".8"/></g>
+  <g id="i-trend"><path d="M4 15l5-5 4 3 7-8" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="i-plus"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></g>
+  <g id="i-calx"><rect x="4" y="5" width="16" height="15" rx="2.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M4 9h16M8 3v4M16 3v4M10 14l4 3M14 14l-4 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></g>
+  <g id="i-chart"><rect x="3" y="3" width="18" height="18" rx="3" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8 15v-3M12 15V9M16 15v-5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></g>
+  <g id="i-check"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="2"/><path d="M8.5 12.4l2.3 2.3 4.7-4.9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></g>
+  <g id="i-brain"><path d="M17 33c-4-1-7-4.6-7-9.2C10 18 14.4 14 20 14c3 0 5.7 1.4 7.4 3.6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" fill="none"/><path d="M18 33c0 1.6 1.3 3 3 3h2v-6" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" fill="none"/><circle cx="31" cy="26" r="6.4" fill="none" stroke="currentColor" stroke-width="2.6"/><circle cx="31" cy="26" r="2.2" fill="currentColor"/></g>
+</defs></svg>
+
+<header class="nav">
+  <div class="wrap nav-in">
+    <a class="brand" href="#top" aria-label="Habitiurs inicio">
+      <svg viewBox="0 0 48 48" fill="none" aria-hidden="true">
+        <rect width="48" height="48" rx="12" fill="var(--brand-soft)"/>
+        <path d="M17 33c-4-1-7-4.6-7-9.2C10 18 14.4 14 20 14c3 0 5.7 1.4 7.4 3.6" stroke="var(--brand)" stroke-width="2.6" stroke-linecap="round"/>
+        <path d="M18 33c0 1.6 1.3 3 3 3h2v-6" stroke="var(--brand)" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="31" cy="26" r="6.4" fill="none" stroke="var(--brand)" stroke-width="2.6"/>
+        <circle cx="31" cy="26" r="2.2" fill="var(--brand)"/>
+        <g stroke="var(--brand)" stroke-width="2.4" stroke-linecap="round"><path d="M31 17.8v2.4M31 31.8v2.4M39.2 26h-2.4M25.2 26h-2.4M36.8 20.2l-1.7 1.7M26.9 30.1l-1.7 1.7M36.8 31.8l-1.7-1.7M26.9 21.9l-1.7-1.7"/></g>
+      </svg>
+      Habitiurs
+    </a>
+    <nav class="nav-links">
+      <a href="#funciones">El método</a>
+      <a href="#descargar" class="nav-cta">Descargar</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+  <section class="hero">
+    <div class="motif" id="motif" aria-hidden="true"></div>
+    <div class="wrap hero-grid">
+      <div class="hero-copy">
+        <h1>Constancia antes que <span class="accent">perfección.</span></h1>
+        <p class="lede">Los hábitos no se construyen en un día perfecto, sino apareciendo en los comunes. Habitiurs vuelve simple aparecer —y hace visible tu constancia.</p>
+        <div class="cta-row">
+          <a class="badge" href="https://apps.apple.com/app/id6780148693" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2 1.6-3 1.7-3-.9-1.4-2.4-1.5-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.2 2-1.4 2.4-.4 6 1 8 .7 1 1.4 2 2.4 2 .9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6s1.7-1 2.3-2c.7-1.1 1-2.2 1-2.3 0 0-1.9-.7-1.9-2.8zM14.6 6.3c.5-.6.9-1.5.8-2.4-.8 0-1.7.5-2.2 1.1-.5.6-.9 1.5-.8 2.3.9.1 1.8-.4 2.2-1z"/></svg>
+            <span><small>Descargar en</small><b>App Store</b></span>
+          </a>
+          <a class="badge" href="https://play.google.com/store/apps/details?id=com.habitiurs.app" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 2.3c-.3.2-.5.6-.5 1.1v17.2c0 .5.2.9.5 1.1l9.2-9.7L3.6 2.3z" fill="#34C1B1"/><path d="M16.6 8.5l-3.8-2.2-9.2-5.3c-.2-.1-.4-.1-.5 0l9.7 10.2 3.8-2.7z" fill="#F0655C"/><path d="M20.4 10.9l-3.8-2.2-4 3.3 4 3.3 3.8-2.2c.7-.4.7-1.8 0-2.2z" fill="#EFAF57"/><path d="M3.1 22.7c.2.1.4.1.6 0l9.1-5.3 3.8-2.2-3.8-2.7-9.7 10.2z" fill="#6E93C9"/></svg>
+            <span><small>Disponible en</small><b>Google Play</b></span>
+          </a>
+        </div>
+        <div class="trust"><span class="dot"></span> Gratis · Sin anuncios · Funciona sin cuenta</div>
+      </div>
+
+      <!-- PHONE -->
+      <div class="phone-stage">
+        <div class="glow" aria-hidden="true"></div>
+        <div class="phone" role="group" aria-label="Demo interactivo de Habitiurs">
+          <div class="screen">
+            <div class="island" aria-hidden="true"></div>
+            <div class="statusbar">
+              <span class="num">9:41</span>
+              <span style="display:flex;gap:6px;align-items:center">
+                <svg viewBox="0 0 20 12" width="17" aria-hidden="true"><g fill="currentColor"><rect x="0" y="7" width="3" height="5" rx="1"/><rect x="5" y="4.5" width="3" height="7.5" rx="1"/><rect x="10" y="2" width="3" height="10" rx="1"/><rect x="15" y="0" width="3" height="12" rx="1"/></g></svg>
+                <svg viewBox="0 0 18 13" width="16" fill="currentColor" aria-hidden="true"><path d="M9 3.5c2.1 0 4 .8 5.4 2.1l1.4-1.5A10 10 0 0 0 9 1.4 10 10 0 0 0 2.2 4.1l1.4 1.5A7.9 7.9 0 0 1 9 3.5z"/><path d="M9 7c1 0 2 .4 2.7 1.1l1.4-1.5A6 6 0 0 0 9 5a6 6 0 0 0-4.1 1.6l1.4 1.5A3.9 3.9 0 0 1 9 7z"/><circle cx="9" cy="10.4" r="1.7"/></svg>
+                <svg viewBox="0 0 26 13" width="22" aria-hidden="true"><rect x="1" y="1" width="21" height="11" rx="3" fill="none" stroke="currentColor" stroke-width="1.2" opacity=".5"/><rect x="3" y="3" width="17" height="7" rx="1.5" fill="currentColor"/><rect x="23" y="4.5" width="2" height="4" rx="1" fill="currentColor" opacity=".5"/></svg>
+              </span>
+            </div>
+            <div class="appbar">
+              <span class="burger" aria-hidden="true"><i></i><i></i><i></i></span>
+              <h4 id="appTitle">Mis Hábitos</h4>
+              <span class="avatar" aria-hidden="true"></span>
+            </div>
+            <div class="scroll">
+              <div class="view active" id="view-habitos">
+                <div class="pcardx week">
+                  <div class="wk-head"><span class="ph-t"><svg><use href="#i-bars"/></svg>Vista semanal</span><span class="wk-range num">3 – 9</span></div>
+                  <div class="grid-days" style="margin-bottom:6px">
+                    <span></span>
+                    <span class="dh">L<b>3</b></span><span class="dh">M<b>4</b></span><span class="dh">M<b>5</b></span><span class="dh">J<b>6</b></span><span class="dh">V<b>7</b></span><span class="dh">S<b>8</b></span><span class="dh today">D<b>9</b></span>
+                  </div>
+                  <div id="weekGrid" class="grid-days"></div>
+                  <div class="flagsbar">
+                    <span class="fc" style="color:var(--p-blue)"><svg><use href="#i-flag"/></svg></span>
+                    <span class="fc" style="color:var(--p-green-d)"><svg><use href="#i-flag"/></svg>4</span>
+                    <span style="flex:1"></span>
+                    <span class="fc" style="color:var(--p-red)"><svg><use href="#i-flag"/></svg>1</span>
+                  </div>
+                </div>
+                <div class="today-h">
+                  <b>Hábitos de hoy</b><span class="cnt"><span id="doneCnt">0</span>/3</span>
+                  <span class="prog"><i id="progBar"></i></span>
+                  <svg class="plus" viewBox="0 0 24 24" aria-hidden="true"><use href="#i-plus"/></svg>
+                </div>
+                <div class="hrow" data-habit data-hi="0" tabindex="0" role="button" aria-pressed="false">
+                  <span class="tile"><svg viewBox="0 0 24 24"><use href="#i-lotus"/></svg></span><span class="nm">Meditar</span><span class="streak num">🔥 12</span><span class="chk"></span>
+                </div>
+                <div class="hrow" data-habit data-hi="1" tabindex="0" role="button" aria-pressed="false">
+                  <span class="tile"><svg viewBox="0 0 24 24"><use href="#i-dumbbell"/></svg></span><span class="nm">Entrenar</span><span class="streak num">🔥 21</span><span class="chk"></span>
+                </div>
+                <div class="hrow" data-habit data-hi="2" tabindex="0" role="button" aria-pressed="false">
+                  <span class="tile"><svg viewBox="0 0 24 24"><use href="#i-book"/></svg></span><span class="nm">Leer 20 min</span><span class="streak num">🔥 8</span><span class="chk"></span>
+                </div>
+                <div class="hrow off">
+                  <span class="tile"><svg viewBox="0 0 24 24"><use href="#i-globe"/></svg></span><span class="nm">Estudiar inglés</span><span class="streak num">🔥 4</span><svg class="cal" viewBox="0 0 24 24"><use href="#i-calx"/></svg>
+                </div>
+              </div>
+
+              <div class="view" id="view-stats">
+                <div class="st2">
+                  <div class="st"><div class="lb">Racha actual</div><div class="vl num">🔥 12 <small>días</small></div></div>
+                  <div class="st"><div class="lb">Mejor racha</div><div class="vl num">🏆 21 <small>días</small></div></div>
+                  <div class="st"><div class="lb">Este mes</div><div class="vl green num">84%</div></div>
+                  <div class="st"><div class="lb">Completados</div><div class="vl num">156 <small>en total</small></div></div>
+                </div>
+                <div class="pcardx heat">
+                  <span class="ph-t"><svg><use href="#i-grid"/></svg>Mapa de constancia</span>
+                  <div class="heat-months"><span>abr</span><span>may</span><span>jun</span><span>jul</span><span>ago</span></div>
+                  <div class="heat-wrap">
+                    <div class="heat-days"><span>L</span><span></span><span>M</span><span></span><span>V</span><span></span><span>D</span></div>
+                    <div class="heat-col"><div id="heatGrid" class="heatgrid"></div></div>
+                  </div>
+                  <div class="heat-lg">Menos <span class="hc"></span><span class="hc l2"></span><span class="hc l3"></span><span class="hc l4"></span> Más</div>
+                </div>
+                <div class="pcardx trend">
+                  <span class="ph-t"><svg><use href="#i-trend"/></svg>Tendencia mensual</span>
+                  <div class="bars">
+                    <div class="barwrap"><div class="bar" style="height:78%"></div><small>Jun</small><b style="color:var(--p-green-d)">78%</b></div>
+                    <div class="barwrap"><div class="bar" style="height:95%"></div><small>Jul</small><b style="color:var(--p-green-d)">95%</b></div>
+                    <div class="barwrap"><div class="bar" style="height:84%"></div><small>Ago</small><b style="color:var(--p-green-d)">84%</b></div>
+                  </div>
+                </div>
+                <div class="pcardx bestday"><span>🏆 Mejor día: <b>Lunes</b></span><span>Más difícil: <b>Sábado</b></span></div>
+              </div>
+
+              <div class="view" id="view-misiones">
+                <div class="pcardx mhead">
+                  <div class="mtop"><div class="big num">5 <small>pendientes</small></div><span class="newbtn"><svg viewBox="0 0 24 24" width="13" height="13" style="color:#fff"><use href="#i-plus"/></svg>Nueva</span></div>
+                  <div class="mchips"><span class="mchip red">1 vencida</span><span class="mchip green">2 este mes</span></div>
+                </div>
+                <div class="mlabel" style="color:var(--p-red)"><span class="d" style="background:var(--p-red)"></span>Vencidas · 1</div>
+                <div class="mrow ov">
+                  <div class="txt"><b>Renovar el registro</b><span>Antes de que se venza.</span><em>hace 3 días</em></div>
+                  <span class="mc"></span>
+                </div>
+                <div class="mlabel" style="color:var(--p-teal)"><span class="d" style="background:var(--p-teal)"></span>Sin fecha · 4</div>
+                <div class="mrow nd"><div class="txt"><b>Reservar los vuelos</b><span>Comparar precios primero.</span></div><span class="cal"><svg viewBox="0 0 24 24"><use href="#i-calx"/></svg></span><span class="mc"></span></div>
+                <div class="mrow nd"><div class="txt"><b>Comprar regalo de Ana</b><span>Cumple el finde que viene.</span></div><span class="cal"><svg viewBox="0 0 24 24"><use href="#i-calx"/></svg></span><span class="mc"></span></div>
+                <div class="mrow nd"><div class="txt"><b>Actualizar el CV</b><span>Sumar los últimos proyectos.</span></div><span class="cal"><svg viewBox="0 0 24 24"><use href="#i-calx"/></svg></span><span class="mc"></span></div>
+                <div class="mrow nd"><div class="txt"><b>Llamar al plomero</b></div><span class="cal"><svg viewBox="0 0 24 24"><use href="#i-calx"/></svg></span><span class="mc"></span></div>
+              </div>
+            </div>
+
+            <nav class="tabbar" aria-label="Navegación del app">
+              <button class="tab" data-tab="stats"><svg viewBox="0 0 24 24"><use href="#i-chart"/></svg>Estadísticas</button>
+              <button class="tab active" data-tab="habitos"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg>Hábitos</button>
+              <button class="tab hint" data-tab="misiones"><svg viewBox="0 0 24 24"><use href="#i-flag"/></svg>Misiones<span class="bn">1</span></button>
+            </nav>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MÉTODO -->
+  <section class="band" id="funciones">
+    <div class="wrap">
+      <div class="sec-head">
+        <p class="eyebrow reveal">El método</p>
+        <h2 class="reveal d1">Aparecer se vuelve fácil cuando lo podés ver.</h2>
+      </div>
+
+      <div class="flist">
+        <div class="fitem h reveal">
+          <div class="fitem-side">
+            <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-check"/></svg></span>
+            <div><div class="kicker">Cada día</div><div class="name">Hábitos</div></div>
+          </div>
+          <div class="fitem-main">
+            <h3>Marcá, y volvé mañana.</h3>
+            <p>Un toque por día. La semana se pinta de verde y la racha se vuelve algo que no querés cortar. La constancia deja de ser una idea: la mirás.</p>
+          </div>
+        </div>
+
+        <div class="fitem m reveal">
+          <div class="fitem-side">
+            <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-flag"/></svg></span>
+            <div><div class="kicker">Una sola vez</div><div class="name">Misiones</div></div>
+          </div>
+          <div class="fitem-main">
+            <h3>Sacátelo de la cabeza.</h3>
+            <p>Turnos, trámites, llamados: eso que se hace una vez y siempre se olvida. Lo anotás y lo soltás; lo que vence nunca queda escondido.</p>
+          </div>
+        </div>
+
+        <div class="fitem s reveal">
+          <div class="fitem-side">
+            <span class="ic"><svg viewBox="0 0 24 24"><use href="#i-chart"/></svg></span>
+            <div><div class="kicker">Con el tiempo</div><div class="name">Estadísticas</div></div>
+          </div>
+          <div class="fitem-main">
+            <h3>Tu esfuerzo, hecho imagen.</h3>
+            <p>Rachas y un mapa de constancia que hacen visible lo invisible: que, día tras día, estás cambiando. Y lo llevás a la pantalla de inicio.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA -->
+  <section id="descargar">
+    <div class="cta-band reveal">
+      <div class="inner">
+        <div class="cta-logo"><svg viewBox="0 0 48 48" aria-hidden="true"><use href="#i-brain"/></svg></div>
+        <h2>La constancia empieza con un toque.</h2>
+        <p>Descargá Habitiurs gratis y hacé de aparecer cada día algo que podés ver crecer. Sin vueltas, sin presión.</p>
+        <div class="cta-row">
+          <a class="badge" href="https://apps.apple.com/app/id6780148693" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.4 12.6c0-2 1.6-3 1.7-3-.9-1.4-2.4-1.5-2.9-1.6-1.2-.1-2.4.7-3 .7-.6 0-1.6-.7-2.6-.7-1.3 0-2.6.8-3.2 2-1.4 2.4-.4 6 1 8 .7 1 1.4 2 2.4 2 .9 0 1.3-.6 2.4-.6 1.1 0 1.4.6 2.4.6s1.7-1 2.3-2c.7-1.1 1-2.2 1-2.3 0 0-1.9-.7-1.9-2.8zM14.6 6.3c.5-.6.9-1.5.8-2.4-.8 0-1.7.5-2.2 1.1-.5.6-.9 1.5-.8 2.3.9.1 1.8-.4 2.2-1z"/></svg>
+            <span><small>Descargar en</small><b>App Store</b></span>
+          </a>
+          <a class="badge" href="https://play.google.com/store/apps/details?id=com.habitiurs.app" target="_blank" rel="noopener">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.6 2.3c-.3.2-.5.6-.5 1.1v17.2c0 .5.2.9.5 1.1l9.2-9.7L3.6 2.3z" fill="#34C1B1"/><path d="M16.6 8.5l-3.8-2.2-9.2-5.3c-.2-.1-.4-.1-.5 0l9.7 10.2 3.8-2.7z" fill="#F0655C"/><path d="M20.4 10.9l-3.8-2.2-4 3.3 4 3.3 3.8-2.2c.7-.4.7-1.8 0-2.2z" fill="#EFAF57"/><path d="M3.1 22.7c.2.1.4.1.6 0l9.1-5.3 3.8-2.2-3.8-2.7-9.7 10.2z" fill="#6E93C9"/></svg>
+            <span><small>Disponible en</small><b>Google Play</b></span>
+          </a>
+        </div>
+        <div class="cta-reassure"><span>Gratis</span><span>Sin anuncios</span><span>Funciona sin cuenta</span><span>iOS y Android</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="wrap foot-in">
+      <span class="brand">
+        <svg viewBox="0 0 48 48" fill="none" width="26" height="26" aria-hidden="true"><rect width="48" height="48" rx="12" fill="var(--brand-soft)"/><circle cx="24" cy="24" r="9" fill="none" stroke="var(--brand)" stroke-width="3"/><circle cx="24" cy="24" r="3" fill="var(--brand)"/></svg>
+        Habitiurs
+      </span>
+      <nav class="foot-links">
+        <a href="privacidad.html">Privacidad</a>
+        <a href="terminos.html">Términos</a>
+        <a href="eliminar-cuenta.html">Eliminar cuenta</a>
+      </nav>
+      <span>Hecho con constancia · © 2026</span>
+    </div>
+  </footer>
+</main>
+
+<script>
+(function(){
+  function field(el, cols, rows, w, tint){
+    if(!el) return;
+    for(var r=0;r<rows;r++) for(var c=0;c<cols;c++){
+      var d=document.createElement('span'); d.className='cell';
+      d.style.left=(c*(w+6))+'px'; d.style.top=(r*(w+6))+'px';
+      var k=(c*7+r*3)%11;
+      if(tint && k<3){ d.style.background=['var(--green)','var(--green)','var(--brand)'][k]; d.style.opacity=(k===2?.5:.7); }
+      el.appendChild(d);
+    }
+  }
+  var m=document.getElementById('motif'); if(m){ field(m,Math.ceil(innerWidth/22)+2,Math.ceil(560/22),16,true); }
+
+  /* phone weekly grid */
+  var pattern=[
+    ['g','g','g','g','g','g','o'],
+    ['g','g','p','g','g','g','o'],
+    ['g','g','g','g','g','g','o'],
+    ['p','g','g','p','g','g','o'],
+    ['g','g','g','g','g','p','o']
+  ];
+  var icons=['i-lotus','i-dumbbell','i-book','i-drop','i-globe'];
+  var wg=document.getElementById('weekGrid');
+  if(wg){
+    pattern.forEach(function(row,i){
+      var t=document.createElement('span'); t.className='htile';
+      t.innerHTML='<svg viewBox="0 0 24 24"><use href="#'+icons[i]+'"/></svg>';
+      wg.appendChild(t);
+      row.forEach(function(v){
+        var c=document.createElement('span'); c.className='cx '+(v==='e'?'':v);
+        if(v==='o'){ c.id='wk-t'+i; }
+        wg.appendChild(c);
+      });
+    });
+  }
+
+  /* phone heatmap */
+  var hg=document.getElementById('heatGrid');
+  if(hg){
+    var weeks=17;
+    for(var c=0;c<weeks;c++) for(var r=0;r<7;r++){
+      var cell=document.createElement('span'); cell.className='hc';
+      var recent=c/weeks; var seed=(c*13+r*7)%10/10; var v=recent*1.25 - seed*0.55;
+      if(!(c>weeks-2 && r>4)){
+        if(v>0.72) cell.className='hc l4';
+        else if(v>0.48) cell.className='hc l3';
+        else if(v>0.26) cell.className='hc l2';
+        else if(v>0.10) cell.className='hc l1';
+      }
+      hg.appendChild(cell);
+    }
+  }
+
+  /* tabs */
+  var titles={habitos:'Mis Hábitos', stats:'Estadísticas', misiones:'Misiones'};
+  var views={habitos:'view-habitos', stats:'view-stats', misiones:'view-misiones'};
+  var tabs=document.querySelectorAll('.tab');
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){
+      var name=t.dataset.tab;
+      tabs.forEach(function(x){ x.classList.remove('active','hint'); });
+      t.classList.add('active');
+      document.querySelectorAll('.view').forEach(function(v){ v.classList.remove('active'); });
+      document.getElementById(views[name]).classList.add('active');
+      document.getElementById('appTitle').textContent=titles[name];
+    });
+  });
+
+  /* habit toggle -> counter, progress AND weekly grid today-cell */
+  var rows=document.querySelectorAll('[data-habit]');
+  var cnt=document.getElementById('doneCnt'), bar=document.getElementById('progBar');
+  function refresh(){ var done=document.querySelectorAll('[data-habit].done').length; cnt.textContent=done; bar.style.width=(done/rows.length*100)+'%'; }
+  rows.forEach(function(r){
+    function toggle(){
+      r.classList.toggle('done'); var on=r.classList.contains('done');
+      r.setAttribute('aria-pressed', on);
+      var cell=document.getElementById('wk-t'+r.dataset.hi);
+      if(cell){ cell.classList.toggle('g', on); cell.classList.toggle('o', !on); }
+      refresh();
+    }
+    r.addEventListener('click', toggle);
+    r.addEventListener('keydown', function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); toggle(); } });
+  });
+
+  /* scroll reveals */
+  var reduce = matchMedia('(prefers-reduced-motion:reduce)').matches;
+  if('IntersectionObserver' in window && !reduce){
+    var io=new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target); } });
+    },{threshold:.16, rootMargin:'0px 0px -8% 0px'});
+    document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function(el){ el.classList.add('in'); });
+  }
+})();
+</script>
+
 </body>
 </html>
