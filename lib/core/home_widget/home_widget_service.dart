@@ -328,11 +328,8 @@ class HomeWidgetService {
     return sorted
         .take(max)
         .map(
-          (m) => MissionRowData(
-            m.title,
-            urgency(m),
-            _dueLabel(m.dueDate, today),
-          ),
+          (m) =>
+              MissionRowData(m.title, urgency(m), _dueLabel(m.dueDate, today)),
         )
         .toList();
   }

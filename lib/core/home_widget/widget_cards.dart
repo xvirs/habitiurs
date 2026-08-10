@@ -269,9 +269,11 @@ class ConstanciaCard extends StatelessWidget {
               child: LayoutBuilder(
                 builder: (context, c) {
                   const gap = 3.0;
-                  final cell = (((c.maxWidth - gap * (weeks - 1)) / weeks)
-                          .clamp(4.0, (c.maxHeight - gap * 6) / 7))
-                      .toDouble();
+                  final cell =
+                      (((c.maxWidth - gap * (weeks - 1)) / weeks).clamp(
+                        4.0,
+                        (c.maxHeight - gap * 6) / 7,
+                      )).toDouble();
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -288,7 +290,9 @@ class ConstanciaCard extends StatelessWidget {
                                         ? levels[w * 7 + r]
                                         : 0,
                                   ),
-                                  borderRadius: BorderRadius.circular(cell * 0.28),
+                                  borderRadius: BorderRadius.circular(
+                                    cell * 0.28,
+                                  ),
                                 ),
                               ),
                               if (r < 6) const SizedBox(height: gap),
@@ -307,7 +311,9 @@ class ConstanciaCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    best > 0 ? '🔥 Mejor racha: $best días' : 'Empezá tu racha hoy',
+                    best > 0
+                        ? '🔥 Mejor racha: $best días'
+                        : 'Empezá tu racha hoy',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(fontSize: 10.5, color: _WC.muted),

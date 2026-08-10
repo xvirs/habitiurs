@@ -78,7 +78,9 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
         createdAt: DateTime.now(),
       );
       final id = await createMission(mission);
-      AnalyticsService.instance.missionCreated(hasDueDate: event.dueDate != null);
+      AnalyticsService.instance.missionCreated(
+        hasDueDate: event.dueDate != null,
+      );
       await _syncMissionReminder(mission.copyWith(id: id));
       add(const LoadMissions());
     } catch (e) {

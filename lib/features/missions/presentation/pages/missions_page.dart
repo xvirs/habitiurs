@@ -344,8 +344,7 @@ class _SummaryHeader extends StatelessWidget {
                   ),
                 if (completedThisMonth > 0)
                   _StatChip(
-                    label:
-                        '$completedThisMonth este mes',
+                    label: '$completedThisMonth este mes',
                     fg: AppColors.completed(context),
                     bg: AppColors.completed(context).withValues(alpha: 0.14),
                   ),
@@ -607,7 +606,10 @@ class _MissionRow extends StatelessWidget {
                         // Acción a la derecha: círculo con el color de urgencia
                         // (agrega color a cada fila sin recargar).
                         IconButton(
-                          icon: Icon(Icons.radio_button_unchecked, color: accent),
+                          icon: Icon(
+                            Icons.radio_button_unchecked,
+                            color: accent,
+                          ),
                           iconSize: 26,
                           onPressed: onToggle,
                           tooltip: 'Completar',

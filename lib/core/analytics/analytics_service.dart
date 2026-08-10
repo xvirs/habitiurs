@@ -13,8 +13,9 @@ class AnalyticsService {
   final FirebaseAnalytics analytics = FirebaseAnalytics.instance;
 
   /// Observer para registrar `screen_view` automáticamente al navegar.
-  late final FirebaseAnalyticsObserver observer =
-      FirebaseAnalyticsObserver(analytics: analytics);
+  late final FirebaseAnalyticsObserver observer = FirebaseAnalyticsObserver(
+    analytics: analytics,
+  );
 
   /// Habilita la recolección (idempotente). Se llama en el bootstrap.
   Future<void> init() async {

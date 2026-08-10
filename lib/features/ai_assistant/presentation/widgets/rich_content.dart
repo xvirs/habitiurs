@@ -55,15 +55,15 @@ class RichContent extends StatelessWidget {
         );
       } else {
         children.add(
-          Padding(
-            padding: const EdgeInsets.only(bottom: 5),
-            child: textWidget,
-          ),
+          Padding(padding: const EdgeInsets.only(bottom: 5), child: textWidget),
         );
       }
     }
 
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: children);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: children,
+    );
   }
 
   /// Divide por `**` alternando normal/negrita (la negrita resalta en
@@ -92,8 +92,9 @@ class RichContent extends StatelessWidget {
 }
 
 /// Versión en texto plano (sin markdown) para vistas previas/truncadas.
-String plainPreview(String markdown) => markdown
-    .replaceAll('**', '')
-    .replaceAll('• ', '')
-    .replaceAll('- ', '')
-    .trim();
+String plainPreview(String markdown) =>
+    markdown
+        .replaceAll('**', '')
+        .replaceAll('• ', '')
+        .replaceAll('- ', '')
+        .trim();
