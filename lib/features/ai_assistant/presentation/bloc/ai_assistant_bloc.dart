@@ -6,6 +6,7 @@ import '../../domain/usecases/get_educational_content.dart';
 import 'ai_assistant_event.dart';
 import 'ai_assistant_state.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
+import 'package:habitiurs/core/analytics/analytics_service.dart';
 
 class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
   final GetEducationalContent _getEducationalContent;
@@ -51,6 +52,7 @@ class AIAssistantBloc extends Bloc<AIAssistantEvent, AIAssistantState> {
       );
       try {
         final aiResponse = await _getAIRecommendation();
+        AnalyticsService.instance.aiRecommendation();
         appLog(
           '✅ [AIAssistantBloc] Recomendación obtenida — fuente: ${aiResponse.isFromAI ? 'Gemini IA' : 'fallback local'}',
         );

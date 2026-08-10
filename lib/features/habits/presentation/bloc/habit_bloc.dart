@@ -19,6 +19,7 @@ import 'habit_event.dart';
 import 'habit_state.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
 import 'package:habitiurs/core/home_widget/home_widget_service.dart';
+import 'package:habitiurs/core/analytics/analytics_service.dart';
 
 class HabitBloc extends Bloc<HabitEvent, HabitState> {
   final GetAllHabits _getAllHabits;
@@ -93,6 +94,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
         reminderTime: event.reminderTime,
       );
       final id = await _createHabit(habit);
+      AnalyticsService.instance.habitCreated();
       await _syncHabitReminder(habit.copyWith(id: id));
       await _loadAndEmitData(emit);
       _syncInBackground('create_habit');
@@ -155,6 +157,7 @@ class HabitBloc extends Bloc<HabitEvent, HabitState> {
   ) async {
     try {
       await _toggleHabitEntry(event.habitId, event.date, event.currentStatus);
+      AnalyticsService.instance.habitChecked();
       await _loadAndEmitData(emit);
       _syncInBackground('toggle_entry');
     } catch (e) {
