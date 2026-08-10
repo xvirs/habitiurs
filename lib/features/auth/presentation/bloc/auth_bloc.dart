@@ -18,6 +18,7 @@ import '../../../ai_assistant/presentation/bloc/ai_assistant_event.dart';
 import 'auth_event.dart';
 import 'auth_state.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
+import 'package:habitiurs/core/analytics/analytics_service.dart';
 
 class AuthBloc extends Bloc<AuthEvent, AuthState> {
   final LoginWithGoogle loginWithGoogle;
@@ -100,6 +101,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       appLog('✅ AuthBloc: Login con Google exitoso para: ${result.data.email}');
       _loadInitialAppData(); // Dispara la carga inicial de datos para los otros Blocs
       _startFullSync();
+      AnalyticsService.instance.logLogin('google');
       emit(AuthAuthenticated(result.data));
     } else if (result is AuthFailure<User>) {
       appLog(
@@ -132,6 +134,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       appLog('✅ AuthBloc: Login con Apple exitoso para: ${result.data.email}');
       _loadInitialAppData();
       _startFullSync();
+      AnalyticsService.instance.logLogin('apple');
       emit(AuthAuthenticated(result.data));
     } else if (result is AuthFailure<User>) {
       appLog(
@@ -217,6 +220,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     emit(AuthLoading());
     final guestUser = createGuestSession.call();
     _loadInitialAppData(); // Dispara la carga inicial de datos para los otros Blocs (solo datos locales)
+    AnalyticsService.instance.logLogin('guest');
     emit(AuthAuthenticated(guestUser));
     appLog('✅ AuthBloc: Sesión de invitado creada.');
   }

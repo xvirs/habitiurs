@@ -18,6 +18,7 @@ import '../../../settings/presentation/bloc/settings_bloc.dart';
 import '../../../settings/presentation/bloc/settings_event.dart';
 import '../../../missions/presentation/bloc/mission_bloc.dart';
 import '../../../missions/presentation/bloc/mission_event.dart';
+import 'package:habitiurs/core/analytics/analytics_service.dart';
 
 class AppPage extends StatefulWidget {
   final AppState appState;
@@ -64,6 +65,7 @@ class _AppPageState extends State<AppPage> {
       supportedLocales: AppLocalizations.supportedLocales,
       locale: const Locale('es'),
       home: _buildHome(),
+      navigatorObservers: [AnalyticsService.instance.observer],
     );
   }
 

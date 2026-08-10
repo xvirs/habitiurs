@@ -10,6 +10,7 @@ import '../../domain/usecases/get_missions.dart';
 import '../../domain/usecases/update_mission.dart';
 import 'mission_event.dart';
 import 'mission_state.dart';
+import 'package:habitiurs/core/analytics/analytics_service.dart';
 
 class MissionBloc extends Bloc<MissionEvent, MissionState> {
   final GetMissions getMissions;
@@ -77,6 +78,7 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
         createdAt: DateTime.now(),
       );
       final id = await createMission(mission);
+      AnalyticsService.instance.missionCreated(hasDueDate: event.dueDate != null);
       await _syncMissionReminder(mission.copyWith(id: id));
       add(const LoadMissions());
     } catch (e) {
@@ -109,6 +111,7 @@ class MissionBloc extends Bloc<MissionEvent, MissionState> {
         clearCompletedAt: !nowDone,
       );
       await updateMission(updated);
+      if (nowDone) AnalyticsService.instance.missionCompleted();
       // Completada → cancela el aviso; reabierta → lo reprograma.
       await _syncMissionReminder(updated);
       add(const LoadMissions());
