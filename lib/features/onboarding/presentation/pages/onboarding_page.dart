@@ -1,6 +1,7 @@
 // lib/features/onboarding/presentation/pages/onboarding_page.dart
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:habitiurs/core/analytics/analytics_service.dart';
 
 /// Onboarding de primer arranque: 3 pantallas salteables.
 /// Se muestra una sola vez (flag en SharedPreferences).
@@ -60,6 +61,7 @@ class _OnboardingPageState extends State<OnboardingPage> {
   Future<void> _finish() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(OnboardingPage.completedKey, true);
+    AnalyticsService.instance.onboardingCompleted();
     widget.onDone();
   }
 

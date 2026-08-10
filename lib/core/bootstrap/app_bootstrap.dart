@@ -9,6 +9,7 @@ import '../notifications/notification_service.dart';
 import '../../firebase_options.dart';
 import 'app_state.dart';
 import 'package:habitiurs/core/utils/app_logger.dart';
+import 'package:habitiurs/core/analytics/analytics_service.dart';
 
 class AppBootstrap {
   Future<AppState> initialize() async {
@@ -44,6 +45,7 @@ class AppBootstrap {
         options: DefaultFirebaseOptions.currentPlatform,
       );
       await _activateAppCheck();
+      await AnalyticsService.instance.init();
       appLog('✅ [Bootstrap] Firebase inicializado');
     } catch (e) {
       appLog('⚠️ [Bootstrap] Firebase falló: $e');
